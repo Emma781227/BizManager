@@ -1,0 +1,143 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum OrderStatus {
+  pending
+  new
+  confirmed
+  in_progress
+  ready
+  delivered
+  cancelled
+}
+
+enum PaymentStatus {
+  unpaid
+  partial
+  paid
+  refunded
+}
+
+enum PaymentMethod {
+  cash
+  mobile_money
+  bank_transfer
+  cod
+}
+
+model User {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  passwordHash String
+  fullName     String
+  phone        String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  products     Product[]
+  customers    Customer[]
+  orders       Order[]
+  shop         Shop?
+
+  @@index([createdAt])
+}
+
+model Shop {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  slug           String   @unique
+  name           String
+  notificationEmail String?
+  logoUrl        String?
+  coverUrl       String?
+  description    String?
+  city           String?
+  whatsappNumber String
+  category       String?
+  address        String?
+  openingHours   String?
+  isPublished    Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([name])
+}
+
+model Product {
+  id          String    @id @default(cuid())
+  userId      String
+  name        String
+  category    String?
+  categories  String[]  @default([])
+  description String?
+  sku         String?
+  unitPrice   Decimal   @db.Decimal(12, 2)
+  stock       Int       @default(0)
+  imageUrl    String?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orderItems  OrderItem[]
+
+  @@index([userId, createdAt])
+  @@index([userId, name])
+}
+
+model Customer {
+  id          String    @id @default(cuid())
+  userId      String
+  fullName    String
+  phone       String
+  email       String?
+  address     String?
+  notes       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders      Order[]
+
+  @@index([userId, createdAt])
+  @@index([userId, phone])
+}
+
+model Order {
+  id            String        @id @default(cuid())
+  userId        String
+  customerId    String
+  status        OrderStatus   @default(new)
+  paymentStatus PaymentStatus @default(unpaid)
+  paymentMethod PaymentMethod?
+  totalAmount   Decimal       @db.Decimal(12, 2)
+  paidAmount    Decimal       @default(0) @db.Decimal(12, 2)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  customer      Customer      @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  items         OrderItem[]
+
+  @@index([userId, createdAt])
+  @@index([userId, status])
+  @@index([customerId])
+}
+
+model OrderItem {
+  id          String   @id @default(cuid())
+  orderId     String
+  productId   String
+  quantity    Int
+  unitPrice   Decimal  @db.Decimal(12, 2)
+  lineTotal   Decimal  @db.Decimal(12, 2)
+  createdAt   DateTime @default(now())
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@index([orderId])
+  @@index([productId])
+}

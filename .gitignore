@@ -1,0 +1,19 @@
+# Local environment
+.venv/
+.env
+.env.*
+
+# Logs
+*.log
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/
+
+# Local docs/assets not intended for repository root
+*.pdf
+*.png
+*.jpg
+*.jpeg
+*.webp
