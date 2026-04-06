@@ -1,8 +1,5 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { mkdir, writeFile } from "node:fs/promises";
-import path from "node:path";
-import { randomUUID } from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import { getSessionFromRequest } from "@/lib/auth";
 import { shopSchema } from "@/lib/validators";
@@ -60,7 +57,7 @@ export async function PUT(request: NextRequest) {
         isPublished: String(formData.get("isPublished") ?? "true") === "true",
       };
 
-      async function saveImage(file: File, prefix: string) {
+      async function saveImage(file: File) {
         if (!file.type.startsWith("image/")) {
           throw new Error("Le fichier doit etre une image");
         }
@@ -69,27 +66,18 @@ export async function PUT(request: NextRequest) {
           throw new Error("Image trop lourde (max 5MB)");
         }
 
-        const ext = path.extname(file.name) || ".jpg";
-        const safeSlug = String(body?.slug ?? "shop")
-          .toLowerCase()
-          .replace(/[^a-z0-9-]/g, "-")
-          .slice(0, 50);
-        const filename = `${prefix}-${safeSlug}-${Date.now()}-${randomUUID()}${ext}`;
-        const uploadDir = path.join(process.cwd(), "public", "uploads", "shops");
-        await mkdir(uploadDir, { recursive: true });
-
         const bytes = await file.arrayBuffer();
-        await writeFile(path.join(uploadDir, filename), Buffer.from(bytes));
+        const base64 = Buffer.from(bytes).toString("base64");
 
-        return `/uploads/shops/${filename}`;
+        return `data:${file.type};base64,${base64}`;
       }
 
       if (logoFile instanceof File && logoFile.size > 0) {
-        body.logoUrl = await saveImage(logoFile, "logo");
+        body.logoUrl = await saveImage(logoFile);
       }
 
       if (coverFile instanceof File && coverFile.size > 0) {
-        body.coverUrl = await saveImage(coverFile, "cover");
+        body.coverUrl = await saveImage(coverFile);
       }
     } else {
       body = await request.json().catch(() => null);

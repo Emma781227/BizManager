@@ -23,6 +23,7 @@ export const productSchema = z.object({
     .union([
       z.string().url(),
       z.string().regex(/^\/uploads\/products\//),
+      z.string().regex(/^data:image\//),
       z.string().length(0),
     ])
     .optional(),
@@ -82,11 +83,23 @@ export const shopSchema = z.object({
   notificationEmail: z.string().email().optional().or(z.literal("")),
   logoUrl: z.preprocess(
     (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
-    z.union([z.string().url(), z.string().regex(/^\/uploads\/shops\//)]).optional(),
+    z
+      .union([
+        z.string().url(),
+        z.string().regex(/^\/uploads\/shops\//),
+        z.string().regex(/^data:image\//),
+      ])
+      .optional(),
   ),
   coverUrl: z.preprocess(
     (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
-    z.union([z.string().url(), z.string().regex(/^\/uploads\/shops\//)]).optional(),
+    z
+      .union([
+        z.string().url(),
+        z.string().regex(/^\/uploads\/shops\//),
+        z.string().regex(/^data:image\//),
+      ])
+      .optional(),
   ),
   description: z.string().max(500).optional().or(z.literal("")),
   city: z.string().max(100).optional().or(z.literal("")),

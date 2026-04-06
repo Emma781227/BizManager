@@ -1,8 +1,5 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { mkdir, writeFile } from "node:fs/promises";
-import path from "node:path";
-import { randomUUID } from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import { getSessionFromRequest } from "@/lib/auth";
 import { productSchema } from "@/lib/validators";
@@ -63,14 +60,6 @@ function parseIntegerInput(value: FormDataEntryValue | null): number {
   return Math.trunc(parsed);
 }
 
-function extensionFromMimeType(type: string): string {
-  if (type === "image/jpeg") return ".jpg";
-  if (type === "image/png") return ".png";
-  if (type === "image/webp") return ".webp";
-  if (type === "image/gif") return ".gif";
-  return "";
-}
-
 async function saveProductImage(file: File): Promise<string> {
   if (!file.type.startsWith("image/")) {
     throw new Error("Le fichier doit etre une image");
@@ -80,15 +69,10 @@ async function saveProductImage(file: File): Promise<string> {
     throw new Error("Image trop volumineuse (max 5 MB)");
   }
 
-  const extension = extensionFromMimeType(file.type) || ".bin";
-  const fileName = `${Date.now()}-${randomUUID()}${extension}`;
-  const uploadDir = path.join(process.cwd(), "public", "uploads", "products");
   const buffer = Buffer.from(await file.arrayBuffer());
+  const base64 = buffer.toString("base64");
 
-  await mkdir(uploadDir, { recursive: true });
-  await writeFile(path.join(uploadDir, fileName), buffer);
-
-  return `/uploads/products/${fileName}`;
+  return `data:${file.type};base64,${base64}`;
 }
 
 export async function GET(request: NextRequest) {
