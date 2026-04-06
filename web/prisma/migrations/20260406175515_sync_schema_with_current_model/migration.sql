@@ -1,5 +1,15 @@
--- CreateEnum
-CREATE TYPE "public"."PaymentMethod" AS ENUM ('cash', 'mobile_money', 'bank_transfer', 'cod');
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_type t
+        JOIN pg_namespace n ON n.oid = t.typnamespace
+        WHERE n.nspname = 'public' AND t.typname = 'PaymentMethod'
+    ) THEN
+        CREATE TYPE "public"."PaymentMethod" AS ENUM ('cash', 'mobile_money', 'bank_transfer', 'cod');
+    END IF;
+END
+$$;
 
 -- AlterEnum
 -- This migration adds more than one value to an enum.
@@ -9,21 +19,63 @@ CREATE TYPE "public"."PaymentMethod" AS ENUM ('cash', 'mobile_money', 'bank_tran
 -- the enum.
 
 
-ALTER TYPE "public"."OrderStatus" ADD VALUE 'new';
-ALTER TYPE "public"."OrderStatus" ADD VALUE 'in_progress';
-ALTER TYPE "public"."OrderStatus" ADD VALUE 'ready';
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_enum e
+        JOIN pg_type t ON t.oid = e.enumtypid
+        JOIN pg_namespace n ON n.oid = t.typnamespace
+        WHERE n.nspname = 'public' AND t.typname = 'OrderStatus' AND e.enumlabel = 'new'
+    ) THEN
+        ALTER TYPE "public"."OrderStatus" ADD VALUE 'new';
+    END IF;
+END
+$$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_enum e
+        JOIN pg_type t ON t.oid = e.enumtypid
+        JOIN pg_namespace n ON n.oid = t.typnamespace
+        WHERE n.nspname = 'public' AND t.typname = 'OrderStatus' AND e.enumlabel = 'in_progress'
+    ) THEN
+        ALTER TYPE "public"."OrderStatus" ADD VALUE 'in_progress';
+    END IF;
+END
+$$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_enum e
+        JOIN pg_type t ON t.oid = e.enumtypid
+        JOIN pg_namespace n ON n.oid = t.typnamespace
+        WHERE n.nspname = 'public' AND t.typname = 'OrderStatus' AND e.enumlabel = 'ready'
+    ) THEN
+        ALTER TYPE "public"."OrderStatus" ADD VALUE 'ready';
+    END IF;
+END
+$$;
 
 -- AlterTable
-ALTER TABLE "public"."Order" ADD COLUMN     "paymentMethod" "public"."PaymentMethod",
-ALTER COLUMN "status" SET DEFAULT 'new';
+ALTER TABLE "public"."Order"
+    ADD COLUMN IF NOT EXISTS "paymentMethod" "public"."PaymentMethod";
+
+ALTER TABLE "public"."Order"
+    ALTER COLUMN "status" SET DEFAULT 'new';
 
 -- AlterTable
-ALTER TABLE "public"."Product" ADD COLUMN     "categories" TEXT[] DEFAULT ARRAY[]::TEXT[],
-ADD COLUMN     "category" TEXT,
-ADD COLUMN     "description" TEXT;
+ALTER TABLE "public"."Product"
+    ADD COLUMN IF NOT EXISTS "categories" TEXT[] DEFAULT ARRAY[]::TEXT[],
+    ADD COLUMN IF NOT EXISTS "category" TEXT,
+    ADD COLUMN IF NOT EXISTS "description" TEXT;
 
 -- CreateTable
-CREATE TABLE "public"."Shop" (
+CREATE TABLE IF NOT EXISTS "public"."Shop" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "slug" TEXT NOT NULL,
@@ -45,13 +97,25 @@ CREATE TABLE "public"."Shop" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Shop_userId_key" ON "public"."Shop"("userId");
+CREATE UNIQUE INDEX IF NOT EXISTS "Shop_userId_key" ON "public"."Shop"("userId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Shop_slug_key" ON "public"."Shop"("slug");
+CREATE UNIQUE INDEX IF NOT EXISTS "Shop_slug_key" ON "public"."Shop"("slug");
 
 -- CreateIndex
-CREATE INDEX "Shop_name_idx" ON "public"."Shop"("name");
+CREATE INDEX IF NOT EXISTS "Shop_name_idx" ON "public"."Shop"("name");
 
 -- AddForeignKey
-ALTER TABLE "public"."Shop" ADD CONSTRAINT "Shop_userId_fkey" FOREIGN KEY ("userId") REFERENCES "public"."User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'Shop_userId_fkey'
+    ) THEN
+        ALTER TABLE "public"."Shop"
+            ADD CONSTRAINT "Shop_userId_fkey"
+            FOREIGN KEY ("userId") REFERENCES "public"."User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+    END IF;
+END
+$$;
