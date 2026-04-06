@@ -65,9 +65,6 @@ $$;
 ALTER TABLE "public"."Order"
     ADD COLUMN IF NOT EXISTS "paymentMethod" "public"."PaymentMethod";
 
-ALTER TABLE "public"."Order"
-    ALTER COLUMN "status" SET DEFAULT 'new';
-
 -- AlterTable
 ALTER TABLE "public"."Product"
     ADD COLUMN IF NOT EXISTS "categories" TEXT[] DEFAULT ARRAY[]::TEXT[],
