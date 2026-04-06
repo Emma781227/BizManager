@@ -32,6 +32,18 @@ const initialState = {
   isPublished: true,
 };
 
+function parseJsonSafe<T>(raw: string): T | null {
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    return null;
+  }
+}
+
 export default function SettingsPage() {
   const [form, setForm] = useState(initialState);
   const [logoFile, setLogoFile] = useState<File | null>(null);
@@ -68,13 +80,14 @@ export default function SettingsPage() {
 
     try {
       const response = await fetch("/api/shop", { cache: "no-store" });
-      const json = await response.json();
+      const raw = await response.text();
+      const json = parseJsonSafe<{ data?: Shop | null; error?: string }>(raw) ?? {};
 
       if (!response.ok) {
         throw new Error(json.error ?? "Impossible de charger la boutique");
       }
 
-      const shop = json.data as Shop | null;
+      const shop = json.data ?? null;
 
       if (!shop) {
         setForm(initialState);
@@ -132,10 +145,13 @@ export default function SettingsPage() {
         method: "PUT",
         body: formData,
       });
-      const json = await response.json();
+      const raw = await response.text();
+      const json = parseJsonSafe<{ data?: Shop; error?: string }>(raw) ?? {};
 
       if (!response.ok) {
-        throw new Error(json.error ?? "Impossible d'enregistrer la boutique");
+        throw new Error(
+          json.error ?? `Impossible d'enregistrer la boutique (HTTP ${response.status})`,
+        );
       }
 
       setSuccess("Profil boutique enregistre.");
