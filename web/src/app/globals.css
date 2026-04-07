@@ -1371,12 +1371,12 @@ th {
 .storefront-wrap {
   width: min(100% - 1rem, 1400px);
   margin: 0.9rem auto;
-  display: grid;
-  place-items: center;
+  display: block;
 }
 
 .storefront-phone {
-  width: min(100%, 460px);
+  width: 100%;
+  max-width: 1180px;
   background: linear-gradient(180deg, #fbfcfb 0%, #f1f3f2 100%);
   border: 1px solid #e4e7e6;
   border-radius: 1.35rem;
@@ -1517,13 +1517,89 @@ th {
 }
 
 .storefront-section-head h2 {
-  font-size: 1rem;
+  font-size: 1.15rem;
   font-weight: 800;
+}
+
+.storefront-search-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.45rem;
 }
 
 .storefront-search-row input {
   border-radius: 0.75rem;
   background: #f8fafb;
+}
+
+.storefront-reset-btn {
+  border: 1px solid #d4dde1;
+  background: #ffffff;
+  color: #2f3a48;
+  border-radius: 0.75rem;
+  min-width: 120px;
+}
+
+.storefront-layout {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.storefront-filters {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.storefront-filter-card {
+  border: 1px solid #e1e6e8;
+  border-radius: 0.78rem;
+  background: #fafcfc;
+  padding: 0.58rem;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.storefront-filter-card h3 {
+  font-size: 0.78rem;
+  color: #2a3340;
+}
+
+.storefront-filter-card select,
+.storefront-price-filter input {
+  min-height: 2rem;
+  border-radius: 0.62rem;
+  border: 1px solid #d4dce0;
+  background: #ffffff;
+  padding: 0.38rem 0.52rem;
+  font-size: 0.79rem;
+}
+
+.storefront-filter-list {
+  display: grid;
+  gap: 0.32rem;
+  max-height: 160px;
+  overflow: auto;
+  padding-right: 0.15rem;
+}
+
+.storefront-check-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.76rem;
+  color: #3f4854;
+}
+
+.storefront-price-filter {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.storefront-price-filter span {
+  color: #6b7280;
+  font-size: 0.8rem;
 }
 
 .storefront-chips {
@@ -1538,7 +1614,7 @@ th {
   background: #f6f8f9;
   border-radius: 999px;
   padding: 0.3rem 0.65rem;
-  font-size: 0.74rem;
+  font-size: 0.8rem;
   color: #4a525f;
   white-space: nowrap;
 }
@@ -1655,6 +1731,166 @@ th {
   border: 1px solid #e2e7e8;
   border-radius: 0.95rem;
   overflow: hidden;
+}
+
+.market-detail-shell {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.market-media-card,
+.market-main-info,
+.market-buybox {
+  background: #ffffff;
+  border: 1px solid #e2e7e8;
+  border-radius: 0.95rem;
+  overflow: hidden;
+}
+
+.market-main-info,
+.market-buybox {
+  padding: 0.85rem;
+}
+
+.market-breadcrumb {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  color: #63707c;
+  font-size: 0.78rem;
+  margin-bottom: 0.45rem;
+}
+
+.market-breadcrumb a {
+  color: #1f6f55;
+  font-weight: 700;
+}
+
+.market-main-info h1 {
+  font-size: 1.4rem;
+  line-height: 1.15;
+  color: #1f2732;
+}
+
+.market-meta-row {
+  margin-top: 0.35rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  color: #54606e;
+  font-size: 0.79rem;
+}
+
+.market-meta-row span {
+  border: 1px solid #e3e8eb;
+  background: #f8fafb;
+  border-radius: 999px;
+  padding: 0.2rem 0.5rem;
+}
+
+.market-price-row {
+  margin-top: 0.55rem;
+}
+
+.market-tags {
+  margin-top: 0.52rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.market-tags span {
+  border-radius: 999px;
+  border: 1px solid #d7e5df;
+  background: #edf8f4;
+  color: #1b6f54;
+  font-size: 0.73rem;
+  font-weight: 700;
+  padding: 0.2rem 0.5rem;
+}
+
+.market-description {
+  margin-top: 0.55rem;
+  color: #2f3a48;
+  line-height: 1.45;
+  font-size: 0.91rem;
+}
+
+.market-benefits {
+  margin-top: 0.55rem;
+  display: grid;
+  gap: 0.38rem;
+  padding-left: 1.1rem;
+  color: #3a4552;
+  font-size: 0.84rem;
+}
+
+.market-buybox h2 {
+  color: #1f2732;
+  font-size: 1rem;
+  margin-bottom: 0.35rem;
+}
+
+.market-buy-price {
+  font-size: 1.35rem;
+  color: #1a2230;
+  font-weight: 800;
+}
+
+.market-buy-stock {
+  margin-top: 0.15rem;
+  color: #5a6674;
+  font-size: 0.82rem;
+}
+
+.market-buybox .quantity-picker {
+  margin-top: 0.55rem;
+}
+
+.market-secondary-cta {
+  margin-top: 0.45rem;
+  border: 1px solid #d6e7e0;
+  background: #f3fbf7;
+  color: #136245;
+  width: 100%;
+  border-radius: 0.68rem;
+  min-height: 2.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.market-secondary-cta:hover {
+  text-decoration: none;
+  background: #e6f6ef;
+}
+
+.market-trust-strip {
+  margin-top: 0.6rem;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.market-trust-strip article {
+  border: 1px solid #e2e7e8;
+  background: #ffffff;
+  border-radius: 0.9rem;
+  padding: 0.72rem;
+}
+
+.market-trust-strip h3 {
+  color: #1f2732;
+  font-size: 0.92rem;
+  margin-bottom: 0.2rem;
+}
+
+.market-trust-strip p {
+  color: #596674;
+  font-size: 0.79rem;
+  line-height: 1.38;
 }
 
 .storefront-detail-image {
@@ -1785,7 +2021,8 @@ th {
   }
 
   .storefront-phone {
-    width: min(100%, 680px);
+    width: 100%;
+    max-width: 1180px;
     border-radius: 1.6rem;
     padding: 0.95rem;
   }
@@ -1796,6 +2033,17 @@ th {
 
   .storefront-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .storefront-layout {
+    grid-template-columns: minmax(230px, 260px) minmax(0, 1fr);
+    align-items: start;
+    gap: 0.72rem;
+  }
+
+  .storefront-filters {
+    position: sticky;
+    top: 0.75rem;
   }
 
   .storefront-product-image,
@@ -1815,6 +2063,28 @@ th {
   .storefront-form button {
     grid-column: 1 / -1;
   }
+
+  .market-detail-shell {
+    gap: 0.72rem;
+  }
+
+  .market-main-info,
+  .market-buybox {
+    padding: 0.95rem;
+  }
+
+  .market-main-info h1 {
+    font-size: 1.72rem;
+  }
+
+  .market-buy-price {
+    font-size: 1.55rem;
+  }
+
+  .market-trust-strip {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
 }
 
 @media (min-width: 1024px) {
@@ -1824,7 +2094,8 @@ th {
   }
 
   .storefront-phone {
-    width: min(100%, 1080px);
+    width: 100%;
+    max-width: 1240px;
     border-radius: 1.8rem;
     padding: 1.1rem;
   }
@@ -1838,6 +2109,11 @@ th {
     gap: 0.7rem;
   }
 
+  .storefront-layout {
+    grid-template-columns: minmax(250px, 280px) minmax(0, 1fr);
+    gap: 0.9rem;
+  }
+
   .storefront-product-detail {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(360px, 430px);
@@ -1846,6 +2122,17 @@ th {
 
   .storefront-detail-image {
     height: 100%;
+  }
+
+  .market-detail-shell {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(280px, 320px);
+    align-items: start;
+    gap: 0.85rem;
+  }
+
+  .market-buybox {
+    position: sticky;
+    top: 1rem;
   }
 }
 
@@ -1878,6 +2165,62 @@ th {
   background: #edf8f3;
   color: #166c50;
   border-color: #cde9de;
+}
+
+.password-field-wrap {
+  position: relative;
+  display: grid;
+}
+
+.password-field-wrap input {
+  padding-right: 2.4rem;
+}
+
+.password-eye-btn {
+  position: absolute;
+  top: 50%;
+  right: 0.45rem;
+  transform: translateY(-50%);
+  border: 0;
+  background: transparent;
+  padding: 0.18rem;
+  width: 1.8rem;
+  height: 1.8rem;
+  border-radius: 0.45rem;
+  color: #5f6874;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.password-eye-btn:hover {
+  background: #eff2f4;
+  color: #273243;
+}
+
+.password-eye-btn:focus-visible {
+  outline: 2px solid #70b59d;
+  outline-offset: 1px;
+}
+
+.password-eye-icon {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.password-eye-btn.masked .password-eye-icon {
+  animation: eyeBlink 2.8s ease-in-out infinite;
+}
+
+@keyframes eyeBlink {
+  0%,
+  88%,
+  100% {
+    transform: scaleY(1);
+  }
+  92% {
+    transform: scaleY(0.1);
+  }
 }
 
 .list-cards {

@@ -23,6 +23,16 @@ type Product = {
   unitPrice: string;
   stock: number;
   imageUrl: string | null;
+  category?: string | null;
+  categories?: string[];
+};
+
+type ProductsResponse = {
+  data: Product[];
+  meta?: {
+    categories?: string[];
+  };
+  error?: string;
 };
 
 export default function PublicShopPage() {
@@ -30,10 +40,32 @@ export default function PublicShopPage() {
   const slug = routeParams?.slug;
   const [shop, setShop] = useState<Shop | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
+  const [availableCategories, setAvailableCategories] = useState<string[]>([]);
   const [search, setSearch] = useState("");
   const [inStockOnly, setInStockOnly] = useState(false);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [stockStatus, setStockStatus] = useState<"all" | "in" | "low" | "out">("all");
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
+  const [sortBy, setSortBy] = useState<"newest" | "price_asc" | "price_desc" | "name_asc">("newest");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const resetFilters = () => {
+    setSearch("");
+    setInStockOnly(false);
+    setSelectedCategories([]);
+    setStockStatus("all");
+    setMinPrice("");
+    setMaxPrice("");
+    setSortBy("newest");
+  };
+
+  const toggleCategory = (category: string) => {
+    setSelectedCategories((prev) =>
+      prev.includes(category) ? prev.filter((item) => item !== category) : [...prev, category],
+    );
+  };
 
   useEffect(() => {
     if (!slug) {
@@ -51,6 +83,19 @@ export default function PublicShopPage() {
         if (inStockOnly) {
           query.set("inStock", "1");
         }
+        if (stockStatus !== "all") {
+          query.set("stockStatus", stockStatus);
+        }
+        if (minPrice.trim()) {
+          query.set("minPrice", minPrice.trim());
+        }
+        if (maxPrice.trim()) {
+          query.set("maxPrice", maxPrice.trim());
+        }
+        if (sortBy !== "newest") {
+          query.set("sort", sortBy);
+        }
+        selectedCategories.forEach((category) => query.append("category", category));
 
         const [shopRes, productsRes] = await Promise.all([
           fetch(`/api/public/shop/${slug}`, { cache: "no-store" }),
@@ -58,7 +103,7 @@ export default function PublicShopPage() {
         ]);
 
         const shopJson = await shopRes.json();
-        const productsJson = await productsRes.json();
+        const productsJson = (await productsRes.json()) as ProductsResponse;
 
         if (!shopRes.ok) {
           throw new Error(shopJson.error ?? "Boutique introuvable");
@@ -70,13 +115,14 @@ export default function PublicShopPage() {
 
         setShop(shopJson.data ?? null);
         setProducts(productsJson.data ?? []);
+        setAvailableCategories(productsJson.meta?.categories ?? []);
       } catch (loadError) {
         setError(loadError instanceof Error ? loadError.message : "Erreur inconnue");
       } finally {
         setLoading(false);
       }
     })();
-  }, [slug, search, inStockOnly]);
+  }, [slug, search, inStockOnly, stockStatus, minPrice, maxPrice, sortBy, selectedCategories]);
 
   if (!slug) {
     return (
@@ -142,35 +188,133 @@ export default function PublicShopPage() {
             <input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Recherche produit"
+              placeholder="Rechercher un produit"
               aria-label="Recherche produits"
             />
+            <button type="button" className="storefront-reset-btn" onClick={resetFilters}>
+              Reinitialiser
+            </button>
           </div>
 
-          <div className="storefront-chips">
-            <span className="active">Tous</span>
-            {shop.category ? <span>{shop.category}</span> : null}
-            {shop.city ? <span>{shop.city}</span> : null}
-          </div>
+          <div className="storefront-layout">
+            <aside className="storefront-filters" aria-label="Filtres produits">
+              <div className="storefront-filter-card">
+                <h3>Trier</h3>
+                <select value={sortBy} onChange={(event) => setSortBy(event.target.value as typeof sortBy)}>
+                  <option value="newest">Les plus recents</option>
+                  <option value="price_asc">Prix croissant</option>
+                  <option value="price_desc">Prix decroissant</option>
+                  <option value="name_asc">Nom A-Z</option>
+                </select>
+              </div>
 
-          {products.length === 0 ? <p className="muted">Aucun produit disponible pour le moment.</p> : null}
-
-          <div className="storefront-grid">
-            {products.map((product) => (
-              <article className="storefront-product-card" key={product.id}>
-                {product.imageUrl ? <img src={product.imageUrl} alt={product.name} className="storefront-product-image" /> : <div className="storefront-product-image placeholder">Image</div>}
-                <div className="storefront-product-body">
-                  <strong>{product.name}</strong>
-                  <span className="price">{Number(product.unitPrice).toFixed(0)} CFA</span>
-                  <span className={product.stock > 0 ? "stock ok" : "stock out"}>
-                    {product.stock > 0 ? "En stock" : "Rupture"}
-                  </span>
+              <div className="storefront-filter-card">
+                <h3>Categorie</h3>
+                <div className="storefront-filter-list">
+                  {availableCategories.length === 0 ? <p className="muted">Aucune categorie</p> : null}
+                  {availableCategories.map((category) => (
+                    <label key={category} className="storefront-check-row">
+                      <input
+                        type="checkbox"
+                        checked={selectedCategories.includes(category)}
+                        onChange={() => toggleCategory(category)}
+                      />
+                      <span>{category}</span>
+                    </label>
+                  ))}
                 </div>
-                <Link className="storefront-stretched-link" href={`/shop/${slug}/products/${product.id}`} aria-label={`Voir ${product.name}`}>
-                  Voir
-                </Link>
-              </article>
-            ))}
+              </div>
+
+              <div className="storefront-filter-card">
+                <h3>Prix</h3>
+                <div className="storefront-price-filter">
+                  <input
+                    value={minPrice}
+                    onChange={(event) => setMinPrice(event.target.value)}
+                    placeholder="Min"
+                    inputMode="decimal"
+                  />
+                  <span>-</span>
+                  <input
+                    value={maxPrice}
+                    onChange={(event) => setMaxPrice(event.target.value)}
+                    placeholder="Max"
+                    inputMode="decimal"
+                  />
+                </div>
+              </div>
+
+              <div className="storefront-filter-card">
+                <h3>Disponibilite</h3>
+                <div className="storefront-filter-list">
+                  <label className="storefront-check-row">
+                    <input
+                      type="radio"
+                      name="stockStatus"
+                      checked={stockStatus === "all"}
+                      onChange={() => setStockStatus("all")}
+                    />
+                    <span>Tous</span>
+                  </label>
+                  <label className="storefront-check-row">
+                    <input
+                      type="radio"
+                      name="stockStatus"
+                      checked={stockStatus === "in"}
+                      onChange={() => setStockStatus("in")}
+                    />
+                    <span>En stock</span>
+                  </label>
+                  <label className="storefront-check-row">
+                    <input
+                      type="radio"
+                      name="stockStatus"
+                      checked={stockStatus === "low"}
+                      onChange={() => setStockStatus("low")}
+                    />
+                    <span>Stock bas</span>
+                  </label>
+                  <label className="storefront-check-row">
+                    <input
+                      type="radio"
+                      name="stockStatus"
+                      checked={stockStatus === "out"}
+                      onChange={() => setStockStatus("out")}
+                    />
+                    <span>Rupture</span>
+                  </label>
+                </div>
+              </div>
+            </aside>
+
+            <div>
+              <div className="storefront-chips">
+                <span className="active">Catalogue</span>
+                {shop.category ? <span>{shop.category}</span> : null}
+                {shop.city ? <span>{shop.city}</span> : null}
+                <span>{products.length} produit(s)</span>
+              </div>
+
+              {products.length === 0 ? <p className="muted">Aucun produit disponible pour ces filtres.</p> : null}
+
+              <div className="storefront-grid">
+                {products.map((product) => (
+                  <article className="storefront-product-card" key={product.id}>
+                    {product.imageUrl ? <img src={product.imageUrl} alt={product.name} className="storefront-product-image" /> : <div className="storefront-product-image placeholder">Image</div>}
+                    <div className="storefront-product-body">
+                      <strong>{product.name}</strong>
+                      <span className="price">{Number(product.unitPrice).toFixed(0)} CFA</span>
+                      <span className={product.stock > 0 ? "stock ok" : "stock out"}>
+                        {product.stock > 0 ? "En stock" : "Rupture"}
+                      </span>
+                    </div>
+                    <Link className="storefront-stretched-link" href={`/shop/${slug}/products/${product.id}`} aria-label={`Voir ${product.name}`}>
+                      Voir
+                    </Link>
+                  </article>
+                ))}
+              </div>
+            </div>
           </div>
         </section>
 

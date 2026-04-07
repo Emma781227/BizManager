@@ -8,10 +8,14 @@ type ProductPayload = {
   id: string;
   name: string;
   description?: string | null;
+  sku?: string | null;
+  category?: string | null;
+  categories?: string[];
   unitPrice: string;
   stock: number;
   imageUrl: string | null;
   shopName: string;
+  whatsappNumber?: string;
 };
 
 export default function PublicProductPage() {
@@ -60,7 +64,11 @@ export default function PublicProductPage() {
   }
 
   if (loading) {
-    return <main className="home"><p>Chargement...</p></main>;
+    return (
+      <main className="home">
+        <p>Chargement...</p>
+      </main>
+    );
   }
 
   if (error || !product) {
@@ -71,32 +79,85 @@ export default function PublicProductPage() {
     );
   }
 
+  const productCategories =
+    Array.isArray(product.categories) && product.categories.length > 0
+      ? product.categories
+      : product.category
+        ? [product.category]
+        : [];
+
+  const description =
+    product.description?.trim() ||
+    "Produit de qualite selectionne avec soin pour repondre a vos besoins au quotidien.";
+
   return (
     <main className="storefront-wrap">
       <section className="storefront-phone">
         <header className="storefront-topbar">
-          <Link href={`/shop/${slug}`} className="storefront-back">←</Link>
-          <strong>{product.name}</strong>
+          <Link href={`/shop/${slug}`} className="storefront-back">
+            ←
+          </Link>
+          <strong>Detail produit</strong>
           <span className="storefront-icon">🛒</span>
         </header>
 
-        <section className="storefront-product-detail">
-          {product.imageUrl ? (
-            <img src={product.imageUrl} alt={product.name} className="storefront-detail-image" />
-          ) : (
-            <div className="storefront-detail-image placeholder">Image indisponible</div>
-          )}
+        <section className="market-detail-shell">
+          <article className="market-media-card">
+            {product.imageUrl ? (
+              <img src={product.imageUrl} alt={product.name} className="storefront-detail-image" />
+            ) : (
+              <div className="storefront-detail-image placeholder">Image indisponible</div>
+            )}
+          </article>
 
-          <div className="storefront-detail-content">
+          <article className="market-main-info">
+            <p className="market-breadcrumb">
+              <Link href={`/shop/${slug}`}>Accueil</Link>
+              <span>/</span>
+              <span>{product.shopName}</span>
+              {productCategories.length > 0 ? (
+                <>
+                  <span>/</span>
+                  <span>{productCategories[0]}</span>
+                </>
+              ) : null}
+            </p>
+
             <h1>{product.name}</h1>
-            <div className="storefront-price-row">
-              <strong>{Number(product.unitPrice).toFixed(0)} CFA</strong>
-              <span className={product.stock > 0 ? "stock ok" : "stock out"}>{product.stock > 0 ? "En stock" : "Rupture"}</span>
+
+            <div className="market-meta-row">
+              <span>Vendu par {product.shopName}</span>
+              {product.sku ? <span>SKU: {product.sku}</span> : null}
             </div>
 
-            <p>
-              {product.description?.trim() || "Produit de qualite, selectionne avec soin pour repondre a vos besoins au quotidien."}
-            </p>
+            <div className="storefront-price-row market-price-row">
+              <strong>{Number(product.unitPrice).toFixed(0)} CFA</strong>
+              <span className={product.stock > 0 ? "stock ok" : "stock out"}>
+                {product.stock > 0 ? "En stock" : "Rupture"}
+              </span>
+            </div>
+
+            {productCategories.length > 0 ? (
+              <div className="market-tags">
+                {productCategories.map((cat) => (
+                  <span key={cat}>{cat}</span>
+                ))}
+              </div>
+            ) : null}
+
+            <p className="market-description">{description}</p>
+
+            <ul className="market-benefits">
+              <li>Livraison rapide possible</li>
+              <li>Paiement a la livraison ou Mobile Money</li>
+              <li>Commande confirmee directement par WhatsApp</li>
+            </ul>
+          </article>
+
+          <aside className="market-buybox">
+            <h2>Commander ce produit</h2>
+            <p className="market-buy-price">{Number(product.unitPrice).toFixed(0)} CFA</p>
+            <p className="market-buy-stock">Stock disponible: {product.stock}</p>
 
             {product.stock > 0 ? (
               <div className="quantity-picker" role="group" aria-label="Selection de la quantite">
@@ -127,24 +188,52 @@ export default function PublicProductPage() {
               </div>
             ) : null}
 
-            <div className="storefront-service-list">
-              <span>⏱️ Livraison rapide possible</span>
-              <span>💳 Paiement a la livraison ou Mobile Money</span>
-            </div>
-
             <Link
               href={`/shop/${slug}/checkout?productId=${product.id}&quantity=${quantity}`}
               className={`storefront-cta ${product.stock <= 0 ? "disabled" : ""}`}
               aria-disabled={product.stock <= 0}
               tabIndex={product.stock <= 0 ? -1 : 0}
             >
-              Commander maintenant
+              Acheter maintenant
             </Link>
-          </div>
+
+            {product.whatsappNumber ? (
+              <a
+                href={`https://wa.me/${product.whatsappNumber.replace(/\D/g, "")}`}
+                target="_blank"
+                rel="noreferrer"
+                className="market-secondary-cta"
+              >
+                Contacter la boutique
+              </a>
+            ) : null}
+
+            <div className="storefront-service-list compact">
+              <span>Paiement securise</span>
+              <span>Support marchand disponible</span>
+            </div>
+          </aside>
+        </section>
+
+        <section className="market-trust-strip" aria-label="Avantages client">
+          <article>
+            <h3>Livraison</h3>
+            <p>Suivi rapide de votre commande avec confirmation par WhatsApp.</p>
+          </article>
+          <article>
+            <h3>Paiement flexible</h3>
+            <p>Mobile Money, paiement a la livraison ou cash selon la boutique.</p>
+          </article>
+          <article>
+            <h3>Service client</h3>
+            <p>Le commerçant vous recontacte pour finaliser la commande.</p>
+          </article>
         </section>
 
         <nav className="storefront-bottom-nav" aria-label="Navigation client">
-          <Link href={`/shop/${slug}`} className="active">🏠</Link>
+          <Link href={`/shop/${slug}`} className="active">
+            🏠
+          </Link>
           <span>🧭</span>
           <span>🛍️</span>
           <span>🛒</span>

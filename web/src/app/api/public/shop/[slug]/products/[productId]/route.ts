@@ -33,6 +33,8 @@ export async function GET(_: Request, context: RouteParams) {
       name: true,
       description: true,
       sku: true,
+      category: true,
+      categories: true,
       unitPrice: true,
       stock: true,
       imageUrl: true,

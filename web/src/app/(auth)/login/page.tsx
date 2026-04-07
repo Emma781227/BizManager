@@ -11,6 +11,7 @@ export default function LoginPage() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -99,13 +100,47 @@ export default function LoginPage() {
 
           <label style={{ display: "grid", gap: 6 }}>
             Mot de passe
-            <input
-              required
-              type="password"
-              minLength={8}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
+            <div className="password-field-wrap">
+              <input
+                required
+                type={showPassword ? "text" : "password"}
+                minLength={8}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <button
+                type="button"
+                className={`password-eye-btn ${showPassword ? "" : "masked"}`}
+                aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+                onClick={() => setShowPassword((prev) => !prev)}
+              >
+                {showPassword ? (
+                  <svg viewBox="0 0 24 24" className="password-eye-icon" aria-hidden="true">
+                    <path
+                      d="M1.5 12s3.8-6 10.5-6 10.5 6 10.5 6-3.8 6-10.5 6S1.5 12 1.5 12Z"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <circle cx="12" cy="12" r="3.2" fill="none" stroke="currentColor" strokeWidth="1.8" />
+                  </svg>
+                ) : (
+                  <svg viewBox="0 0 24 24" className="password-eye-icon" aria-hidden="true">
+                    <path
+                      d="M1.5 12s3.8-6 10.5-6 10.5 6 10.5 6-3.8 6-10.5 6S1.5 12 1.5 12Z"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <line x1="3" y1="3" x2="21" y2="21" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                  </svg>
+                )}
+              </button>
+            </div>
           </label>
 
           {error ? <p className="feedback error">{error}</p> : null}
