@@ -9,6 +9,7 @@ const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
 export type SessionPayload = {
   userId: string;
   email: string;
+  role?: "merchant" | "admin";
 };
 
 const defaultAdminEmails = ["merchant@test.local"];
@@ -26,6 +27,10 @@ function getAdminEmails() {
 export function isPlatformAdmin(session: SessionPayload | null) {
   if (!session) {
     return false;
+  }
+
+  if (session.role === "admin") {
+    return true;
   }
 
   return getAdminEmails().includes(session.email.toLowerCase());

@@ -24,10 +24,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Identifiants invalides" }, { status: 401 });
   }
 
-  const token = await signSession({ userId: user.id, email: user.email });
+  const token = await signSession({ userId: user.id, email: user.email, role: user.role });
   const response = NextResponse.json(
     {
-      data: { id: user.id, email: user.email, fullName: user.fullName },
+      data: { id: user.id, email: user.email, fullName: user.fullName, role: user.role },
     },
     { status: 200 },
   );

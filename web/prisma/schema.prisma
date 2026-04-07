@@ -31,12 +31,18 @@ enum PaymentMethod {
   cod
 }
 
+enum UserRole {
+  merchant
+  admin
+}
+
 model User {
   id           String     @id @default(cuid())
   email        String     @unique
   passwordHash String
   fullName     String
   phone        String?
+  role         UserRole   @default(merchant)
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
   products     Product[]

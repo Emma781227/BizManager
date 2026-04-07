@@ -10,12 +10,13 @@ async function main() {
   const passwordHash = await bcrypt.hash("Commerce123!", 10);
   const merchant = await prisma.user.upsert({
     where: { email: "merchant@test.local" },
-    update: {},
+    update: { role: "admin" },
     create: {
       email: "merchant@test.local",
       fullName: "Jean Dupont",
       phone: "+237655000000",
       passwordHash: passwordHash,
+      role: "admin",
     },
   });
   console.log(`✅ Merchant created: ${merchant.email}`);

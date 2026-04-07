@@ -25,11 +25,12 @@ export async function POST(request: Request) {
       fullName: result.data.fullName.trim(),
       email,
       passwordHash,
+      role: "merchant",
     },
-    select: { id: true, email: true, fullName: true },
+    select: { id: true, email: true, fullName: true, role: true },
   });
 
-  const token = await signSession({ userId: user.id, email: user.email });
+  const token = await signSession({ userId: user.id, email: user.email, role: user.role });
   const response = NextResponse.json({ data: user }, { status: 201 });
   setSessionCookie(response, token);
 
