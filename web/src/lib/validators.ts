@@ -6,9 +6,25 @@ export const registerSchema = z.object({
   password: z.string().min(8),
 });
 
+export const registerRequestCodeSchema = registerSchema;
+
+export const registerVerifySchema = registerSchema.extend({
+  code: z.string().regex(/^\d{6}$/, "Code invalide"),
+});
+
 export const loginSchema = z.object({
   email: z.email(),
   password: z.string().min(8),
+});
+
+export const forgotPasswordRequestSchema = z.object({
+  email: z.email(),
+});
+
+export const forgotPasswordResetSchema = z.object({
+  email: z.email(),
+  code: z.string().regex(/^\d{6}$/, "Code invalide"),
+  newPassword: z.string().min(8, "Mot de passe trop court"),
 });
 
 export const productSchema = z.object({

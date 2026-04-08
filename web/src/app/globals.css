@@ -202,6 +202,48 @@ a {
   font-size: 0.93rem;
 }
 
+.password-eye-btn.masked .password-eye-icon {
+  animation: eyeBlink 0.35s ease;
+}
+
+.popup-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 24, 28, 0.45);
+  display: grid;
+  place-items: center;
+  z-index: 1200;
+  padding: 16px;
+}
+
+.popup-card {
+  width: min(92vw, 420px);
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  padding: 18px;
+  display: grid;
+  gap: 10px;
+}
+
+.popup-card h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.popup-card p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.popup-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
 .landing-inline-link {
   margin-top: 0.9rem;
   display: inline-block;
@@ -1365,6 +1407,65 @@ th {
   margin-top: 0.25rem;
   font-size: clamp(0.8rem, 1.5vw, 0.9rem);
   color: var(--muted);
+}
+
+.ghost-button {
+  border: 1px solid #d7dedd;
+  background: #f8faf9;
+  color: #2a6756;
+  border-radius: 0.65rem;
+  padding: 0.6rem 0.8rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.ghost-button:hover {
+  background: #eef6f3;
+}
+
+.forgot-link {
+  border: 0;
+  background: transparent;
+  color: #1a6f55;
+  font-weight: 700;
+  font-size: 0.83rem;
+  justify-self: end;
+  margin-top: -0.2rem;
+}
+
+.forgot-link:hover {
+  text-decoration: underline;
+}
+
+.forgot-panel {
+  margin-top: 0.9rem;
+  border: 1px solid #dfe8e5;
+  background: #f8fbfa;
+  border-radius: 0.8rem;
+  padding: 0.8rem;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.forgot-panel h3 {
+  font-size: 0.98rem;
+}
+
+.forgot-panel p {
+  color: #5c6673;
+  font-size: 0.83rem;
+}
+
+.forgot-actions {
+  display: grid;
+  gap: 0.55rem;
+}
+
+@media (min-width: 640px) {
+  .forgot-actions {
+    grid-template-columns: 1fr auto;
+    align-items: center;
+  }
 }
 
 /* Client storefront experience */

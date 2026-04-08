@@ -118,7 +118,7 @@ export async function PUT(request: NextRequest) {
       update: {
         slug: data.slug.toLowerCase().trim(),
         name: data.name.trim(),
-        notificationEmail: data.notificationEmail?.trim() || null,
+        notificationEmail: data.notificationEmail?.trim() || session.email,
         logoUrl: data.logoUrl?.trim() || null,
         coverUrl: data.coverUrl?.trim() || null,
         description: data.description?.trim() || null,
@@ -133,7 +133,7 @@ export async function PUT(request: NextRequest) {
         userId: session.userId,
         slug: data.slug.toLowerCase().trim(),
         name: data.name.trim(),
-        notificationEmail: data.notificationEmail?.trim() || null,
+        notificationEmail: data.notificationEmail?.trim() || session.email,
         logoUrl: data.logoUrl?.trim() || null,
         coverUrl: data.coverUrl?.trim() || null,
         description: data.description?.trim() || null,
