@@ -200,7 +200,7 @@ export default function Home() {
       <section className="relative overflow-hidden pt-16 pb-24 lg:pt-20 lg:pb-32">
         {/* Background blurs */}
         <div className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full bg-[#1d7c5f]/5 blur-[64px] pointer-events-none animate-fade-in" />
-        <div className="absolute top-[220px] left-0 w-[500px] h-[500px] rounded-full bg-[#daf2e9]/40 blur-[64px] pointer-events-none animate-fade-in delay-300" />
+        <div className="absolute top-[220px] left-0 w-[500px] h-[500px] rounded-full bg-[#daf2e9]/40 blur-[64px] pointer-events-none animate-fade-in stagger-3" />
 
         <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center relative">
           {/* Left */}
@@ -212,16 +212,16 @@ export default function Home() {
               </span>
             </div>
 
-            <h1 className="text-4xl sm:text-5xl lg:text-[60px] font-bold leading-[1.15] tracking-tight mb-6 animate-fade-up delay-100">
+            <h1 className="text-4xl sm:text-5xl lg:text-[60px] font-bold leading-[1.15] tracking-tight mb-6 animate-fade-up stagger-1">
               Vendez en ligne depuis votre telephone
             </h1>
 
-            <p className="text-xl text-[#6a707a] leading-relaxed mb-8 max-w-lg animate-fade-up delay-200">
+            <p className="text-xl text-[#6a707a] leading-relaxed mb-8 max-w-lg animate-fade-up stagger-2">
               Creez votre boutique en ligne, gerez vos produits et recevez vos
               commandes via WhatsApp. Simple, rapide, mobile.
             </p>
 
-            <div className="flex flex-wrap gap-4 mb-8 animate-fade-up delay-300">
+            <div className="flex flex-wrap gap-4 mb-8 animate-fade-up stagger-3">
               <Link
                 href="/login"
                 className="bg-[#1d7c5f] text-white px-8 py-4 rounded-2xl font-medium text-base flex items-center gap-2 hover:bg-[#14634c] shadow-lg shadow-[#1d7c5f]/20 hover-scale active-press transition-all duration-200"
@@ -239,7 +239,7 @@ export default function Home() {
           </div>
 
           {/* Right — Mock Dashboard */}
-          <div className="relative hidden lg:block animate-slide-right delay-200">
+          <div className="relative hidden lg:block animate-slide-right stagger-2">
             {/* Notification badge */}
             <div className="absolute -top-4 right-8 z-20 bg-[#1d7c5f] text-white rounded-xl px-4 py-2 shadow-lg animate-bounce-gentle">
               <div className="absolute -top-1 -right-1 w-3 h-3 bg-[#25d366] rounded-full animate-pulse-dot" />
@@ -314,13 +314,13 @@ export default function Home() {
               { value: "98%", label: "Satisfaction client" },
               { value: "6 pays", label: "En Afrique" },
             ].map((s, i) => (
-              <Reveal key={s.label} animation="animate-count" delay={`delay-${(i + 1) * 100}`}>
+              <Reveal key={s.label} animation="animate-count" delay={`stagger-${i + 1}`}>
                 <p className="text-4xl font-bold text-[#1d7c5f]">{s.value}</p>
                 <p className="text-base text-[#6a707a] mt-2">{s.label}</p>
               </Reveal>
             ))}
           </div>
-          <Reveal animation="animate-fade-up" delay="delay-500">
+          <Reveal animation="animate-fade-up" delay="stagger-5">
             <div className="flex justify-center">
               <div className="inline-flex items-center gap-2 bg-[#daf2e9] rounded-full px-4 py-2">
                 <span className="w-2 h-2 rounded-full bg-[#1d7c5f] animate-pulse-dot" />
@@ -371,7 +371,7 @@ export default function Home() {
                 desc: "Visualisez vos performances et prenez de meilleures decisions",
               },
             ].map((f, i) => (
-              <Reveal key={f.title} animation="animate-fade-up" delay={`delay-${(i + 1) * 100}`}>
+              <Reveal key={f.title} animation="animate-fade-up" delay={`stagger-${i + 1}`}>
                 <div className="bg-white/80 border border-[#e8e6e3] rounded-2xl p-8 hover-lift hover-glow cursor-default h-full">
                   <div className="w-14 h-14 bg-[#daf2e9] rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
                     <Image src={f.icon} alt="" width={28} height={28} />
@@ -421,7 +421,7 @@ export default function Home() {
                 desc: "Les clients commandent directement via WhatsApp. Vous gerez tout depuis l'app",
               },
             ].map((s, i) => (
-              <Reveal key={s.num} animation="animate-fade-up" delay={`delay-${(i + 1) * 200}`}>
+              <Reveal key={s.num} animation="animate-fade-up" delay={`stagger-${(i + 1) * 2}`}>
                 <p className="text-7xl font-bold text-[#1d7c5f]/10 leading-none mb-4">
                   {s.num}
                 </p>
@@ -467,7 +467,7 @@ export default function Home() {
                 "Historique complet de toutes les conversations",
                 "Aucune installation requise pour vos clients",
               ].map((t, i) => (
-                <Reveal key={t} animation="animate-fade-up" delay={`delay-${(i + 1) * 100}`}>
+                <Reveal key={t} animation="animate-fade-up" delay={`stagger-${i + 1}`}>
                   <div className="flex items-center gap-3">
                     <span className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center shrink-0">
                       <Image src="/landing/icon-check-wa.svg" alt="" width={16} height={16} />
@@ -480,7 +480,7 @@ export default function Home() {
           </Reveal>
 
           {/* Right — Chat Mock */}
-          <Reveal animation="animate-slide-right" delay="delay-200">
+          <Reveal animation="animate-slide-right" delay="stagger-2">
             <div className="bg-white rounded-3xl p-6 shadow-2xl hover-glow transition-shadow duration-500">
               {/* Chat header */}
               <div className="flex items-center gap-3 border-b border-[#dde0e4] pb-4 mb-4">

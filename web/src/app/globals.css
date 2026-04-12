@@ -121,14 +121,14 @@
   animation: count-up 0.8s ease-out both;
 }
 
-/* Staggered delays */
-.delay-100 { animation-delay: 100ms; }
-.delay-200 { animation-delay: 200ms; }
-.delay-300 { animation-delay: 300ms; }
-.delay-400 { animation-delay: 400ms; }
-.delay-500 { animation-delay: 500ms; }
-.delay-600 { animation-delay: 600ms; }
-.delay-700 { animation-delay: 700ms; }
+/* Staggered delays (prefixed to avoid Tailwind conflict) */
+.stagger-1 { animation-delay: 100ms; }
+.stagger-2 { animation-delay: 200ms; }
+.stagger-3 { animation-delay: 300ms; }
+.stagger-4 { animation-delay: 400ms; }
+.stagger-5 { animation-delay: 500ms; }
+.stagger-6 { animation-delay: 600ms; }
+.stagger-7 { animation-delay: 700ms; }
 
 /* Hover effects */
 .hover-lift {
@@ -201,19 +201,6 @@ html {
 
 html {
   height: 100%;
-  font-size: 16px;
-}
-
-@media (min-width: 640px) {
-  html {
-    font-size: 16px;
-  }
-}
-
-@media (min-width: 1024px) {
-  html {
-    font-size: 17px;
-  }
 }
 
 html,
@@ -224,20 +211,18 @@ body {
 
 body {
   min-height: 100%;
-  display: flex;
-  flex-direction: column;
-  color: var(--ink);
-  background: var(--bg);
   font-family: var(--font-app-sans), sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Dashboard pages get the gradient background */
+/* Dashboard pages get the dark bg + gradient */
 .app-shell {
+  color: var(--ink);
   background:
     radial-gradient(circle at 12% 18%, #eeefed 0%, transparent 45%),
-    radial-gradient(circle at 88% 82%, #e8ebe8 0%, transparent 42%);
+    radial-gradient(circle at 88% 82%, #e8ebe8 0%, transparent 42%),
+    var(--bg);
 }
 
 a {
