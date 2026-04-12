@@ -17,23 +17,51 @@ type SendEmailOptions = {
 
 let transporterPromise: Promise<Transporter> | null = null;
 
-function parsePort(value: string | undefined) {
+function normalizeEnv(value: string | undefined) {
   if (!value) {
+    return "";
+  }
+
+  const trimmed = value.trim();
+
+  // Support values entered with quotes in hosted env UIs (e.g. "587").
+  if (
+    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+    (trimmed.startsWith("'") && trimmed.endsWith("'"))
+  ) {
+    return trimmed.slice(1, -1).trim();
+  }
+
+  return trimmed;
+}
+
+function parsePort(value: string | undefined) {
+  const normalized = normalizeEnv(value);
+
+  if (!normalized) {
     return null;
   }
 
-  const port = Number(value);
+  const port = Number(normalized);
   return Number.isInteger(port) && port > 0 ? port : null;
 }
 
 export function getSmtpConfig(): SmtpConfig | null {
-  const host = process.env.SMTP_HOST?.trim();
+  const host = normalizeEnv(process.env.SMTP_HOST);
   const port = parsePort(process.env.SMTP_PORT);
-  const user = process.env.SMTP_USER?.trim();
-  const pass = process.env.SMTP_PASS?.trim();
-  const from = process.env.SMTP_FROM?.trim() || (user ? `BizManager <${user}>` : "");
+  const user = normalizeEnv(process.env.SMTP_USER);
+  const pass = normalizeEnv(process.env.SMTP_PASS);
+  const from = normalizeEnv(process.env.SMTP_FROM) || (user ? `BizManager <${user}>` : "");
 
   if (!host || !port || !user || !pass || !from) {
+    console.error("SMTP configuration is incomplete:", {
+      hasHost: Boolean(host),
+      hasPort: Boolean(port),
+      hasUser: Boolean(user),
+      hasPass: Boolean(pass),
+      hasFrom: Boolean(from),
+      rawPort: process.env.SMTP_PORT,
+    });
     return null;
   }
 

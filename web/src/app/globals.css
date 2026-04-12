@@ -396,6 +396,43 @@ a {
   color: #c7e1d7;
 }
 
+.phone-input-group,
+.time-input-group {
+  display: grid;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.phone-input-group {
+  grid-template-columns: minmax(108px, 130px) minmax(0, 1fr);
+}
+
+.phone-input-group select,
+.phone-input-group input,
+.time-input-group input {
+  width: 100%;
+}
+
+.time-input-group {
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+}
+
+.time-input-group span {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+@media (max-width: 640px) {
+  .phone-input-group,
+  .time-input-group {
+    grid-template-columns: 1fr;
+  }
+
+  .time-input-group span {
+    display: none;
+  }
+}
+
 @media (min-width: 700px) {
   .landing-footer {
     padding: 1.3rem;

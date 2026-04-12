@@ -2,6 +2,31 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
+const AFRICAN_DIAL_CODES = [
+  { label: "CM +237", value: "+237" },
+  { label: "SN +221", value: "+221" },
+  { label: "CI +225", value: "+225" },
+  { label: "NG +234", value: "+234" },
+  { label: "GH +233", value: "+233" },
+  { label: "KE +254", value: "+254" },
+  { label: "MA +212", value: "+212" },
+  { label: "TN +216", value: "+216" },
+  { label: "DZ +213", value: "+213" },
+  { label: "ET +251", value: "+251" },
+  { label: "ZA +27", value: "+27" },
+  { label: "UG +256", value: "+256" },
+  { label: "TZ +255", value: "+255" },
+  { label: "RW +250", value: "+250" },
+  { label: "BF +226", value: "+226" },
+  { label: "ML +223", value: "+223" },
+  { label: "NE +227", value: "+227" },
+  { label: "TG +228", value: "+228" },
+  { label: "BJ +229", value: "+229" },
+  { label: "CD +243", value: "+243" },
+];
+
+const notificationEmailPattern = "[A-Za-z0-9._-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}";
+
 type Shop = {
   slug: string;
   name: string;
@@ -32,6 +57,40 @@ const initialState = {
   isPublished: true,
 };
 
+function splitPhoneNumber(phone: string | null | undefined) {
+  const sanitized = (phone ?? "").trim();
+  const sortedCodes = [...AFRICAN_DIAL_CODES].sort((a, b) => b.value.length - a.value.length);
+  const matchingCode = sortedCodes.find((item) => sanitized.startsWith(item.value));
+
+  if (matchingCode) {
+    return {
+      dialCode: matchingCode.value,
+      localNumber: sanitized.slice(matchingCode.value.length).replace(/\D/g, ""),
+    };
+  }
+
+  const genericMatch = sanitized.match(/^(\+\d{1,4})(\d+)$/);
+  if (genericMatch) {
+    return { dialCode: genericMatch[1], localNumber: genericMatch[2] };
+  }
+
+  return { dialCode: "+237", localNumber: sanitized.replace(/\D/g, "") };
+}
+
+function splitOpeningHours(value: string | null | undefined) {
+  const sanitized = (value ?? "").trim();
+  const match = sanitized.match(/^([01]\d|2[0-3]):([0-5]\d)-([01]\d|2[0-3]):([0-5]\d)$/);
+
+  if (!match) {
+    return { openingTime: "", closingTime: "" };
+  }
+
+  return {
+    openingTime: `${match[1]}:${match[2]}`,
+    closingTime: `${match[3]}:${match[4]}`,
+  };
+}
+
 function parseJsonSafe<T>(raw: string): T | null {
   if (!raw) {
     return null;
@@ -46,6 +105,10 @@ function parseJsonSafe<T>(raw: string): T | null {
 
 export default function SettingsPage() {
   const [form, setForm] = useState(initialState);
+  const [whatsappDialCode, setWhatsappDialCode] = useState("+237");
+  const [whatsappLocalNumber, setWhatsappLocalNumber] = useState("");
+  const [openingTime, setOpeningTime] = useState("");
+  const [closingTime, setClosingTime] = useState("");
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(true);
@@ -91,7 +154,14 @@ export default function SettingsPage() {
 
       if (!shop) {
         setForm(initialState);
+        setWhatsappDialCode("+237");
+        setWhatsappLocalNumber("");
+        setOpeningTime("");
+        setClosingTime("");
       } else {
+        const phoneParts = splitPhoneNumber(shop.whatsappNumber);
+        const openingHoursParts = splitOpeningHours(shop.openingHours);
+
         setForm({
           slug: shop.slug,
           name: shop.name,
@@ -106,6 +176,11 @@ export default function SettingsPage() {
           openingHours: shop.openingHours ?? "",
           isPublished: shop.isPublished,
         });
+
+        setWhatsappDialCode(phoneParts.dialCode);
+        setWhatsappLocalNumber(phoneParts.localNumber);
+        setOpeningTime(openingHoursParts.openingTime);
+        setClosingTime(openingHoursParts.closingTime);
       }
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "Erreur de chargement");
@@ -121,6 +196,22 @@ export default function SettingsPage() {
     setSuccess(null);
 
     try {
+      const localPhone = whatsappLocalNumber.replace(/\D/g, "").trim();
+      if (localPhone.length < 6) {
+        throw new Error("Le numero WhatsApp local doit contenir au moins 6 chiffres.");
+      }
+
+      if ((openingTime && !closingTime) || (!openingTime && closingTime)) {
+        throw new Error("Renseigne a la fois l'heure d'ouverture et de fermeture.");
+      }
+
+      if (openingTime && closingTime && openingTime >= closingTime) {
+        throw new Error("L'heure de fermeture doit etre apres l'heure d'ouverture.");
+      }
+
+      const fullWhatsApp = `${whatsappDialCode}${localPhone}`;
+      const openingHours = openingTime && closingTime ? `${openingTime}-${closingTime}` : "";
+
       const formData = new FormData();
       formData.set("slug", normalizedSlug);
       formData.set("name", form.name);
@@ -129,10 +220,10 @@ export default function SettingsPage() {
       formData.set("coverUrl", form.coverUrl);
       formData.set("description", form.description);
       formData.set("city", form.city);
-      formData.set("whatsappNumber", form.whatsappNumber);
+      formData.set("whatsappNumber", fullWhatsApp);
       formData.set("category", form.category);
       formData.set("address", form.address);
-      formData.set("openingHours", form.openingHours);
+      formData.set("openingHours", openingHours);
       formData.set("isPublished", String(form.isPublished));
       if (logoFile) {
         formData.set("logoFile", logoFile);
@@ -197,7 +288,7 @@ export default function SettingsPage() {
           </article>
           <article>
             <span>WhatsApp</span>
-            <strong>{form.whatsappNumber || "-"}</strong>
+            <strong>{whatsappLocalNumber ? `${whatsappDialCode} ${whatsappLocalNumber}` : "-"}</strong>
           </article>
         </div>
       </section>
@@ -225,24 +316,44 @@ export default function SettingsPage() {
 
           <label>
             Numero WhatsApp
-            <input
-              required
-              value={form.whatsappNumber}
-              onChange={(event) =>
-                setForm((prev) => ({ ...prev, whatsappNumber: event.target.value }))
-              }
-            />
+            <div className="phone-input-group">
+              <select
+                value={whatsappDialCode}
+                onChange={(event) => setWhatsappDialCode(event.target.value)}
+                aria-label="Indicatif pays"
+              >
+                {AFRICAN_DIAL_CODES.map((code) => (
+                  <option key={code.value} value={code.value}>
+                    {code.label}
+                  </option>
+                ))}
+              </select>
+              <input
+                required
+                inputMode="numeric"
+                pattern="[0-9]{6,14}"
+                title="Entrez uniquement les chiffres du numero local"
+                value={whatsappLocalNumber}
+                onChange={(event) =>
+                  setWhatsappLocalNumber(event.target.value.replace(/\D/g, ""))
+                }
+                placeholder="Ex: 620778033"
+              />
+            </div>
           </label>
 
           <label>
             Email notification stock
             <input
               type="email"
+              pattern={notificationEmailPattern}
+              inputMode="email"
               value={form.notificationEmail}
               onChange={(event) =>
                 setForm((prev) => ({ ...prev, notificationEmail: event.target.value }))
               }
               placeholder="notifications@ma-boutique.com"
+              title="Utilise un email valide (lettres, chiffres, points, tirets et @)"
             />
           </label>
 
@@ -300,12 +411,21 @@ export default function SettingsPage() {
 
           <label>
             Horaires
-            <input
-              value={form.openingHours}
-              onChange={(event) =>
-                setForm((prev) => ({ ...prev, openingHours: event.target.value }))
-              }
-            />
+            <div className="time-input-group">
+              <input
+                type="time"
+                value={openingTime}
+                onChange={(event) => setOpeningTime(event.target.value)}
+                aria-label="Heure d'ouverture"
+              />
+              <span>à</span>
+              <input
+                type="time"
+                value={closingTime}
+                onChange={(event) => setClosingTime(event.target.value)}
+                aria-label="Heure de fermeture"
+              />
+            </div>
           </label>
 
           <label className="full-width">

@@ -1,5 +1,9 @@
 import { z } from "zod";
 
+const strictEmailRegex = /^[A-Za-z0-9._-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+const internationalPhoneRegex = /^\+[1-9]\d{7,15}$/;
+const openingHoursRegex = /^([01]\d|2[0-3]):[0-5]\d-([01]\d|2[0-3]):[0-5]\d$/;
+
 export const registerSchema = z.object({
   fullName: z.string().min(2),
   email: z.email(),
@@ -96,7 +100,15 @@ export const shopSchema = z.object({
     .min(3)
     .regex(/^[a-z0-9-]+$/i, "Slug invalide"),
   name: z.string().min(2),
-  notificationEmail: z.string().email().optional().or(z.literal("")),
+  notificationEmail: z
+    .union([
+      z.literal(""),
+      z
+        .string()
+        .trim()
+        .regex(strictEmailRegex, "Email de notification invalide"),
+    ])
+    .optional(),
   logoUrl: z.preprocess(
     (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
     z
@@ -119,10 +131,21 @@ export const shopSchema = z.object({
   ),
   description: z.string().max(500).optional().or(z.literal("")),
   city: z.string().max(100).optional().or(z.literal("")),
-  whatsappNumber: z.string().min(8),
+  whatsappNumber: z
+    .string()
+    .trim()
+    .regex(internationalPhoneRegex, "Numero WhatsApp invalide"),
   category: z.string().max(120).optional().or(z.literal("")),
   address: z.string().max(255).optional().or(z.literal("")),
-  openingHours: z.string().max(120).optional().or(z.literal("")),
+  openingHours: z
+    .union([
+      z.literal(""),
+      z
+        .string()
+        .trim()
+        .regex(openingHoursRegex, "Horaires invalides (HH:mm-HH:mm)"),
+    ])
+    .optional(),
   isPublished: z.boolean().optional(),
 });
 
