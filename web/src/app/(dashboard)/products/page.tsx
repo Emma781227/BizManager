@@ -312,6 +312,21 @@ export default function ProductsPage() {
     setEditImageFile(null);
   }
 
+  useEffect(() => {
+    if (!editingProductId) {
+      return;
+    }
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        cancelEditing();
+      }
+    }
+
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [editingProductId]);
+
   async function handleUpdateProduct(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!editingProductId) {
@@ -441,6 +456,7 @@ export default function ProductsPage() {
         </div>
       </section>
 
+      {!editingProductId ? (
       <section className="card product-form-card merchant-surface">
         <h2>Nouveau produit</h2>
         <p>Creation rapide avec mode assiste pour gagner du temps.</p>
@@ -621,134 +637,158 @@ export default function ProductsPage() {
         </form>
         {success ? <p className="feedback success">{success}</p> : null}
       </section>
+      ) : null}
 
       {editingProductId ? (
-        <section className="card product-form-card merchant-surface">
-          <h2>Modifier le produit</h2>
-          <p>Mets a jour rapidement les informations et la photo.</p>
-          <form className="form-grid product-form" onSubmit={handleUpdateProduct}>
-            <label>
-              Nom
-              <input
-                value={editName}
-                onChange={(event) => setEditName(event.target.value)}
-                minLength={2}
-                required
-              />
-            </label>
-            <label>
-              Categorie principale
-              <input
-                value={editCategory}
-                onChange={(event) => setEditCategory(event.target.value)}
-                placeholder="Ex: Vetements"
-              />
-            </label>
-            <div className="full-width product-create-categories">
-              <span>Categories (selection multiple)</span>
-              <div className="product-chip-row">
-                {suggestedCategories.map((value) => (
-                  <button
-                    key={value}
-                    type="button"
-                    className={`product-chip ${editSelectedCategories.includes(value) ? "active" : ""}`}
-                    onClick={() => toggleEditCategory(value)}
-                  >
-                    {value}
-                  </button>
-                ))}
+        <div
+          className="popup-backdrop product-edit-modal"
+          role="dialog"
+          aria-modal="true"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              cancelEditing();
+            }
+          }}
+        >
+          <section className="popup-card">
+            <div className="product-edit-modal-head">
+              <div>
+                <h2>Modifier le produit</h2>
+                <p>Mets a jour les informations sans quitter le catalogue.</p>
               </div>
-              <div className="category-create-row">
+              <button type="button" className="btn-secondary" onClick={cancelEditing}>
+                Fermer
+              </button>
+            </div>
+            <form className="form-grid product-form" onSubmit={handleUpdateProduct}>
+              <label>
+                Nom
                 <input
-                  value={editNewCategory}
-                  onChange={(event) => setEditNewCategory(event.target.value)}
-                  placeholder="Nouvelle categorie"
+                  value={editName}
+                  onChange={(event) => setEditName(event.target.value)}
+                  minLength={2}
+                  required
                 />
-                <button type="button" className="btn-secondary" onClick={addNewEditCategory}>
-                  Ajouter
+              </label>
+              <label>
+                Categorie principale
+                <input
+                  value={editCategory}
+                  onChange={(event) => setEditCategory(event.target.value)}
+                  placeholder="Ex: Vetements"
+                />
+              </label>
+              <div className="full-width product-create-categories">
+                <span>Categories (selection multiple)</span>
+                <div className="product-chip-row">
+                  {suggestedCategories.map((value) => (
+                    <button
+                      key={value}
+                      type="button"
+                      className={`product-chip ${editSelectedCategories.includes(value) ? "active" : ""}`}
+                      onClick={() => toggleEditCategory(value)}
+                    >
+                      {value}
+                    </button>
+                  ))}
+                </div>
+                <div className="category-create-row">
+                  <input
+                    value={editNewCategory}
+                    onChange={(event) => setEditNewCategory(event.target.value)}
+                    placeholder="Nouvelle categorie"
+                  />
+                  <button type="button" className="btn-secondary" onClick={addNewEditCategory}>
+                    Ajouter
+                  </button>
+                </div>
+                {editSelectedCategories.length > 0 ? (
+                  <p className="muted form-hint">
+                    Selection: {editSelectedCategories.join(", ")}
+                  </p>
+                ) : null}
+              </div>
+              <label className="full-width">
+                Description
+                <textarea
+                  value={editDescription}
+                  onChange={(event) => setEditDescription(event.target.value)}
+                  rows={3}
+                  placeholder="Description courte du produit"
+                />
+              </label>
+              <label>
+                SKU
+                <input
+                  value={editSku}
+                  onChange={(event) => setEditSku(event.target.value)}
+                  placeholder="Optionnel"
+                />
+              </label>
+              <label>
+                URL de l&apos;image
+                <input
+                  type="url"
+                  value={editImageUrl}
+                  onChange={(event) => setEditImageUrl(event.target.value)}
+                  placeholder="https://example.com/image.jpg"
+                />
+              </label>
+              <label>
+                Nouvelle image depuis l&apos;appareil
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0] ?? null;
+                    setEditImageFile(file);
+                  }}
+                />
+              </label>
+              {editImageFile ? (
+                <p className="muted form-hint">Fichier selectionne: {editImageFile.name}</p>
+              ) : null}
+              <label>
+                Prix unitaire
+                <input
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={editUnitPrice}
+                  onChange={(event) => setEditUnitPrice(event.target.value)}
+                  required
+                />
+              </label>
+              <label>
+                Stock
+                <input
+                  type="number"
+                  min={0}
+                  step={1}
+                  value={editStock}
+                  onChange={(event) => setEditStock(event.target.value)}
+                  required
+                />
+              </label>
+              <div className="inline-form full-width form-actions">
+                <button type="submit" disabled={updating}>
+                  {updating ? "Mise a jour..." : "Mettre a jour"}
+                </button>
+                <button type="button" className="btn-secondary" onClick={cancelEditing}>
+                  Annuler
                 </button>
               </div>
-              {editSelectedCategories.length > 0 ? (
-                <p className="muted form-hint">
-                  Selection: {editSelectedCategories.join(", ")}
-                </p>
-              ) : null}
-            </div>
-            <label className="full-width">
-              Description
-              <textarea
-                value={editDescription}
-                onChange={(event) => setEditDescription(event.target.value)}
-                rows={3}
-                placeholder="Description courte du produit"
-              />
-            </label>
-            <label>
-              SKU
-              <input
-                value={editSku}
-                onChange={(event) => setEditSku(event.target.value)}
-                placeholder="Optionnel"
-              />
-            </label>
-            <label>
-              URL de l&apos;image
-              <input
-                type="url"
-                value={editImageUrl}
-                onChange={(event) => setEditImageUrl(event.target.value)}
-                placeholder="https://example.com/image.jpg"
-              />
-            </label>
-            <label>
-              Nouvelle image depuis l&apos;appareil
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(event) => {
-                  const file = event.target.files?.[0] ?? null;
-                  setEditImageFile(file);
-                }}
-              />
-            </label>
-            {editImageFile ? (
-              <p className="muted form-hint">Fichier selectionne: {editImageFile.name}</p>
-            ) : null}
-            <label>
-              Prix unitaire
-              <input
-                type="number"
-                min={0}
-                step="0.01"
-                value={editUnitPrice}
-                onChange={(event) => setEditUnitPrice(event.target.value)}
-                required
-              />
-            </label>
-            <label>
-              Stock
-              <input
-                type="number"
-                min={0}
-                step={1}
-                value={editStock}
-                onChange={(event) => setEditStock(event.target.value)}
-                required
-              />
-            </label>
-            <div className="inline-form full-width form-actions">
-              <button type="submit" disabled={updating}>
-                {updating ? "Mise a jour..." : "Mettre a jour"}
-              </button>
-              <button type="button" className="btn-secondary" onClick={cancelEditing}>
-                Annuler
-              </button>
-            </div>
-          </form>
-        </section>
+            </form>
+          </section>
+        </div>
       ) : null}
 
       <section className="card products-catalog-card merchant-surface">
+        {editingProductId ? (
+          <p className="edit-context-note">
+            Mode modification actif: termine ou annule la modification pour revenir a la creation.
+          </p>
+        ) : null}
         <div className="section-head">
           <div>
             <h2>Catalogue</h2>

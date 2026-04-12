@@ -34,10 +34,12 @@ type Shop = {
   logoUrl: string | null;
   coverUrl: string | null;
   description: string | null;
+  address: string | null;
   city: string | null;
+  postalCode: string | null;
+  regionCountry: string | null;
   whatsappNumber: string;
   category: string | null;
-  address: string | null;
   openingHours: string | null;
   isPublished: boolean;
 };
@@ -49,10 +51,12 @@ const initialState = {
   logoUrl: "",
   coverUrl: "",
   description: "",
+  address: "",
   city: "",
+  postalCode: "",
+  regionCountry: "",
   whatsappNumber: "",
   category: "",
-  address: "",
   openingHours: "",
   isPublished: true,
 };
@@ -169,10 +173,12 @@ export default function SettingsPage() {
           logoUrl: shop.logoUrl ?? "",
           coverUrl: shop.coverUrl ?? "",
           description: shop.description ?? "",
+          address: shop.address ?? "",
           city: shop.city ?? "",
+          postalCode: shop.postalCode ?? "",
+          regionCountry: shop.regionCountry ?? "",
           whatsappNumber: shop.whatsappNumber,
           category: shop.category ?? "",
-          address: shop.address ?? "",
           openingHours: shop.openingHours ?? "",
           isPublished: shop.isPublished,
         });
@@ -219,10 +225,12 @@ export default function SettingsPage() {
       formData.set("logoUrl", form.logoUrl);
       formData.set("coverUrl", form.coverUrl);
       formData.set("description", form.description);
+      formData.set("address", form.address);
       formData.set("city", form.city);
+      formData.set("postalCode", form.postalCode);
+      formData.set("regionCountry", form.regionCountry);
       formData.set("whatsappNumber", fullWhatsApp);
       formData.set("category", form.category);
-      formData.set("address", form.address);
       formData.set("openingHours", openingHours);
       formData.set("isPublished", String(form.isPublished));
       if (logoFile) {
@@ -357,11 +365,44 @@ export default function SettingsPage() {
             />
           </label>
 
+          <label className="full-width">
+            Adresse
+            <textarea
+              value={form.address}
+              onChange={(event) => setForm((prev) => ({ ...prev, address: event.target.value }))}
+              rows={2}
+              placeholder="Rue, numero, appartement, batiment..."
+            />
+          </label>
+
           <label>
             Ville
             <input
               value={form.city}
               onChange={(event) => setForm((prev) => ({ ...prev, city: event.target.value }))}
+              placeholder="Ex: Douala"
+            />
+          </label>
+
+          <label>
+            Code postal
+            <input
+              value={form.postalCode}
+              onChange={(event) =>
+                setForm((prev) => ({ ...prev, postalCode: event.target.value }))
+              }
+              placeholder="Ex: 12500"
+            />
+          </label>
+
+          <label>
+            Pays / Region
+            <input
+              value={form.regionCountry}
+              onChange={(event) =>
+                setForm((prev) => ({ ...prev, regionCountry: event.target.value }))
+              }
+              placeholder="Ex: Cameroun / Littoral"
             />
           </label>
 
@@ -436,15 +477,6 @@ export default function SettingsPage() {
                 setForm((prev) => ({ ...prev, description: event.target.value }))
               }
               rows={3}
-            />
-          </label>
-
-          <label className="full-width">
-            Adresse
-            <textarea
-              value={form.address}
-              onChange={(event) => setForm((prev) => ({ ...prev, address: event.target.value }))}
-              rows={2}
             />
           </label>
 

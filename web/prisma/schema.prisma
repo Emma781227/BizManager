@@ -87,6 +87,8 @@ model Shop {
   coverUrl       String?
   description    String?
   city           String?
+  postalCode     String?
+  regionCountry  String?
   whatsappNumber String
   category       String?
   address        String?

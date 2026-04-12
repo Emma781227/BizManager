@@ -131,6 +131,8 @@ export const shopSchema = z.object({
   ),
   description: z.string().max(500).optional().or(z.literal("")),
   city: z.string().max(100).optional().or(z.literal("")),
+  postalCode: z.string().max(20).optional().or(z.literal("")),
+  regionCountry: z.string().max(100).optional().or(z.literal("")),
   whatsappNumber: z
     .string()
     .trim()
