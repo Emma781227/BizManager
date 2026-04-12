@@ -31,16 +31,22 @@ export async function POST(request: Request) {
   const code = generateCode();
   const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
-  await prisma.pendingPasswordReset.upsert({
-    where: { email },
-    update: { code, expiresAt },
-    create: { email, code, expiresAt },
-  });
-
   try {
+    await prisma.pendingPasswordReset.upsert({
+      where: { email },
+      update: { code, expiresAt },
+      create: { email, code, expiresAt },
+    });
+
     await sendPasswordResetCodeEmail(email, code);
   } catch (error) {
-    console.error("Password reset email error:", error);
+    console.error("Password reset email error:", {
+      email,
+      error,
+    });
+
+    await prisma.pendingPasswordReset.deleteMany({ where: { email } }).catch(() => null);
+
     return NextResponse.json(
       { error: "Impossible d'envoyer le code. Verifiez la configuration email." },
       { status: 500 },

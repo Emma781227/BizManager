@@ -17,6 +17,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [emailUsedPopup, setEmailUsedPopup] = useState<string | null>(null);
+  const [registerErrorPopup, setRegisterErrorPopup] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [forgotOpen, setForgotOpen] = useState(false);
@@ -32,6 +33,32 @@ export default function LoginPage() {
     event.preventDefault();
     setError(null);
     setInfo(null);
+    setRegisterErrorPopup(null);
+
+    if (!email.trim()) {
+      setError("Entrez votre email");
+      return;
+    }
+
+    if (!password || password.length < 8) {
+      setError("Le mot de passe doit contenir au moins 8 caracteres");
+      return;
+    }
+
+    if (mode === "register") {
+      if (!fullName.trim() || fullName.trim().length < 2) {
+        setError("Entrez votre nom complet");
+        return;
+      }
+
+      if (registerStep === "verify") {
+        if (!/^\d{6}$/.test(verificationCode)) {
+          setError("Entrez un code de verification a 6 chiffres");
+          return;
+        }
+      }
+    }
+
     setIsLoading(true);
 
     const endpoint =
@@ -67,6 +94,14 @@ export default function LoginPage() {
 
         if (mode === "register" && isEmailAlreadyUsed) {
           setEmailUsedPopup("Cet email est deja utilise. Connectez-vous ou utilisez un autre email.");
+        } else if (
+          mode === "register" &&
+          (errorMessage.toLowerCase().includes("service email non configure") ||
+            errorMessage.toLowerCase().includes("impossible d'envoyer le code"))
+        ) {
+          setRegisterErrorPopup(
+            "L'envoi du code email n'est pas encore configure. Vérifie les variables SMTP dans .env.local ou sur Vercel.",
+          );
         } else {
           setError(errorMessage);
         }
@@ -91,6 +126,7 @@ export default function LoginPage() {
     setError(null);
     setInfo(null);
     setEmailUsedPopup(null);
+    setRegisterErrorPopup(null);
     setRegisterStep("details");
     setVerificationCode("");
     setForgotOpen(false);
@@ -105,6 +141,24 @@ export default function LoginPage() {
     event.preventDefault();
     setForgotError(null);
     setForgotInfo(null);
+
+    if (!forgotEmail.trim()) {
+      setForgotError("Entrez votre email");
+      return;
+    }
+
+    if (forgotStep === "verify") {
+      if (!/^\d{6}$/.test(forgotCode)) {
+        setForgotError("Entrez le code a 6 chiffres recu par email");
+        return;
+      }
+
+      if (!forgotPassword || forgotPassword.length < 8) {
+        setForgotError("Le nouveau mot de passe doit contenir au moins 8 caracteres");
+        return;
+      }
+    }
+
     setForgotLoading(true);
 
     const endpoint =
@@ -179,6 +233,19 @@ export default function LoginPage() {
           </div>
         </div>
       ) : null}
+      {registerErrorPopup ? (
+        <div className="popup-backdrop" role="dialog" aria-modal="true" aria-label="Configuration email manquante">
+          <div className="popup-card">
+            <h3>Email non configure</h3>
+            <p>{registerErrorPopup}</p>
+            <div className="popup-actions">
+              <button type="button" onClick={() => setRegisterErrorPopup(null)}>
+                Fermer
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
       <section className="phone-shell">
         <div className="auth-card">
           <div className="brand">
@@ -204,7 +271,11 @@ export default function LoginPage() {
             </button>
           </div>
 
-          <form onSubmit={onSubmit} style={{ display: "grid", gap: 12 }}>
+          {mode === "register" && registerStep === "details" ? (
+            <p className="auth-hint">Remplissez le formulaire puis cliquez sur &quot;Envoyer le code&quot;.</p>
+          ) : null}
+
+          <form noValidate onSubmit={onSubmit} style={{ display: "grid", gap: 12 }}>
           {mode === "register" ? (
             <label style={{ display: "grid", gap: 6 }}>
               Nom complet
@@ -286,18 +357,20 @@ export default function LoginPage() {
               Mot de passe oublie ?
             </button>
           ) : null}
-
+{/* */}
           {mode === "register" && registerStep === "verify" ? (
             <label style={{ display: "grid", gap: 6 }}>
               Code de verification
               <input
                 required
                 inputMode="numeric"
-                pattern="\\d{6}"
+                pattern="[0-9]{6}"
+                minLength={6}
                 maxLength={6}
                 value={verificationCode}
                 onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, ""))}
                 placeholder="Entrez les 6 chiffres"
+                title="Entrez exactement 6 chiffres"
               />
             </label>
           ) : null}
@@ -332,7 +405,7 @@ export default function LoginPage() {
           </form>
 
           {mode === "login" && forgotOpen ? (
-            <form className="forgot-panel" onSubmit={onForgotSubmit}>
+            <form noValidate className="forgot-panel" onSubmit={onForgotSubmit}>
               <h3>Reinitialiser le mot de passe</h3>
               <p>
                 {forgotStep === "details"
@@ -357,11 +430,13 @@ export default function LoginPage() {
                     <input
                       required
                       inputMode="numeric"
-                      pattern="\\d{6}"
+                      pattern="[0-9]{6}"
+                      minLength={6}
                       maxLength={6}
                       value={forgotCode}
                       onChange={(e) => setForgotCode(e.target.value.replace(/\D/g, ""))}
                       placeholder="Entrez les 6 chiffres"
+                      title="Entrez exactement 6 chiffres"
                     />
                   </label>
 

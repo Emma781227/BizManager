@@ -28,27 +28,33 @@ export async function POST(request: Request) {
   const passwordHash = await bcrypt.hash(result.data.password, 10);
   const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
-  await prisma.pendingRegistration.upsert({
-    where: { email },
-    update: {
-      fullName: result.data.fullName.trim(),
-      passwordHash,
-      code,
-      expiresAt,
-    },
-    create: {
-      email,
-      fullName: result.data.fullName.trim(),
-      passwordHash,
-      code,
-      expiresAt,
-    },
-  });
-
   try {
+    await prisma.pendingRegistration.upsert({
+      where: { email },
+      update: {
+        fullName: result.data.fullName.trim(),
+        passwordHash,
+        code,
+        expiresAt,
+      },
+      create: {
+        email,
+        fullName: result.data.fullName.trim(),
+        passwordHash,
+        code,
+        expiresAt,
+      },
+    });
+
     await sendVerificationCodeEmail(email, code);
   } catch (error) {
-    console.error("Email verification error:", error);
+    console.error("Email verification error:", {
+      email,
+      error,
+    });
+
+    await prisma.pendingRegistration.deleteMany({ where: { email } }).catch(() => null);
+
     return NextResponse.json(
       { error: "Impossible d'envoyer le code. Verifiez la configuration email." },
       { status: 500 },

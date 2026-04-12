@@ -1,4 +1,4 @@
-import nodemailer from "nodemailer";
+import { sendEmail } from "@/lib/mailer";
 
 type StockZeroNotificationInput = {
   shopName: string;
@@ -17,25 +17,7 @@ async function sendEmailStockZeroAlert(input: StockZeroNotificationInput) {
     return;
   }
 
-  const host = process.env.SMTP_HOST;
-  const port = Number(process.env.SMTP_PORT ?? "0");
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
-  const from = process.env.SMTP_FROM;
-
-  if (!host || !port || !user || !pass || !from) {
-    return;
-  }
-
-  const transporter = nodemailer.createTransport({
-    host,
-    port,
-    secure: port === 465,
-    auth: { user, pass },
-  });
-
-  await transporter.sendMail({
-    from,
+  await sendEmail({
     to: input.merchantEmail,
     subject: `[${input.shopName}] Stock epuise: ${input.productName}`,
     text: [
@@ -46,6 +28,14 @@ async function sendEmailStockZeroAlert(input: StockZeroNotificationInput) {
       "",
       "Pensez a reapprovisionner ce produit pour continuer a recevoir des commandes.",
     ].join("\n"),
+    html: `
+      <div style="font-family:Arial,sans-serif;line-height:1.5;color:#1f2937">
+        <h2 style="margin:0 0 16px">${input.shopName} - stock epuise</h2>
+        <p style="margin:0 0 16px">Le produit <strong>${input.productName}</strong> est maintenant en rupture de stock.</p>
+        <p style="margin:0 0 16px">ID produit: <strong>${input.productId}</strong></p>
+        <p style="margin:0">Pensez a reapprovisionner ce produit pour continuer a recevoir des commandes.</p>
+      </div>
+    `,
   });
 }
 

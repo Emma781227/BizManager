@@ -17,3 +17,7 @@ Thumbs.db
 *.jpg
 *.jpeg
 *.webp
+
+# Future native mobile app (exclude from repository for now)
+web/android/
+web/capacitor.config.ts

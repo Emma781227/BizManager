@@ -2268,6 +2268,12 @@ th {
   border-color: #cde9de;
 }
 
+.auth-hint {
+  margin: 0 0 0.8rem;
+  color: #5f6f68;
+  font-size: 0.86rem;
+}
+
 .password-field-wrap {
   position: relative;
   display: grid;
