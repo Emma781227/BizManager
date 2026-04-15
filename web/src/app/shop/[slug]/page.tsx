@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { formatPriceCFA } from "@/lib/format";
 
@@ -57,7 +57,9 @@ export default function PublicShopPage() {
   const [draftMaxPrice, setDraftMaxPrice] = useState("");
   const [draftSortBy, setDraftSortBy] = useState<"newest" | "price_asc" | "price_desc" | "name_asc">("newest");
   const [loading, setLoading] = useState(true);
+  const [isFiltering, setIsFiltering] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const hasLoadedRef = useRef(false);
 
   const resetFilters = () => {
     setSearch("");
@@ -113,7 +115,11 @@ export default function PublicShopPage() {
     }
 
     void (async () => {
-      setLoading(true);
+      if (!hasLoadedRef.current) {
+        setLoading(true);
+      } else {
+        setIsFiltering(true);
+      }
       setError(null);
       try {
         const query = new URLSearchParams();
@@ -156,10 +162,12 @@ export default function PublicShopPage() {
         setShop(shopJson.data ?? null);
         setProducts(productsJson.data ?? []);
         setAvailableCategories(productsJson.meta?.categories ?? []);
+        hasLoadedRef.current = true;
       } catch (loadError) {
         setError(loadError instanceof Error ? loadError.message : "Erreur inconnue");
       } finally {
         setLoading(false);
+        setIsFiltering(false);
       }
     })();
   }, [slug, search, inStockOnly, stockStatus, minPrice, maxPrice, sortBy, selectedCategories]);
@@ -172,7 +180,7 @@ export default function PublicShopPage() {
     );
   }
 
-  if (loading) {
+  if (loading && !hasLoadedRef.current) {
     return <main className="home"><p>Chargement de la boutique...</p></main>;
   }
 
@@ -218,6 +226,7 @@ export default function PublicShopPage() {
         <section className="storefront-section">
           <div className="storefront-section-head">
             <h2>Nos produits</h2>
+            {isFiltering ? <span className="muted">Mise a jour des filtres...</span> : null}
             <label className="inline-check">
               <input type="checkbox" checked={inStockOnly} onChange={(event) => setInStockOnly(event.target.checked)} />
               En stock
