@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { formatPrice, formatPriceCFA } from "@/lib/format";
 
 type Customer = {
   id: string;
@@ -169,8 +170,7 @@ export default function OrdersPage() {
         }
 
         return sum + Number(product.unitPrice) * line.quantity;
-      }, 0)
-      .toFixed(2);
+      }, 0);
   }, [lines, products]);
 
   const deliveredCount = useMemo(
@@ -279,7 +279,7 @@ export default function OrdersPage() {
           </article>
           <article>
             <span>Total courant</span>
-            <strong>{Number(totalPreview).toFixed(0)} CFA</strong>
+            <strong>{formatPriceCFA(totalPreview)}</strong>
           </article>
         </div>
       </section>
@@ -319,7 +319,7 @@ export default function OrdersPage() {
                     <option value="">Selectionner un produit</option>
                     {products.map((product) => (
                       <option key={product.id} value={product.id}>
-                        {product.name} - {Number(product.unitPrice).toFixed(2)}
+                        {product.name} - {formatPrice(product.unitPrice, 2)}
                       </option>
                     ))}
                   </select>
@@ -361,7 +361,7 @@ export default function OrdersPage() {
               >
                 Ajouter une ligne
               </button>
-              <span className="muted">Total estime: {totalPreview}</span>
+              <span className="muted">Total estime: {formatPriceCFA(totalPreview)}</span>
             </div>
           </div>
 
@@ -437,7 +437,7 @@ export default function OrdersPage() {
                         <span>{new Date(order.createdAt).toLocaleDateString()}</span>
                       </div>
                     </div>
-                    <strong className="price">{Number(order.totalAmount).toFixed(0)} CFA</strong>
+                    <strong className="price">{formatPriceCFA(order.totalAmount)}</strong>
                   </div>
 
                   <div className="status-chips">

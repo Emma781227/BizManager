@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { formatPriceCFA } from "@/lib/format";
 
 type Product = {
   id: string;
@@ -78,9 +79,9 @@ export default function ProductsPage() {
   const createPricePreview = useMemo(() => {
     const value = Number(unitPrice || "0");
     if (Number.isNaN(value)) {
-      return "0";
+      return 0;
     }
-    return new Intl.NumberFormat("fr-FR").format(Math.round(value));
+    return Math.round(value);
   }, [unitPrice]);
 
   const createStockPreview = useMemo(() => {
@@ -104,7 +105,7 @@ export default function ProductsPage() {
       return acc + Number(product.unitPrice) * product.stock;
     }, 0);
 
-    return new Intl.NumberFormat("fr-FR").format(Math.round(amount));
+    return Math.round(amount);
   }, [products]);
 
   async function loadProducts(filters: {
@@ -451,7 +452,7 @@ export default function ProductsPage() {
           </article>
           <article className="products-metric-card">
             <span>Valeur stock</span>
-            <strong>{formattedInventoryValue} CFA</strong>
+            <strong>{formatPriceCFA(formattedInventoryValue)}</strong>
           </article>
         </div>
       </section>
@@ -464,7 +465,7 @@ export default function ProductsPage() {
         <div className="product-create-quick-bar">
           <div className="product-create-pill">
             <span>Prix</span>
-            <strong>{createPricePreview} CFA</strong>
+            <strong>{formatPriceCFA(createPricePreview)}</strong>
           </div>
           <div className="product-create-pill">
             <span>Etat stock</span>
@@ -895,7 +896,7 @@ export default function ProductsPage() {
                   </div>
 
                   <div className="product-card-side">
-                    <strong className="price">{Number(product.unitPrice).toFixed(0)} CFA</strong>
+                    <strong className="price">{formatPriceCFA(product.unitPrice)}</strong>
                     <span className={`badge ${stockClass}`}>{stockLabel}</span>
                     <div className="product-card-actions">
                       <button type="button" className="btn-secondary" onClick={() => startEditing(product)}>

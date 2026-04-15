@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
+import { formatPriceCFA } from "@/lib/format";
 
 type ProductPayload = {
   id: string;
@@ -146,8 +147,8 @@ export default function PublicCheckoutPage() {
           {!loadingProduct && product ? (
             <div className="storefront-checkout-summary">
               <h1>{product.name}</h1>
-              <p className="price">{Number(product.unitPrice).toFixed(0)} CFA</p>
-              <p className="muted">Total estime: {totalEstimate.toFixed(0)} CFA</p>
+              <p className="price">{formatPriceCFA(product.unitPrice)}</p>
+              <p className="muted">Total estime: {formatPriceCFA(totalEstimate)}</p>
             </div>
           ) : null}
 

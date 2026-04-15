@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { publicWhatsAppOrderSchema } from "@/lib/validators";
 import { sendStockZeroNotifications } from "@/lib/notifications";
+import { formatPrice } from "@/lib/format";
 
 type RouteParams = {
   params: Promise<{ slug: string }>;
@@ -206,9 +207,9 @@ export async function POST(request: Request, context: RouteParams) {
     "",
     "Je souhaite commander:",
     `- Produit: ${orderOutcome.productName}`,
-    `- Prix: ${orderOutcome.unitPrice.toFixed(0)} CFA`,
+    `- Prix: ${formatPrice(orderOutcome.unitPrice)} CFA`,
     `- Quantite: ${quantity}`,
-    `- Total estime: ${orderOutcome.total.toFixed(0)} CFA`,
+    `- Total estime: ${formatPrice(orderOutcome.total)} CFA`,
     "",
     "Mes informations:",
     `- Nom: ${customerName}`,

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { formatPriceCFA } from "@/lib/format";
 
 type ProductPayload = {
   id: string;
@@ -131,7 +132,7 @@ export default function PublicProductPage() {
             </div>
 
             <div className="storefront-price-row market-price-row">
-              <strong>{Number(product.unitPrice).toFixed(0)} CFA</strong>
+              <strong>{formatPriceCFA(product.unitPrice)}</strong>
               <span className={product.stock > 0 ? "stock ok" : "stock out"}>
                 {product.stock > 0 ? "En stock" : "Rupture"}
               </span>
@@ -156,7 +157,7 @@ export default function PublicProductPage() {
 
           <aside className="market-buybox">
             <h2>Commander ce produit</h2>
-            <p className="market-buy-price">{Number(product.unitPrice).toFixed(0)} CFA</p>
+            <p className="market-buy-price">{formatPriceCFA(product.unitPrice)}</p>
             <p className="market-buy-stock">Stock disponible: {product.stock}</p>
 
             {product.stock > 0 ? (

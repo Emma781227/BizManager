@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { formatPriceCFA } from "@/lib/format";
 
 type Shop = {
   slug: string;
@@ -344,7 +345,7 @@ export default function PublicShopPage() {
                     {product.imageUrl ? <img src={product.imageUrl} alt={product.name} className="storefront-product-image" /> : <div className="storefront-product-image placeholder">Image</div>}
                     <div className="storefront-product-body">
                       <strong>{product.name}</strong>
-                      <span className="price">{Number(product.unitPrice).toFixed(0)} CFA</span>
+                      <span className="price">{formatPriceCFA(product.unitPrice)}</span>
                       <span className={product.stock > 0 ? "stock ok" : "stock out"}>
                         {product.stock > 0 ? "En stock" : "Rupture"}
                       </span>
