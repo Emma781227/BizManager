@@ -7,7 +7,7 @@ async function main() {
   console.log("🌱 Seeding database...");
 
   // Créer un commerçant par défaut
-  const passwordHash = await bcrypt.hash("Commerce123!", 10);
+  const passwordHash = await bcrypt.hash("  ", 10);
   const merchant = await prisma.user.upsert({
     where: { email: "merchant@test.local" },
     update: { role: "admin" },

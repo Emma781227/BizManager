@@ -1002,7 +1002,7 @@ button {
   font: inherit;
 }
 
-input,
+input:not([type="checkbox"]):not([type="radio"]),
 select,
 textarea {
   border: 1px solid var(--border);
@@ -1015,7 +1015,7 @@ textarea {
 }
 
 @media (min-width: 640px) {
-  input,
+  input:not([type="checkbox"]):not([type="radio"]),
   select,
   textarea {
     padding: 0.62rem 0.7rem;
@@ -1023,7 +1023,7 @@ textarea {
   }
 }
 
-input:focus,
+input:not([type="checkbox"]):not([type="radio"]):focus,
 select:focus,
 textarea:focus {
   outline: none;
@@ -1661,7 +1661,7 @@ th {
 
 .storefront-search-row {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: 1fr auto auto;
   gap: 0.45rem;
 }
 
@@ -1678,14 +1678,79 @@ th {
   min-width: 120px;
 }
 
+.storefront-filter-trigger {
+  border: 1px solid #cde0d7;
+  background: #f2fbf7;
+  color: #1d7c5f;
+  border-radius: 0.75rem;
+  min-width: 110px;
+  font-weight: 700;
+}
+
 .storefront-layout {
   display: grid;
   gap: 0.65rem;
 }
 
 .storefront-filters {
-  display: grid;
+  display: none;
   gap: 0.55rem;
+}
+
+.storefront-filter-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: flex-end;
+}
+
+.storefront-filter-sheet {
+  width: 100%;
+  max-height: 88vh;
+  overflow: auto;
+  background: #ffffff;
+  border-radius: 1rem 1rem 0 0;
+  padding: 0.85rem;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.storefront-filter-sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.storefront-filter-sheet-head strong {
+  font-size: 1rem;
+}
+
+.storefront-filter-sheet-head button {
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border-radius: 0.6rem;
+  border: 1px solid #d4dce0;
+  background: #fff;
+}
+
+.storefront-filter-sheet-actions {
+  position: sticky;
+  bottom: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.45rem;
+  padding-top: 0.45rem;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, #fff 35%);
+}
+
+.storefront-filter-sheet-actions .storefront-cta,
+.storefront-filter-sheet-actions .storefront-reset-btn {
+  width: 100%;
+  min-width: 0;
 }
 
 .storefront-filter-card {
@@ -1726,6 +1791,16 @@ th {
   gap: 0.35rem;
   font-size: 0.76rem;
   color: #3f4854;
+  justify-content: flex-start;
+}
+
+.storefront-check-row input,
+.inline-check input {
+  width: auto;
+  min-width: 1rem;
+  height: 1rem;
+  margin: 0;
+  flex: 0 0 auto;
 }
 
 .storefront-price-filter {
@@ -2179,7 +2254,13 @@ th {
     gap: 0.72rem;
   }
 
+  .storefront-filter-trigger,
+  .storefront-filter-overlay {
+    display: none;
+  }
+
   .storefront-filters {
+    display: grid;
     position: sticky;
     top: 0.75rem;
   }

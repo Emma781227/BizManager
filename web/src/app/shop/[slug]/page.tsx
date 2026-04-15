@@ -48,6 +48,12 @@ export default function PublicShopPage() {
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
   const [sortBy, setSortBy] = useState<"newest" | "price_asc" | "price_desc" | "name_asc">("newest");
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [draftSelectedCategories, setDraftSelectedCategories] = useState<string[]>([]);
+  const [draftStockStatus, setDraftStockStatus] = useState<"all" | "in" | "low" | "out">("all");
+  const [draftMinPrice, setDraftMinPrice] = useState("");
+  const [draftMaxPrice, setDraftMaxPrice] = useState("");
+  const [draftSortBy, setDraftSortBy] = useState<"newest" | "price_asc" | "price_desc" | "name_asc">("newest");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -65,6 +71,38 @@ export default function PublicShopPage() {
     setSelectedCategories((prev) =>
       prev.includes(category) ? prev.filter((item) => item !== category) : [...prev, category],
     );
+  };
+
+  const toggleDraftCategory = (category: string) => {
+    setDraftSelectedCategories((prev) =>
+      prev.includes(category) ? prev.filter((item) => item !== category) : [...prev, category],
+    );
+  };
+
+  const openMobileFilters = () => {
+    setDraftSelectedCategories(selectedCategories);
+    setDraftStockStatus(stockStatus);
+    setDraftMinPrice(minPrice);
+    setDraftMaxPrice(maxPrice);
+    setDraftSortBy(sortBy);
+    setMobileFiltersOpen(true);
+  };
+
+  const resetMobileDraft = () => {
+    setDraftSelectedCategories([]);
+    setDraftStockStatus("all");
+    setDraftMinPrice("");
+    setDraftMaxPrice("");
+    setDraftSortBy("newest");
+  };
+
+  const applyMobileFilters = () => {
+    setSelectedCategories(draftSelectedCategories);
+    setStockStatus(draftStockStatus);
+    setMinPrice(draftMinPrice);
+    setMaxPrice(draftMaxPrice);
+    setSortBy(draftSortBy);
+    setMobileFiltersOpen(false);
   };
 
   useEffect(() => {
@@ -191,6 +229,9 @@ export default function PublicShopPage() {
               placeholder="Rechercher un produit"
               aria-label="Recherche produits"
             />
+            <button type="button" className="storefront-filter-trigger" onClick={openMobileFilters}>
+              Filtrer
+            </button>
             <button type="button" className="storefront-reset-btn" onClick={resetFilters}>
               Reinitialiser
             </button>
@@ -325,6 +366,122 @@ export default function PublicShopPage() {
           <span>🛒</span>
           <span>👤</span>
         </nav>
+
+        {mobileFiltersOpen ? (
+          <div
+            className="storefront-filter-overlay"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Filtres produits"
+            onClick={() => setMobileFiltersOpen(false)}
+          >
+            <div className="storefront-filter-sheet" onClick={(event) => event.stopPropagation()}>
+              <div className="storefront-filter-sheet-head">
+                <strong>Filtres</strong>
+                <button type="button" onClick={() => setMobileFiltersOpen(false)} aria-label="Fermer les filtres">
+                  ✕
+                </button>
+              </div>
+
+              <div className="storefront-filter-card">
+                <h3>Trier</h3>
+                <select value={draftSortBy} onChange={(event) => setDraftSortBy(event.target.value as typeof draftSortBy)}>
+                  <option value="newest">Les plus recents</option>
+                  <option value="price_asc">Prix croissant</option>
+                  <option value="price_desc">Prix decroissant</option>
+                  <option value="name_asc">Nom A-Z</option>
+                </select>
+              </div>
+
+              <div className="storefront-filter-card">
+                <h3>Categorie</h3>
+                <div className="storefront-filter-list">
+                  {availableCategories.length === 0 ? <p className="muted">Aucune categorie</p> : null}
+                  {availableCategories.map((category) => (
+                    <label key={`mobile-${category}`} className="storefront-check-row">
+                      <input
+                        type="checkbox"
+                        checked={draftSelectedCategories.includes(category)}
+                        onChange={() => toggleDraftCategory(category)}
+                      />
+                      <span>{category}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="storefront-filter-card">
+                <h3>Prix</h3>
+                <div className="storefront-price-filter">
+                  <input
+                    value={draftMinPrice}
+                    onChange={(event) => setDraftMinPrice(event.target.value)}
+                    placeholder="Min"
+                    inputMode="decimal"
+                  />
+                  <span>-</span>
+                  <input
+                    value={draftMaxPrice}
+                    onChange={(event) => setDraftMaxPrice(event.target.value)}
+                    placeholder="Max"
+                    inputMode="decimal"
+                  />
+                </div>
+              </div>
+
+              <div className="storefront-filter-card">
+                <h3>Disponibilite</h3>
+                <div className="storefront-filter-list">
+                  <label className="storefront-check-row">
+                    <input
+                      type="radio"
+                      name="mobileStockStatus"
+                      checked={draftStockStatus === "all"}
+                      onChange={() => setDraftStockStatus("all")}
+                    />
+                    <span>Tous</span>
+                  </label>
+                  <label className="storefront-check-row">
+                    <input
+                      type="radio"
+                      name="mobileStockStatus"
+                      checked={draftStockStatus === "in"}
+                      onChange={() => setDraftStockStatus("in")}
+                    />
+                    <span>En stock</span>
+                  </label>
+                  <label className="storefront-check-row">
+                    <input
+                      type="radio"
+                      name="mobileStockStatus"
+                      checked={draftStockStatus === "low"}
+                      onChange={() => setDraftStockStatus("low")}
+                    />
+                    <span>Stock bas</span>
+                  </label>
+                  <label className="storefront-check-row">
+                    <input
+                      type="radio"
+                      name="mobileStockStatus"
+                      checked={draftStockStatus === "out"}
+                      onChange={() => setDraftStockStatus("out")}
+                    />
+                    <span>Rupture</span>
+                  </label>
+                </div>
+              </div>
+
+              <div className="storefront-filter-sheet-actions">
+                <button type="button" className="storefront-reset-btn" onClick={resetMobileDraft}>
+                  Reinitialiser
+                </button>
+                <button type="button" className="storefront-cta" onClick={applyMobileFilters}>
+                  Appliquer
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
       </section>
     </main>
   );
