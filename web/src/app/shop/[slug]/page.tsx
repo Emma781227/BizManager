@@ -40,10 +40,12 @@ type ProductsResponse = {
 export default function PublicShopPage() {
   const routeParams = useParams<{ slug: string }>();
   const slug = routeParams?.slug;
+  const productsSectionRef = useRef<HTMLElement | null>(null);
   const [shop, setShop] = useState<Shop | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [availableCategories, setAvailableCategories] = useState<string[]>([]);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [inStockOnly, setInStockOnly] = useState(false);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [stockStatus, setStockStatus] = useState<"all" | "in" | "low" | "out">("all");
@@ -109,6 +111,18 @@ export default function PublicShopPage() {
     setMobileFiltersOpen(false);
   };
 
+  const scrollToProducts = () => {
+    productsSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [search]);
+
   useEffect(() => {
     if (!slug) {
       return;
@@ -123,8 +137,8 @@ export default function PublicShopPage() {
       setError(null);
       try {
         const query = new URLSearchParams();
-        if (search.trim()) {
-          query.set("q", search.trim());
+        if (debouncedSearch.trim()) {
+          query.set("q", debouncedSearch.trim());
         }
         if (inStockOnly) {
           query.set("inStock", "1");
@@ -170,7 +184,7 @@ export default function PublicShopPage() {
         setIsFiltering(false);
       }
     })();
-  }, [slug, search, inStockOnly, stockStatus, minPrice, maxPrice, sortBy, selectedCategories]);
+  }, [slug, debouncedSearch, inStockOnly, stockStatus, minPrice, maxPrice, sortBy, selectedCategories]);
 
   if (!slug) {
     return (
@@ -208,14 +222,9 @@ export default function PublicShopPage() {
             <h1>{shop.name}</h1>
             <p>{shop.description ?? "Decouvrez notre selection de produits."}</p>
             <div className="storefront-hero-actions">
-              <a
-                className="storefront-cta"
-                href={`https://wa.me/${shop.whatsappNumber.replace(/[^\d]/g, "")}`}
-                target="_blank"
-                rel="noreferrer"
-              >
+              <button type="button" className="storefront-cta" onClick={scrollToProducts}>
                 Voir les produits
-              </a>
+              </button>
               <button type="button" className="storefront-icon-btn" aria-label="Rechercher">
                 🔍
               </button>
@@ -223,7 +232,7 @@ export default function PublicShopPage() {
           </div>
         </section>
 
-        <section className="storefront-section">
+        <section className="storefront-section" ref={productsSectionRef}>
           <div className="storefront-section-head">
             <h2>Nos produits</h2>
             {isFiltering ? <span className="muted">Mise a jour des filtres...</span> : null}
