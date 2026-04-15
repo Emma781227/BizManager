@@ -75,6 +75,29 @@ async function saveProductImage(file: File): Promise<string> {
   return `data:${file.type};base64,${base64}`;
 }
 
+function parseImageVariantsInput(value: FormDataEntryValue | null): string[] {
+  if (typeof value !== "string" || value.trim().length === 0) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    if (Array.isArray(parsed)) {
+      return parsed
+        .filter((item): item is string => typeof item === "string")
+        .map((item) => item.trim())
+        .filter(Boolean);
+    }
+  } catch {
+    // Fallback to comma-separated format.
+  }
+
+  return value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ productId: string }> }
@@ -136,6 +159,7 @@ export async function PUT(
     try {
       const formData = await request.formData();
       const fileField = formData.get("imageFile");
+      const variantFileFields = formData.getAll("imageVariantFiles");
 
       let uploadedImageUrl: string | null = null;
       if (fileField instanceof File && fileField.size > 0) {
@@ -143,6 +167,24 @@ export async function PUT(
           uploadedImageUrl = await saveProductImage(fileField);
         } catch (error) {
           const message = error instanceof Error ? error.message : "Image invalide";
+          return NextResponse.json({ error: message }, { status: 400 });
+        }
+      }
+
+      const uploadedVariants: string[] = [];
+      for (const field of variantFileFields) {
+        if (!(field instanceof File) || field.size === 0) {
+          continue;
+        }
+
+        if (uploadedVariants.length >= 4) {
+          break;
+        }
+
+        try {
+          uploadedVariants.push(await saveProductImage(field));
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "Image variante invalide";
           return NextResponse.json({ error: message }, { status: 400 });
         }
       }
@@ -155,10 +197,14 @@ export async function PUT(
       const manualImageUrl = String(formData.get("imageUrl") ?? "").trim();
       const categoriesValue = parseCategoriesInput(formData.get("categories"));
       const categoryValue = normalizeCategory(String(formData.get("category") ?? ""));
+      const imageVariantUrls = parseImageVariantsInput(formData.get("imageVariants"));
       const mergedCategories = normalizeCategories([
         categoryValue,
         ...categoriesValue,
       ]);
+      const mergedImageVariants = Array.from(
+        new Set([...imageVariantUrls, ...uploadedVariants].map((item) => item.trim()).filter(Boolean)),
+      ).slice(0, 4);
 
       body = {
         name: nameValue,
@@ -169,6 +215,7 @@ export async function PUT(
         unitPrice: unitPriceValue,
         stock: stockValue,
         imageUrl: uploadedImageUrl || manualImageUrl || undefined,
+        imageVariants: mergedImageVariants,
       };
     } catch {
       return NextResponse.json(
@@ -204,6 +251,7 @@ export async function PUT(
       unitPrice: String(result.data.unitPrice),
       stock: result.data.stock,
       imageUrl: result.data.imageUrl || null,
+      imageVariants: result.data.imageVariants ?? [],
     },
   });
 

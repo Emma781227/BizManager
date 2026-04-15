@@ -95,6 +95,7 @@ export async function GET(request: Request, context: RouteParams) {
       unitPrice: true,
       stock: true,
       imageUrl: true,
+      imageVariants: true,
       category: true,
       categories: true,
       createdAt: true,

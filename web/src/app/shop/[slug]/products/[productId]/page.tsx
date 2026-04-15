@@ -15,6 +15,7 @@ type ProductPayload = {
   unitPrice: string;
   stock: number;
   imageUrl: string | null;
+  imageVariants?: string[];
   shopName: string;
   whatsappNumber?: string;
 };
@@ -25,6 +26,7 @@ export default function PublicProductPage() {
   const productId = routeParams?.productId;
   const [product, setProduct] = useState<ProductPayload | null>(null);
   const [quantity, setQuantity] = useState(1);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -48,6 +50,11 @@ export default function PublicProductPage() {
         }
 
         setProduct(json.data ?? null);
+        const mainImage =
+          json.data?.imageUrl ??
+          (Array.isArray(json.data?.imageVariants) ? json.data.imageVariants[0] : null) ??
+          null;
+        setSelectedImage(mainImage);
       } catch (loadError) {
         setError(loadError instanceof Error ? loadError.message : "Erreur inconnue");
       } finally {
@@ -91,6 +98,15 @@ export default function PublicProductPage() {
     product.description?.trim() ||
     "Produit de qualite selectionne avec soin pour repondre a vos besoins au quotidien.";
 
+  const imageGallery = Array.from(
+    new Set([
+      product.imageUrl,
+      ...(product.imageVariants ?? []),
+    ].filter((value): value is string => Boolean(value && value.trim()))),
+  ).slice(0, 5);
+
+  const mainImage = selectedImage || imageGallery[0] || null;
+
   return (
     <main className="storefront-wrap">
       <section className="storefront-phone">
@@ -104,11 +120,27 @@ export default function PublicProductPage() {
 
         <section className="market-detail-shell">
           <article className="market-media-card">
-            {product.imageUrl ? (
-              <img src={product.imageUrl} alt={product.name} className="storefront-detail-image" />
+            {mainImage ? (
+              <img src={mainImage} alt={product.name} className="storefront-detail-image" />
             ) : (
               <div className="storefront-detail-image placeholder">Image indisponible</div>
             )}
+            {imageGallery.length > 1 ? (
+              <div className="market-variant-gallery" role="list" aria-label="Variantes d'image">
+                {imageGallery.map((image, index) => (
+                  <button
+                    key={`${image}-${index}`}
+                    type="button"
+                    role="listitem"
+                    className={`market-variant-thumb ${mainImage === image ? "active" : ""}`}
+                    onClick={() => setSelectedImage(image)}
+                    aria-label={`Variante ${index + 1}`}
+                  >
+                    <img src={image} alt={`${product.name} variante ${index + 1}`} />
+                  </button>
+                ))}
+              </div>
+            ) : null}
           </article>
 
           <article className="market-main-info">

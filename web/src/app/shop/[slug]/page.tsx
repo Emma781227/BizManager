@@ -24,6 +24,7 @@ type Product = {
   unitPrice: string;
   stock: number;
   imageUrl: string | null;
+  imageVariants?: string[];
   category?: string | null;
   categories?: string[];
 };
@@ -340,21 +341,33 @@ export default function PublicShopPage() {
               {products.length === 0 ? <p className="muted">Aucun produit disponible pour ces filtres.</p> : null}
 
               <div className="storefront-grid">
-                {products.map((product) => (
-                  <article className="storefront-product-card" key={product.id}>
-                    {product.imageUrl ? <img src={product.imageUrl} alt={product.name} className="storefront-product-image" /> : <div className="storefront-product-image placeholder">Image</div>}
-                    <div className="storefront-product-body">
-                      <strong>{product.name}</strong>
-                      <span className="price">{formatPriceCFA(product.unitPrice)}</span>
-                      <span className={product.stock > 0 ? "stock ok" : "stock out"}>
-                        {product.stock > 0 ? "En stock" : "Rupture"}
-                      </span>
-                    </div>
-                    <Link className="storefront-stretched-link" href={`/shop/${slug}/products/${product.id}`} aria-label={`Voir ${product.name}`}>
-                      Voir
-                    </Link>
-                  </article>
-                ))}
+                {products.map((product) => {
+                  const previewImage = product.imageUrl || product.imageVariants?.[0] || null;
+
+                  return (
+                    <article className="storefront-product-card" key={product.id}>
+                      {previewImage ? (
+                        <img src={previewImage} alt={product.name} className="storefront-product-image" />
+                      ) : (
+                        <div className="storefront-product-image placeholder">Image</div>
+                      )}
+                      <div className="storefront-product-body">
+                        <strong>{product.name}</strong>
+                        <span className="price">{formatPriceCFA(product.unitPrice)}</span>
+                        <span className={product.stock > 0 ? "stock ok" : "stock out"}>
+                          {product.stock > 0 ? "En stock" : "Rupture"}
+                        </span>
+                      </div>
+                      <Link
+                        className="storefront-stretched-link"
+                        href={`/shop/${slug}/products/${product.id}`}
+                        aria-label={`Voir ${product.name}`}
+                      >
+                        Voir
+                      </Link>
+                    </article>
+                  );
+                })}
               </div>
             </div>
           </div>

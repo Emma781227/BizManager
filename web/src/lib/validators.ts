@@ -47,6 +47,16 @@ export const productSchema = z.object({
       z.string().length(0),
     ])
     .optional(),
+  imageVariants: z
+    .array(
+      z.union([
+        z.string().url(),
+        z.string().regex(/^\/uploads\/products\//),
+        z.string().regex(/^data:image\//),
+      ]),
+    )
+    .max(4)
+    .optional(),
 });
 
 export const customerSchema = z.object({

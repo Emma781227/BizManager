@@ -13,6 +13,7 @@ type Product = {
   unitPrice: string | number;
   stock: number;
   imageUrl?: string | null;
+  imageVariants?: string[];
   createdAt: string;
 };
 
@@ -38,6 +39,8 @@ export default function ProductsPage() {
   const [stock, setStock] = useState("0");
   const [imageUrl, setImageUrl] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imageVariants, setImageVariants] = useState<string[]>([]);
+  const [imageVariantFiles, setImageVariantFiles] = useState<File[]>([]);
   const [showAdvancedCreate, setShowAdvancedCreate] = useState(false);
   const [autoSku, setAutoSku] = useState(true);
   const [loading, setLoading] = useState(true);
@@ -55,6 +58,8 @@ export default function ProductsPage() {
   const [editStock, setEditStock] = useState("0");
   const [editImageUrl, setEditImageUrl] = useState("");
   const [editImageFile, setEditImageFile] = useState<File | null>(null);
+  const [editImageVariants, setEditImageVariants] = useState<string[]>([]);
+  const [editImageVariantFiles, setEditImageVariantFiles] = useState<File[]>([]);
   const [updating, setUpdating] = useState(false);
   const [deletingProductId, setDeletingProductId] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -175,6 +180,25 @@ export default function ProductsPage() {
     setNewCategory("");
   }
 
+  function addImageVariantField() {
+    setImageVariants((previous) => {
+      if (previous.length >= 4) {
+        return previous;
+      }
+      return [...previous, ""];
+    });
+  }
+
+  function updateImageVariant(index: number, value: string) {
+    setImageVariants((previous) =>
+      previous.map((entry, currentIndex) => (currentIndex === index ? value : entry)),
+    );
+  }
+
+  function removeImageVariant(index: number) {
+    setImageVariants((previous) => previous.filter((_, currentIndex) => currentIndex !== index));
+  }
+
   function toggleEditCategory(value: string) {
     const normalized = value.trim();
     if (!normalized) {
@@ -201,6 +225,27 @@ export default function ProductsPage() {
     setEditNewCategory("");
   }
 
+  function addEditImageVariantField() {
+    setEditImageVariants((previous) => {
+      if (previous.length >= 4) {
+        return previous;
+      }
+      return [...previous, ""];
+    });
+  }
+
+  function updateEditImageVariant(index: number, value: string) {
+    setEditImageVariants((previous) =>
+      previous.map((entry, currentIndex) => (currentIndex === index ? value : entry)),
+    );
+  }
+
+  function removeEditImageVariant(index: number) {
+    setEditImageVariants((previous) =>
+      previous.filter((_, currentIndex) => currentIndex !== index),
+    );
+  }
+
   async function handleCreateProduct(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSubmitting(true);
@@ -224,6 +269,9 @@ export default function ProductsPage() {
         ...selectedCategories.map((value) => value.trim()),
       ].filter(Boolean)),
     );
+    const cleanedImageVariants = Array.from(
+      new Set(imageVariants.map((value) => value.trim()).filter(Boolean)),
+    ).slice(0, 4);
 
     const formData = new FormData();
     formData.set("name", name);
@@ -234,8 +282,12 @@ export default function ProductsPage() {
     formData.set("unitPrice", unitPrice);
     formData.set("stock", stock);
     formData.set("imageUrl", imageUrl);
+    formData.set("imageVariants", JSON.stringify(cleanedImageVariants));
     if (imageFile) {
       formData.set("imageFile", imageFile);
+    }
+    for (const variantFile of imageVariantFiles.slice(0, 4)) {
+      formData.append("imageVariantFiles", variantFile);
     }
 
     try {
@@ -260,6 +312,8 @@ export default function ProductsPage() {
       setStock("1");
       setImageUrl("");
       setImageFile(null);
+      setImageVariants([]);
+      setImageVariantFiles([]);
       await loadProducts({
         query,
         category: categoryFilter,
@@ -295,6 +349,8 @@ export default function ProductsPage() {
     setEditStock(String(product.stock));
     setEditImageUrl(product.imageUrl ?? "");
     setEditImageFile(null);
+    setEditImageVariants((product.imageVariants ?? []).slice(0, 4));
+    setEditImageVariantFiles([]);
     setError(null);
     setSuccess(null);
   }
@@ -311,6 +367,8 @@ export default function ProductsPage() {
     setEditStock("0");
     setEditImageUrl("");
     setEditImageFile(null);
+    setEditImageVariants([]);
+    setEditImageVariantFiles([]);
   }
 
   useEffect(() => {
@@ -346,6 +404,9 @@ export default function ProductsPage() {
         ].filter(Boolean),
       ),
     );
+    const cleanedEditImageVariants = Array.from(
+      new Set(editImageVariants.map((value) => value.trim()).filter(Boolean)),
+    ).slice(0, 4);
 
     const formData = new FormData();
     formData.set("name", editName);
@@ -356,8 +417,12 @@ export default function ProductsPage() {
     formData.set("unitPrice", editUnitPrice);
     formData.set("stock", editStock);
     formData.set("imageUrl", editImageUrl);
+    formData.set("imageVariants", JSON.stringify(cleanedEditImageVariants));
     if (editImageFile) {
       formData.set("imageFile", editImageFile);
+    }
+    for (const variantFile of editImageVariantFiles.slice(0, 4)) {
+      formData.append("imageVariantFiles", variantFile);
     }
 
     try {
@@ -624,6 +689,55 @@ export default function ProductsPage() {
                   }}
                 />
               </label>
+              <div className="full-width variant-editor">
+                <div className="variant-editor-head">
+                  <span>Variantes d&apos;image (max 4)</span>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={addImageVariantField}
+                    disabled={imageVariants.length >= 4}
+                  >
+                    Ajouter URL variante
+                  </button>
+                </div>
+                <div className="variant-url-list">
+                  {imageVariants.map((value, index) => (
+                    <div key={`create-variant-${index}`} className="variant-url-row">
+                      <input
+                        type="url"
+                        value={value}
+                        onChange={(event) => updateImageVariant(index, event.target.value)}
+                        placeholder="https://example.com/variant.jpg"
+                      />
+                      <button
+                        type="button"
+                        className="btn-danger"
+                        onClick={() => removeImageVariant(index)}
+                      >
+                        Retirer
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <label>
+                  Variantes depuis l&apos;appareil (4 max)
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={(event) => {
+                      const files = Array.from(event.target.files ?? []).slice(0, 4);
+                      setImageVariantFiles(files);
+                    }}
+                  />
+                </label>
+                {imageVariantFiles.length > 0 ? (
+                  <p className="muted form-hint">
+                    Variantes selectionnees: {imageVariantFiles.map((file) => file.name).join(", ")}
+                  </p>
+                ) : null}
+              </div>
               {imageFile ? (
                 <p className="muted form-hint">Fichier selectionne: {imageFile.name}</p>
               ) : null}
@@ -746,6 +860,57 @@ export default function ProductsPage() {
                   }}
                 />
               </label>
+              <div className="full-width variant-editor">
+                <div className="variant-editor-head">
+                  <span>Variantes d&apos;image (max 4)</span>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={addEditImageVariantField}
+                    disabled={editImageVariants.length >= 4}
+                  >
+                    Ajouter URL variante
+                  </button>
+                </div>
+                <div className="variant-url-list">
+                  {editImageVariants.map((value, index) => (
+                    <div key={`edit-variant-${index}`} className="variant-url-row">
+                      <input
+                        type="url"
+                        value={value}
+                        onChange={(event) => updateEditImageVariant(index, event.target.value)}
+                        placeholder="https://example.com/variant.jpg"
+                      />
+                      <button
+                        type="button"
+                        className="btn-danger"
+                        onClick={() => removeEditImageVariant(index)}
+                      >
+                        Retirer
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <label>
+                  Variantes depuis l&apos;appareil (4 max)
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={(event) => {
+                      const files = Array.from(event.target.files ?? []).slice(0, 4);
+                      setEditImageVariantFiles(files);
+                    }}
+                  />
+                </label>
+                {editImageVariantFiles.length > 0 ? (
+                  <p className="muted form-hint">
+                    Variantes selectionnees: {editImageVariantFiles
+                      .map((file) => file.name)
+                      .join(", ")}
+                  </p>
+                ) : null}
+              </div>
               {editImageFile ? (
                 <p className="muted form-hint">Fichier selectionne: {editImageFile.name}</p>
               ) : null}
@@ -888,6 +1053,11 @@ export default function ProductsPage() {
                         <span className="product-category-pill">Sans categorie</span>
                       )}
                     </div>
+                    {product.imageVariants && product.imageVariants.length > 0 ? (
+                      <p className="muted form-hint">
+                        {product.imageVariants.length} variante(s) d&apos;image
+                      </p>
+                    ) : null}
                     <p className="muted product-description-preview">
                       {product.description?.trim() || "Aucune description"}
                     </p>

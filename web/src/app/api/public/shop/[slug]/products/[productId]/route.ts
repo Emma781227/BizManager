@@ -38,6 +38,7 @@ export async function GET(_: Request, context: RouteParams) {
       unitPrice: true,
       stock: true,
       imageUrl: true,
+      imageVariants: true,
       createdAt: true,
     },
   });
