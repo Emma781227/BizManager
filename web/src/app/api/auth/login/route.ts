@@ -11,7 +11,7 @@ export async function POST(request: Request) {
   if (!result.success) {
     return NextResponse.json({ error: "Payload invalide" }, { status: 400 });
   }
-
+  //const { email, password, rememberMe } = await req.json();
   const email = result.data.email.toLowerCase().trim();
   const user = await prisma.user.findUnique({ where: { email } });
 

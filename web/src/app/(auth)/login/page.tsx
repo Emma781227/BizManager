@@ -28,6 +28,7 @@ export default function LoginPage() {
   const [forgotInfo, setForgotInfo] = useState<string | null>(null);
   const [forgotError, setForgotError] = useState<string | null>(null);
   const [forgotLoading, setForgotLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -58,6 +59,15 @@ export default function LoginPage() {
         }
       }
     }
+    await fetch("/api/auth/login", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    email,
+    password,
+    rememberMe,
+  }),
+});
 
     setIsLoading(true);
 
@@ -357,6 +367,15 @@ export default function LoginPage() {
               Mot de passe oublie ?
             </button>
           ) : null}
+          <label className="flex items-center gap-2">
+  <input
+    type="checkbox"
+    name="rememberMe"
+    checked={rememberMe}
+    onChange={(e) => setRememberMe(e.target.checked)}
+  />
+  <span>Se souvenir de moi</span>
+</label>
 {/* */}
           {mode === "register" && registerStep === "verify" ? (
             <label style={{ display: "grid", gap: 6 }}>
