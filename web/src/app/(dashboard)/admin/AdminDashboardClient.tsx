@@ -173,133 +173,136 @@ export default function AdminDashboardClient() {
   }
 
   return (
-    <main className="page-stack merchant-grid admin-platform-page">
-      <section className="card merchant-hero admin-hero">
-        <div className="section-head admin-hero-head">
+    <main className="grid gap-2.5 p-3 sm:gap-3.5 sm:p-4 lg:gap-4 lg:p-5">
+      <section className="rounded-2xl border border-slate-200 bg-[radial-gradient(circle_at_82%_6%,rgba(25,105,82,0.14)_0%,transparent_40%),radial-gradient(circle_at_8%_80%,rgba(43,88,180,0.1)_0%,transparent_35%),linear-gradient(145deg,#ffffff_0%,#f5faf8_100%)] p-4 sm:p-5">
+        <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-start">
           <div>
-            <span className="admin-eyebrow">Espace gerant</span>
-            <h1>Pilotage global de la plateforme</h1>
-            <p>
+            <span className="inline-flex rounded-full border border-emerald-300 bg-emerald-100 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-emerald-700 sm:text-sm">Espace gerant</span>
+            <h1 className="mt-3 text-2xl font-bold leading-tight text-slate-900 sm:text-2.5xl">Pilotage global de la plateforme</h1>
+            <p className="mt-2 max-w-2xl text-sm text-slate-600 sm:text-base">
               Suis les performances de toutes les boutiques, controle leur publication et
               accompagne les commercants en temps reel.
             </p>
           </div>
-          <div className="admin-search-box">
-            <label htmlFor="admin-shop-search">Rechercher une boutique</label>
+          <div className="w-full grid gap-2 sm:w-96">
+            <label htmlFor="admin-shop-search" className="text-xs font-bold text-slate-700 sm:text-sm">Rechercher une boutique</label>
             <input
               id="admin-shop-search"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Nom, slug, ville, email..."
+              className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm transition-colors focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100 sm:text-base"
             />
           </div>
         </div>
 
         {overview && (
-          <div className="admin-highlight-row">
-            <span className="admin-highlight-pill">Publication: {publicationRate}%</span>
-            <span className="admin-highlight-pill">Brouillons: {draftShopsCount}</span>
-            <span className="admin-highlight-pill">CA: {toMoney(overview.revenue)}</span>
+          <div className="mt-4 flex flex-wrap gap-2 sm:gap-3">
+            <span className="inline-flex rounded-full border border-emerald-300 bg-emerald-100 px-3 py-1.5 text-xs font-bold text-emerald-700 sm:text-sm">Publication: {publicationRate}%</span>
+            <span className="inline-flex rounded-full border border-yellow-300 bg-yellow-100 px-3 py-1.5 text-xs font-bold text-yellow-700 sm:text-sm">Brouillons: {draftShopsCount}</span>
+            <span className="inline-flex rounded-full border border-slate-300 bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-700 sm:text-sm">CA: {toMoney(overview.revenue)}</span>
           </div>
         )}
       </section>
 
-      {loading && <p className="muted">Chargement des donnees plateforme...</p>}
-      {error && <p className="feedback error">{error}</p>}
-      {actionError && <p className="feedback error">{actionError}</p>}
+      {loading && <p className="py-4 text-center text-sm text-slate-600">Chargement des donnees plateforme...</p>}
+      {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 sm:py-2.5 sm:text-base">{error}</p>}
+      {actionError && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 sm:py-2.5 sm:text-base">{actionError}</p>}
 
       {overview && !loading && (
-        <section className="card merchant-surface">
-          <div className="kpi-grid admin-kpi-grid">
-            <article className="kpi-box">
-              <h3>Boutiques</h3>
-              <p>{overview.shopsCount}</p>
+        <section className="rounded-2xl border border-slate-200 bg-gradient-to-b from-white to-slate-50 p-4 sm:p-5">
+          <div className="grid gap-2 grid-cols-2 sm:gap-2.5 lg:grid-cols-6">
+            <article className="rounded-lg border border-slate-200 bg-slate-50 p-2 sm:p-2.5">
+              <h3 className="mb-1 text-xs font-semibold text-slate-600 sm:text-sm">Boutiques</h3>
+              <p className="text-lg font-bold text-slate-900 sm:text-xl">{overview.shopsCount}</p>
             </article>
-            <article className="kpi-box">
-              <h3>Publiees</h3>
-              <p>{overview.publishedShopsCount}</p>
+            <article className="rounded-lg border border-slate-200 bg-slate-50 p-2 sm:p-2.5">
+              <h3 className="mb-1 text-xs font-semibold text-slate-600 sm:text-sm">Publiees</h3>
+              <p className="text-lg font-bold text-slate-900 sm:text-xl">{overview.publishedShopsCount}</p>
             </article>
-            <article className="kpi-box">
-              <h3>Commercants</h3>
-              <p>{overview.usersCount}</p>
+            <article className="rounded-lg border border-slate-200 bg-slate-50 p-2 sm:p-2.5">
+              <h3 className="mb-1 text-xs font-semibold text-slate-600 sm:text-sm">Commercants</h3>
+              <p className="text-lg font-bold text-slate-900 sm:text-xl">{overview.usersCount}</p>
             </article>
-            <article className="kpi-box">
-              <h3>Commandes</h3>
-              <p>{overview.ordersCount}</p>
+            <article className="rounded-lg border border-slate-200 bg-slate-50 p-2 sm:p-2.5">
+              <h3 className="mb-1 text-xs font-semibold text-slate-600 sm:text-sm">Commandes</h3>
+              <p className="text-lg font-bold text-slate-900 sm:text-xl">{overview.ordersCount}</p>
             </article>
-            <article className="kpi-box">
-              <h3>Stock bas</h3>
-              <p>{overview.stockLowCount}</p>
+            <article className="rounded-lg border border-slate-200 bg-slate-50 p-2 sm:p-2.5">
+              <h3 className="mb-1 text-xs font-semibold text-slate-600 sm:text-sm">Stock bas</h3>
+              <p className="text-lg font-bold text-slate-900 sm:text-xl">{overview.stockLowCount}</p>
             </article>
-            <article className="kpi-box">
-              <h3>CA global</h3>
-              <p>{toMoney(overview.revenue)}</p>
+            <article className="rounded-lg border border-slate-200 bg-slate-50 p-2 sm:p-2.5">
+              <h3 className="mb-1 text-xs font-semibold text-slate-600 sm:text-sm">CA global</h3>
+              <p className="text-lg font-bold text-slate-900 sm:text-xl">{toMoney(overview.revenue)}</p>
             </article>
           </div>
-          <p className="muted admin-kpi-footnote">
-            Taux de publication actuel: <strong>{publicationRate}%</strong>
+          <p className="mt-3 text-xs text-slate-600 sm:text-sm">
+            Taux de publication actuel: <strong className="font-semibold text-emerald-700">{publicationRate}%</strong>
           </p>
         </section>
       )}
 
       {!loading && (
-        <section className="card merchant-surface">
-          <div className="top-actions admin-top-actions">
-            <h2>Boutiques creees ({shops.length})</h2>
-            <p className="muted">Controle publication, visibilite et activite par boutique.</p>
+        <section className="rounded-2xl border border-slate-200 bg-gradient-to-b from-white to-slate-50 p-4 sm:p-5">
+          <div className="mb-4 flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
+            <div>
+              <h2 className="text-xl font-bold text-slate-900 sm:text-2xl">Boutiques creees ({shops.length})</h2>
+              <p className="mt-1 text-sm text-slate-600">Controle publication, visibilite et activite par boutique.</p>
+            </div>
           </div>
 
           {shops.length === 0 ? (
-            <p className="muted">Aucune boutique trouvee.</p>
+            <p className="py-4 text-center text-sm text-slate-600">Aucune boutique trouvee.</p>
           ) : (
             <>
-              <div className="admin-shop-cards">
+              <div className="mb-6 grid gap-3 sm:hidden">
                 {shops.map((shop) => {
                   const shopUrl = `/shop/${shop.slug}`;
 
                   return (
-                    <article key={shop.id} className="admin-shop-card">
-                      <div className="admin-shop-card-head">
-                        <div>
-                          <h3>{shop.name}</h3>
-                          <p>/{shop.slug}</p>
+                    <article key={shop.id} className="rounded-lg border border-slate-200 bg-white p-4 grid gap-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <h3 className="font-bold text-slate-900">{shop.name}</h3>
+                          <p className="text-xs text-slate-600">/{shop.slug}</p>
                         </div>
                         <span
-                          className={shop.isPublished ? "status-pill stock-ok" : "status-pill stock-low"}
+                          className={`inline-flex flex-shrink-0 rounded-full px-2 py-1 text-xs font-bold ${shop.isPublished ? "border border-emerald-300 bg-emerald-100 text-emerald-700" : "border border-yellow-300 bg-yellow-100 text-yellow-700"}`}
                         >
                           {shop.isPublished ? "Publiee" : "Brouillon"}
                         </span>
                       </div>
 
-                      <div className="admin-shop-meta-grid">
+                      <div className="grid gap-2 grid-cols-2 text-xs">
                         <div>
-                          <span>Commercant</span>
-                          <strong>{shop.owner.fullName}</strong>
-                          <small>{shop.owner.email}</small>
+                          <span className="block font-semibold text-slate-700">Commercant</span>
+                          <strong className="block text-slate-900">{shop.owner.fullName}</strong>
+                          <small className="block text-slate-600">{shop.owner.email}</small>
                         </div>
                         <div>
-                          <span>Ville</span>
-                          <strong>{shop.city ?? "-"}</strong>
+                          <span className="block font-semibold text-slate-700">Ville</span>
+                          <strong className="block text-slate-900">{shop.city ?? "-"}</strong>
                         </div>
                         <div>
-                          <span>Produits</span>
-                          <strong>{shop.productsCount}</strong>
+                          <span className="block font-semibold text-slate-700">Produits</span>
+                          <strong className="block text-slate-900">{shop.productsCount}</strong>
                         </div>
                         <div>
-                          <span>Commandes</span>
-                          <strong>{shop.ordersCount}</strong>
+                          <span className="block font-semibold text-slate-700">Commandes</span>
+                          <strong className="block text-slate-900">{shop.ordersCount}</strong>
                         </div>
                       </div>
 
-                      <div className="admin-shop-card-foot">
-                        <small>Creee le {formatDate(shop.createdAt)}</small>
-                        <div className="admin-actions">
-                          <a className="ghost-link" href={shopUrl} target="_blank" rel="noreferrer">
+                      <div className="flex items-center justify-between gap-2 border-t border-slate-200 pt-3">
+                        <small className="text-slate-600">Creee le {formatDate(shop.createdAt)}</small>
+                        <div className="flex gap-2">
+                          <a className="inline-flex rounded-lg border border-slate-300 bg-slate-100 px-2 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-200" href={shopUrl} target="_blank" rel="noreferrer">
                             Voir
                           </a>
                           <button
                             type="button"
-                            className="ghost-btn"
+                            className="inline-flex rounded-lg border border-slate-300 bg-slate-100 px-2 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-200 disabled:opacity-50"
                             onClick={() => togglePublication(shop.id, shop.isPublished)}
                             disabled={pendingShopId === shop.id}
                           >
@@ -316,17 +319,17 @@ export default function AdminDashboardClient() {
                 })}
               </div>
 
-              <div className="table-wrap admin-table-wrap">
-                <table>
+              <div className="hidden overflow-x-auto rounded-lg border border-slate-200 sm:block">
+                <table className="w-full border-collapse">
                 <thead>
-                  <tr>
-                    <th>Boutique</th>
-                    <th>Commercant</th>
-                    <th>Ville</th>
-                    <th>Produits</th>
-                    <th>Commandes</th>
-                    <th>Statut</th>
-                    <th>Action</th>
+                  <tr className="border-b border-slate-200 bg-slate-50">
+                    <th className="px-3 py-2 text-left text-xs font-semibold text-slate-700 sm:py-3 sm:px-4">Boutique</th>
+                    <th className="px-3 py-2 text-left text-xs font-semibold text-slate-700 sm:py-3 sm:px-4">Commercant</th>
+                    <th className="px-3 py-2 text-left text-xs font-semibold text-slate-700 sm:py-3 sm:px-4">Ville</th>
+                    <th className="px-3 py-2 text-center text-xs font-semibold text-slate-700 sm:py-3 sm:px-4">Produits</th>
+                    <th className="px-3 py-2 text-center text-xs font-semibold text-slate-700 sm:py-3 sm:px-4">Commandes</th>
+                    <th className="px-3 py-2 text-center text-xs font-semibold text-slate-700 sm:py-3 sm:px-4">Statut</th>
+                    <th className="px-3 py-2 text-right text-xs font-semibold text-slate-700 sm:py-3 sm:px-4">Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -334,34 +337,34 @@ export default function AdminDashboardClient() {
                     const shopUrl = `/shop/${shop.slug}`;
 
                     return (
-                      <tr key={shop.id}>
-                        <td>
-                          <strong>{shop.name}</strong>
-                          <div className="meta-line">/{shop.slug}</div>
-                          <div className="meta-line">Creee le {formatDate(shop.createdAt)}</div>
+                      <tr key={shop.id} className="border-b border-slate-100 hover:bg-slate-50">
+                        <td className="px-3 py-2 text-xs sm:py-3 sm:px-4">
+                          <strong className="block text-slate-900">{shop.name}</strong>
+                          <div className="block text-slate-600">/{shop.slug}</div>
+                          <div className="block text-slate-500">Creee le {formatDate(shop.createdAt)}</div>
                         </td>
-                        <td>
-                          <strong>{shop.owner.fullName}</strong>
-                          <div className="meta-line">{shop.owner.email}</div>
+                        <td className="px-3 py-2 text-xs sm:py-3 sm:px-4">
+                          <strong className="block text-slate-900">{shop.owner.fullName}</strong>
+                          <div className="block text-slate-600">{shop.owner.email}</div>
                         </td>
-                        <td>{shop.city ?? "-"}</td>
-                        <td>{shop.productsCount}</td>
-                        <td>{shop.ordersCount}</td>
-                        <td>
+                        <td className="px-3 py-2 text-xs text-slate-900 sm:py-3 sm:px-4">{shop.city ?? "-"}</td>
+                        <td className="px-3 py-2 text-center text-xs text-slate-900 sm:py-3 sm:px-4">{shop.productsCount}</td>
+                        <td className="px-3 py-2 text-center text-xs text-slate-900 sm:py-3 sm:px-4">{shop.ordersCount}</td>
+                        <td className="px-3 py-2 text-center text-xs sm:py-3 sm:px-4">
                           <span
-                            className={shop.isPublished ? "status-pill stock-ok" : "status-pill stock-low"}
+                            className={`inline-flex rounded-full px-2 py-1 text-xs font-bold ${shop.isPublished ? "border border-emerald-300 bg-emerald-100 text-emerald-700" : "border border-yellow-300 bg-yellow-100 text-yellow-700"}`}
                           >
                             {shop.isPublished ? "Publiee" : "Brouillon"}
                           </span>
                         </td>
-                        <td>
-                          <div className="admin-actions">
-                            <a className="ghost-link" href={shopUrl} target="_blank" rel="noreferrer">
+                        <td className="px-3 py-2 text-right sm:py-3 sm:px-4">
+                          <div className="flex justify-end gap-2">
+                            <a className="inline-flex rounded-lg border border-slate-300 bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-200" href={shopUrl} target="_blank" rel="noreferrer">
                               Voir
                             </a>
                             <button
                               type="button"
-                              className="ghost-btn"
+                              className="inline-flex rounded-lg border border-slate-300 bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-200 disabled:opacity-50"
                               onClick={() => togglePublication(shop.id, shop.isPublished)}
                               disabled={pendingShopId === shop.id}
                             >

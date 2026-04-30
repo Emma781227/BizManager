@@ -134,92 +134,126 @@ export default function PublicCheckoutPage() {
   }
 
   return (
-    <main className="storefront-wrap">
-      <section className="storefront-phone">
-        <header className="storefront-topbar">
-          {slug ? <Link href={`/shop/${slug}`} className="storefront-back">←</Link> : <span className="storefront-back">←</span>}
-          <strong>Commande</strong>
-          <span className="storefront-icon">🧾</span>
+    <main className="min-h-screen bg-[linear-gradient(180deg,#f7faf7_0%,#edf5ef_100%)] px-4 py-6 text-slate-900 sm:px-6 lg:px-8">
+      <section className="mx-auto w-full max-w-4xl rounded-3xl border border-emerald-100 bg-white p-5 shadow-[0_24px_80px_rgba(15,23,42,0.10)] sm:p-8">
+        <header className="mb-6 flex items-center justify-between border-b border-slate-200 pb-4">
+          {slug ? (
+            <Link href={`/shop/${slug}`} className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-600 transition hover:bg-slate-50">
+              ←
+            </Link>
+          ) : (
+            <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-400">←</span>
+          )}
+          <strong className="text-lg font-semibold text-slate-950">Commande</strong>
+          <span className="inline-flex h-10 min-w-10 items-center justify-center rounded-xl bg-emerald-50 px-3 text-sm font-semibold text-emerald-700">Etape 2</span>
         </header>
 
-        <section className="storefront-checkout-card">
-          {loadingProduct ? <p className="muted">Verification du produit...</p> : null}
-          {!loadingProduct && product ? (
-            <div className="storefront-checkout-summary">
-              <h1>{product.name}</h1>
-              <p className="price">{formatPriceCFA(product.unitPrice)}</p>
-              <p className="muted">Total estime: {formatPriceCFA(totalEstimate)}</p>
-            </div>
-          ) : null}
+        <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+          <div className="space-y-4">
+            {loadingProduct ? <p className="text-sm text-slate-500">Verification du produit...</p> : null}
+            {!loadingProduct && product ? (
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <h1 className="text-xl font-semibold text-slate-950">{product.name}</h1>
+                <p className="mt-1 text-lg font-semibold text-emerald-700">{formatPriceCFA(product.unitPrice)}</p>
+                <p className="mt-1 text-sm text-slate-500">Total estime: {formatPriceCFA(totalEstimate)}</p>
+              </div>
+            ) : null}
 
-          <form className="storefront-form" onSubmit={handleSubmit}>
-            <label>
-              Nom complet
-              <input
-                required
-                value={customerName}
-                onChange={(event) => setCustomerName(event.target.value)}
-              />
-            </label>
+            <form className="space-y-4" onSubmit={handleSubmit}>
+              <label className="block space-y-2 text-sm font-medium text-slate-700">
+                <span>Nom complet</span>
+                <input
+                  required
+                  value={customerName}
+                  onChange={(event) => setCustomerName(event.target.value)}
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+                />
+              </label>
 
-            <label>
-              Telephone
-              <input
-                required
-                value={customerPhone}
-                onChange={(event) => setCustomerPhone(event.target.value)}
-                placeholder="+237..."
-              />
-            </label>
+              <label className="block space-y-2 text-sm font-medium text-slate-700">
+                <span>Telephone</span>
+                <input
+                  required
+                  value={customerPhone}
+                  onChange={(event) => setCustomerPhone(event.target.value)}
+                  placeholder="+237..."
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+                />
+              </label>
 
-            <label>
-              Quantite
-              <input
-                type="number"
-                min={1}
-                max={Math.max(1, product?.stock ?? 1)}
-                value={quantity}
-                onChange={(event) => {
-                  const next = Number(event.target.value) || 1;
-                  const max = Math.max(1, product?.stock ?? 1);
-                  setQuantity(Math.min(Math.max(next, 1), max));
-                }}
-              />
-            </label>
+              <label className="block space-y-2 text-sm font-medium text-slate-700">
+                <span>Quantite</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={Math.max(1, product?.stock ?? 1)}
+                  value={quantity}
+                  onChange={(event) => {
+                    const next = Number(event.target.value) || 1;
+                    const max = Math.max(1, product?.stock ?? 1);
+                    setQuantity(Math.min(Math.max(next, 1), max));
+                  }}
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+                />
+              </label>
 
-            <label>
-              Adresse
-              <input value={address} onChange={(event) => setAddress(event.target.value)} />
-            </label>
+              <label className="block space-y-2 text-sm font-medium text-slate-700">
+                <span>Adresse</span>
+                <input
+                  value={address}
+                  onChange={(event) => setAddress(event.target.value)}
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+                />
+              </label>
 
-            <label>
-              Remarque
-              <textarea value={note} onChange={(event) => setNote(event.target.value)} rows={2} />
-            </label>
+              <label className="block space-y-2 text-sm font-medium text-slate-700">
+                <span>Remarque</span>
+                <textarea
+                  value={note}
+                  onChange={(event) => setNote(event.target.value)}
+                  rows={2}
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+                />
+              </label>
 
-            <button type="submit" disabled={submitting || !slug || !productId || !product || product.stock <= 0}>
-              {submitting ? "Preparation..." : "Valider la commande"}
-            </button>
-          </form>
-
-          <div className="storefront-service-list compact">
-            <span>⏱️ Livraison rapide possible</span>
-            <span>💳 Paiement a la livraison ou Mobile Money</span>
+              <button
+                type="submit"
+                disabled={submitting || !slug || !productId || !product || product.stock <= 0}
+                className="inline-flex w-full items-center justify-center rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {submitting ? "Preparation..." : "Valider la commande"}
+              </button>
+            </form>
           </div>
 
-          {!slug ? <p className="feedback error">Boutique manquante dans le lien.</p> : null}
-          {!productId ? <p className="feedback error">Produit manquant dans le lien.</p> : null}
-          {!loadingProduct && !product && productId ? <p className="feedback error">Produit introuvable.</p> : null}
-          {product && product.stock <= 0 ? <p className="feedback error">Produit indisponible pour le moment.</p> : null}
-          {error ? <p className="feedback error">{error}</p> : null}
+          <aside className="space-y-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-700">Infos utiles</h2>
+            <div className="grid gap-3 text-sm text-slate-600">
+              <span className="rounded-xl border border-slate-200 bg-white px-3 py-2">Livraison rapide possible</span>
+              <span className="rounded-xl border border-slate-200 bg-white px-3 py-2">Paiement a la livraison ou Mobile Money</span>
+              <span className="rounded-xl border border-slate-200 bg-white px-3 py-2">Confirmation de commande par WhatsApp</span>
+            </div>
+
+            {!slug ? <p className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">Boutique manquante dans le lien.</p> : null}
+            {!productId ? <p className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">Produit manquant dans le lien.</p> : null}
+            {!loadingProduct && !product && productId ? <p className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">Produit introuvable.</p> : null}
+            {product && product.stock <= 0 ? <p className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">Produit indisponible pour le moment.</p> : null}
+            {error ? <p className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</p> : null}
+          </aside>
         </section>
 
-        <nav className="storefront-bottom-nav" aria-label="Navigation client">
-          {slug ? <Link href={`/shop/${slug}`}>🏠</Link> : <span>🏠</span>}
-          <span>🧭</span>
-          <span>🛍️</span>
-          <span className="active">🛒</span>
-          <span>👤</span>
+        <nav className="mt-8 grid grid-cols-5 gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-2 text-center text-sm text-slate-500" aria-label="Navigation client">
+          {slug ? (
+            <Link href={`/shop/${slug}`} className="rounded-xl px-2 py-2 transition hover:bg-white">
+              Accueil
+            </Link>
+          ) : (
+            <span className="rounded-xl px-2 py-2">Accueil</span>
+          )}
+          <span className="rounded-xl px-2 py-2">Explorer</span>
+          <span className="rounded-xl px-2 py-2">Produits</span>
+          <span className="rounded-xl bg-emerald-100 px-2 py-2 font-semibold text-emerald-700">Commande</span>
+          <span className="rounded-xl px-2 py-2">Compte</span>
         </nav>
       </section>
     </main>

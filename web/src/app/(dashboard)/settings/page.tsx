@@ -266,69 +266,72 @@ export default function SettingsPage() {
 
   if (loading) {
     return (
-      <main className="page-stack merchant-grid">
-        <section className="card merchant-hero">
-          <h1>Parametres boutique</h1>
-          <p className="muted">Chargement...</p>
+      <main className="grid gap-2.5 p-3 sm:gap-3.5 sm:p-4 lg:gap-4 lg:p-5">
+        <section className="rounded-2xl border border-slate-200 bg-[radial-gradient(circle_at_8%_16%,rgba(34,136,102,0.09)_0%,transparent_46%),linear-gradient(145deg,#ffffff_0%,#f8fbf9_100%)] p-4 sm:p-5">
+          <h1 className="mb-2 text-2xl font-bold leading-tight text-slate-900 sm:text-2.5xl">Parametres boutique</h1>
+          <p className="text-sm text-slate-600 sm:text-base">Chargement...</p>
         </section>
       </main>
     );
   }
 
   return (
-    <main className="page-stack merchant-grid">
-      <section className="card merchant-hero">
-        <h1>Parametres boutique</h1>
-        <p>Complete ton profil boutique pour activer la vitrine publique client.</p>
+    <main className="grid gap-2.5 p-3 sm:gap-3.5 sm:p-4 lg:gap-4 lg:p-5">
+      <section className="rounded-2xl border border-slate-200 bg-[radial-gradient(circle_at_8%_16%,rgba(34,136,102,0.09)_0%,transparent_46%),linear-gradient(145deg,#ffffff_0%,#f8fbf9_100%)] p-4 sm:p-5">
+        <h1 className="mb-2 text-2xl font-bold leading-tight text-slate-900 sm:text-2.5xl">Parametres boutique</h1>
+        <p className="mb-4 max-w-2xl text-sm text-slate-600 sm:text-base">Complete ton profil boutique pour activer la vitrine publique client.</p>
 
-        <div className="merchant-kpi">
-          <article>
-            <span>Slug public</span>
-            <strong>{form.slug || "-"}</strong>
+        <div className="mt-3 grid gap-2 grid-cols-2 sm:gap-2.5 lg:grid-cols-4">
+          <article className="rounded-lg border border-slate-200 bg-slate-50 p-2.5 sm:p-3">
+            <span className="block text-xs font-semibold text-slate-600 sm:text-sm">Slug public</span>
+            <strong className="text-base font-bold text-slate-900 sm:text-lg truncate">{form.slug || "-"}</strong>
           </article>
-          <article>
-            <span>Publication</span>
-            <strong>{form.isPublished ? "Active" : "Brouillon"}</strong>
+          <article className="rounded-lg border border-slate-200 bg-slate-50 p-2.5 sm:p-3">
+            <span className="block text-xs font-semibold text-slate-600 sm:text-sm">Publication</span>
+            <strong className="text-base font-bold text-slate-900 sm:text-lg">{form.isPublished ? "Active" : "Brouillon"}</strong>
           </article>
-          <article>
-            <span>Ville</span>
-            <strong>{form.city || "-"}</strong>
+          <article className="rounded-lg border border-slate-200 bg-slate-50 p-2.5 sm:p-3">
+            <span className="block text-xs font-semibold text-slate-600 sm:text-sm">Ville</span>
+            <strong className="text-base font-bold text-slate-900 sm:text-lg truncate">{form.city || "-"}</strong>
           </article>
-          <article>
-            <span>WhatsApp</span>
-            <strong>{whatsappLocalNumber ? `${whatsappDialCode} ${whatsappLocalNumber}` : "-"}</strong>
+          <article className="rounded-lg border border-slate-200 bg-slate-50 p-2.5 sm:p-3">
+            <span className="block text-xs font-semibold text-slate-600 sm:text-sm">WhatsApp</span>
+            <strong className="text-base font-bold text-slate-900 sm:text-lg truncate">{whatsappLocalNumber ? `${whatsappDialCode} ${whatsappLocalNumber}` : "-"}</strong>
           </article>
         </div>
       </section>
 
-      <section className="card merchant-surface">
-        <form className="form-grid" onSubmit={handleSubmit}>
-          <label>
-            Nom de la boutique
+      <section className="rounded-2xl border border-slate-200 bg-gradient-to-b from-white to-slate-50 p-4 sm:p-5">
+        <form className="mt-3 grid gap-2 grid-cols-1 sm:grid-cols-[repeat(auto-fit,minmax(220px,1fr))] lg:grid-cols-[repeat(auto-fit,minmax(250px,1fr))] lg:gap-3" onSubmit={handleSubmit}>
+          <label className="grid gap-1">
+            <span className="text-xs font-semibold text-slate-700 sm:text-sm">Nom de la boutique</span>
             <input
               required
               value={form.name}
               onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
+              className="rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm transition-colors focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100 sm:px-3 sm:py-2.5 sm:text-base"
             />
           </label>
 
-          <label>
-            Slug public
+          <label className="grid gap-1">
+            <span className="text-xs font-semibold text-slate-700 sm:text-sm">Slug public</span>
             <input
               required
               value={form.slug}
               onChange={(event) => setForm((prev) => ({ ...prev, slug: event.target.value }))}
               placeholder="ma-boutique"
+              className="rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm transition-colors focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100 sm:px-3 sm:py-2.5 sm:text-base"
             />
           </label>
 
-          <label>
-            Numero WhatsApp
-            <div className="phone-input-group">
+          <label className="grid gap-1">
+            <span className="text-xs font-semibold text-slate-700 sm:text-sm">Numero WhatsApp</span>
+            <div className="flex gap-2">
               <select
                 value={whatsappDialCode}
                 onChange={(event) => setWhatsappDialCode(event.target.value)}
                 aria-label="Indicatif pays"
+                className="flex-shrink-0 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm transition-colors focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100 sm:px-3 sm:py-2.5 sm:text-base"
               >
                 {AFRICAN_DIAL_CODES.map((code) => (
                   <option key={code.value} value={code.value}>
@@ -346,12 +349,13 @@ export default function SettingsPage() {
                   setWhatsappLocalNumber(event.target.value.replace(/\D/g, ""))
                 }
                 placeholder="Ex: 620778033"
+                className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm transition-colors focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100 sm:px-3 sm:py-2.5 sm:text-base"
               />
             </div>
           </label>
 
-          <label>
-            Email notification stock
+          <label className="grid gap-1">
+            <span className="text-xs font-semibold text-slate-700 sm:text-sm">Email notification stock</span>
             <input
               type="email"
               pattern={notificationEmailPattern}
@@ -362,147 +366,161 @@ export default function SettingsPage() {
               }
               placeholder="notifications@ma-boutique.com"
               title="Utilise un email valide (lettres, chiffres, points, tirets et @)"
+              className="rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm transition-colors focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100 sm:px-3 sm:py-2.5 sm:text-base"
             />
           </label>
 
-          <label className="full-width">
-            Adresse
+          <label className="col-span-full grid gap-1">
+            <span className="text-xs font-semibold text-slate-700 sm:text-sm">Adresse</span>
             <textarea
               value={form.address}
               onChange={(event) => setForm((prev) => ({ ...prev, address: event.target.value }))}
               rows={2}
               placeholder="Rue, numero, appartement, batiment..."
+              className="rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm transition-colors focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100 sm:px-3 sm:py-2.5 sm:text-base"
             />
           </label>
 
-          <label>
-            Ville
+          <label className="grid gap-1">
+            <span className="text-xs font-semibold text-slate-700 sm:text-sm">Ville</span>
             <input
               value={form.city}
               onChange={(event) => setForm((prev) => ({ ...prev, city: event.target.value }))}
               placeholder="Ex: Douala"
+              className="rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm transition-colors focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100 sm:px-3 sm:py-2.5 sm:text-base"
             />
           </label>
 
-          <label>
-            Code postal
+          <label className="grid gap-1">
+            <span className="text-xs font-semibold text-slate-700 sm:text-sm">Code postal</span>
             <input
               value={form.postalCode}
               onChange={(event) =>
                 setForm((prev) => ({ ...prev, postalCode: event.target.value }))
               }
               placeholder="Ex: 12500"
+              className="rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm transition-colors focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100 sm:px-3 sm:py-2.5 sm:text-base"
             />
           </label>
 
-          <label>
-            Pays / Region
+          <label className="grid gap-1">
+            <span className="text-xs font-semibold text-slate-700 sm:text-sm">Pays / Region</span>
             <input
               value={form.regionCountry}
               onChange={(event) =>
                 setForm((prev) => ({ ...prev, regionCountry: event.target.value }))
               }
               placeholder="Ex: Cameroun / Littoral"
+              className="rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm transition-colors focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100 sm:px-3 sm:py-2.5 sm:text-base"
             />
           </label>
 
-          <label>
-            Categorie
+          <label className="grid gap-1">
+            <span className="text-xs font-semibold text-slate-700 sm:text-sm">Categorie</span>
             <input
               value={form.category}
               onChange={(event) => setForm((prev) => ({ ...prev, category: event.target.value }))}
+              className="rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm transition-colors focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100 sm:px-3 sm:py-2.5 sm:text-base"
             />
           </label>
 
-          <label>
-            Logo URL
+          <label className="grid gap-1">
+            <span className="text-xs font-semibold text-slate-700 sm:text-sm">Logo URL</span>
             <input
               type="url"
               value={form.logoUrl}
               onChange={(event) => setForm((prev) => ({ ...prev, logoUrl: event.target.value }))}
+              className="rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm transition-colors focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100 sm:px-3 sm:py-2.5 sm:text-base"
             />
           </label>
 
-          <label>
-            Logo depuis l&apos;appareil
+          <label className="grid gap-1">
+            <span className="text-xs font-semibold text-slate-700 sm:text-sm">Logo depuis l&apos;appareil</span>
             <input
               type="file"
               accept="image/*"
               onChange={(event) => setLogoFile(event.target.files?.[0] ?? null)}
+              className="block w-full text-sm text-slate-600 file:rounded-lg file:border file:border-slate-200 file:bg-slate-50 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-slate-700"
             />
           </label>
 
-          <label>
-            Cover URL
+          <label className="grid gap-1">
+            <span className="text-xs font-semibold text-slate-700 sm:text-sm">Cover URL</span>
             <input
               type="url"
               value={form.coverUrl}
               onChange={(event) => setForm((prev) => ({ ...prev, coverUrl: event.target.value }))}
+              className="rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm transition-colors focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100 sm:px-3 sm:py-2.5 sm:text-base"
             />
           </label>
 
-          <label>
-            Cover depuis l&apos;appareil
+          <label className="grid gap-1">
+            <span className="text-xs font-semibold text-slate-700 sm:text-sm">Cover depuis l&apos;appareil</span>
             <input
               type="file"
               accept="image/*"
               onChange={(event) => setCoverFile(event.target.files?.[0] ?? null)}
+              className="block w-full text-sm text-slate-600 file:rounded-lg file:border file:border-slate-200 file:bg-slate-50 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-slate-700"
             />
           </label>
 
-          <label>
-            Horaires
-            <div className="time-input-group">
+          <label className="grid gap-1">
+            <span className="text-xs font-semibold text-slate-700 sm:text-sm">Horaires</span>
+            <div className="flex gap-2 items-end">
               <input
                 type="time"
                 value={openingTime}
                 onChange={(event) => setOpeningTime(event.target.value)}
                 aria-label="Heure d'ouverture"
+                className="flex-1 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm transition-colors focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100 sm:px-3 sm:py-2.5 sm:text-base"
               />
-              <span>à</span>
+              <span className="flex-shrink-0 text-sm text-slate-600">à</span>
               <input
                 type="time"
                 value={closingTime}
                 onChange={(event) => setClosingTime(event.target.value)}
                 aria-label="Heure de fermeture"
+                className="flex-1 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm transition-colors focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100 sm:px-3 sm:py-2.5 sm:text-base"
               />
             </div>
           </label>
 
-          <label className="full-width">
-            Description
+          <label className="col-span-full grid gap-1">
+            <span className="text-xs font-semibold text-slate-700 sm:text-sm">Description</span>
             <textarea
               value={form.description}
               onChange={(event) =>
                 setForm((prev) => ({ ...prev, description: event.target.value }))
               }
               rows={3}
+              className="rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm transition-colors focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100 sm:px-3 sm:py-2.5 sm:text-base"
             />
           </label>
 
-          <label>
+          <label className="col-span-full flex items-center gap-2">
             <input
               type="checkbox"
               checked={form.isPublished}
               onChange={(event) =>
                 setForm((prev) => ({ ...prev, isPublished: event.target.checked }))
               }
+              className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
             />
-            Boutique publiee
+            <span className="text-sm font-semibold text-slate-700 sm:text-base">Boutique publiee</span>
           </label>
 
-          <div className="full-width">
-            <button type="submit" disabled={saving}>
+          <div className="col-span-full">
+            <button type="submit" disabled={saving} className="rounded-lg border border-emerald-600 bg-gradient-to-b from-emerald-600 to-emerald-700 px-3 py-2 font-bold text-white transition-colors hover:from-emerald-700 hover:to-emerald-800 disabled:opacity-65 sm:px-4 sm:py-2.5">
               {saving ? "Enregistrement..." : "Enregistrer"}
             </button>
           </div>
         </form>
 
-        {shopPreview ? <p className="muted">Lien public: {shopPreview}</p> : null}
-        {logoFile ? <p className="muted">Logo selectionne: {logoFile.name}</p> : null}
-        {coverFile ? <p className="muted">Cover selectionnee: {coverFile.name}</p> : null}
-        {success ? <p className="feedback success">{success}</p> : null}
-        {error ? <p className="feedback error">{error}</p> : null}
+        {shopPreview ? <p className="mt-3 text-xs text-slate-600 sm:text-sm">Lien public: {shopPreview}</p> : null}
+        {logoFile ? <p className="mt-2 text-xs text-slate-600 sm:text-sm">Logo selectionne: {logoFile.name}</p> : null}
+        {coverFile ? <p className="mt-2 text-xs text-slate-600 sm:text-sm">Cover selectionnee: {coverFile.name}</p> : null}
+        {success ? <p className="mt-3 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700 sm:py-2.5 sm:text-base">{success}</p> : null}
+        {error ? <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 sm:py-2.5 sm:text-base">{error}</p> : null}
       </section>
     </main>
   );

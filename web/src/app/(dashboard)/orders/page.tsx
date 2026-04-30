@@ -259,38 +259,38 @@ export default function OrdersPage() {
   }
 
   return (
-    <main className="page-stack merchant-grid">
-      <section className="card merchant-hero">
-        <h1>Commandes</h1>
-        <p>Cree et suis les commandes en un coup d&apos;oeil.</p>
+    <main className="grid gap-2.5 p-3 sm:gap-3.5 sm:p-4 lg:gap-4 lg:p-5">
+      <section className="rounded-2xl border border-slate-200 bg-[radial-gradient(circle_at_8%_16%,rgba(34,136,102,0.09)_0%,transparent_46%),linear-gradient(145deg,#ffffff_0%,#f8fbf9_100%)] p-4 sm:p-5">
+        <h1 className="mb-2 text-2xl font-bold leading-tight text-slate-900 sm:text-2.5xl">Commandes</h1>
+        <p className="mb-4 max-w-2xl text-sm text-slate-600 sm:text-base">Cree et suis les commandes en un coup d&apos;oeil.</p>
 
-        <div className="merchant-kpi">
-          <article>
-            <span>Commandes visibles</span>
-            <strong>{orders.length}</strong>
+        <div className="mt-3 grid gap-2 grid-cols-2 sm:gap-2.5 lg:grid-cols-4">
+          <article className="rounded-lg border border-slate-200 bg-slate-50 p-2.5 sm:p-3">
+            <span className="block text-xs font-semibold text-slate-600 sm:text-sm">Commandes visibles</span>
+            <strong className="text-base font-bold text-slate-900 sm:text-lg">{orders.length}</strong>
           </article>
-          <article>
-            <span>Actives</span>
-            <strong>{pendingCount}</strong>
+          <article className="rounded-lg border border-slate-200 bg-slate-50 p-2.5 sm:p-3">
+            <span className="block text-xs font-semibold text-slate-600 sm:text-sm">Actives</span>
+            <strong className="text-base font-bold text-slate-900 sm:text-lg">{pendingCount}</strong>
           </article>
-          <article>
-            <span>Livrees</span>
-            <strong>{deliveredCount}</strong>
+          <article className="rounded-lg border border-slate-200 bg-slate-50 p-2.5 sm:p-3">
+            <span className="block text-xs font-semibold text-slate-600 sm:text-sm">Livrees</span>
+            <strong className="text-base font-bold text-slate-900 sm:text-lg">{deliveredCount}</strong>
           </article>
-          <article>
-            <span>Total courant</span>
-            <strong>{formatPriceCFA(totalPreview)}</strong>
+          <article className="rounded-lg border border-slate-200 bg-slate-50 p-2.5 sm:p-3">
+            <span className="block text-xs font-semibold text-slate-600 sm:text-sm">Total courant</span>
+            <strong className="text-base font-bold text-slate-900 sm:text-lg">{formatPriceCFA(totalPreview)}</strong>
           </article>
         </div>
       </section>
 
-      <section className="card merchant-surface">
-        {liveNotice ? <p className="feedback success">{liveNotice}</p> : null}
+      <section className="rounded-2xl border border-slate-200 bg-gradient-to-b from-white to-slate-50 p-4 sm:p-5">
+        {liveNotice ? <p className="mb-3 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700 sm:py-2.5 sm:text-base">{liveNotice}</p> : null}
 
-        <form className="form-grid" onSubmit={handleCreateOrder}>
-          <label>
-            Client
-            <select value={customerId} onChange={(event) => setCustomerId(event.target.value)}>
+        <form className="mt-3 grid gap-2 grid-cols-1 sm:grid-cols-[repeat(auto-fit,minmax(220px,1fr))] lg:grid-cols-[repeat(auto-fit,minmax(250px,1fr))] lg:gap-3" onSubmit={handleCreateOrder}>
+          <label className="grid gap-1">
+            <span className="text-xs font-semibold text-slate-700 sm:text-sm">Client</span>
+            <select value={customerId} onChange={(event) => setCustomerId(event.target.value)} className="rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm transition-colors focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100 sm:px-3 sm:py-2.5 sm:text-base">
               <option value="">Selectionner un client</option>
               {customers.map((customer) => (
                 <option key={customer.id} value={customer.id}>
@@ -300,11 +300,11 @@ export default function OrdersPage() {
             </select>
           </label>
 
-          <div className="full-width line-items">
+          <div className="col-span-full grid gap-2 sm:gap-2.5">
             {lines.map((line, index) => (
-              <div className="line-row" key={`${index}-${line.productId || "new"}`}>
-                <label>
-                  Produit
+              <div className="grid gap-2 grid-cols-1 sm:grid-cols-[minmax(180px,2fr)_minmax(100px,1fr)_auto] items-end sm:gap-2.5" key={`${index}-${line.productId || "new"}`}>
+                <label className="grid gap-1">
+                  <span className="text-xs font-semibold text-slate-700 sm:text-sm">Produit</span>
                   <select
                     value={line.productId}
                     onChange={(event) => {
@@ -315,6 +315,7 @@ export default function OrdersPage() {
                       };
                       setLines(next);
                     }}
+                    className="rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm transition-colors focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100 sm:px-3 sm:py-2.5 sm:text-base"
                   >
                     <option value="">Selectionner un produit</option>
                     {products.map((product) => (
@@ -325,8 +326,8 @@ export default function OrdersPage() {
                   </select>
                 </label>
 
-                <label>
-                  Quantite
+                <label className="grid gap-1">
+                  <span className="text-xs font-semibold text-slate-700 sm:text-sm">Quantite</span>
                   <input
                     type="number"
                     min={1}
@@ -337,6 +338,7 @@ export default function OrdersPage() {
                       next[index] = { ...next[index], quantity: value };
                       setLines(next);
                     }}
+                    className="rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm transition-colors focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100 sm:px-3 sm:py-2.5 sm:text-base"
                   />
                 </label>
 
@@ -346,64 +348,66 @@ export default function OrdersPage() {
                     setLines((current) => current.filter((_, currentIndex) => currentIndex !== index));
                   }}
                   disabled={lines.length === 1}
+                  className="rounded-lg border border-slate-300 bg-slate-100 px-2.5 py-2 text-xs font-semibold text-slate-900 transition-colors hover:bg-slate-200 disabled:opacity-50 sm:px-3 sm:py-2.5 sm:text-sm"
                 >
                   Retirer
                 </button>
               </div>
             ))}
 
-            <div className="line-actions">
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
               <button
                 type="button"
                 onClick={() => {
                   setLines((current) => [...current, { productId: "", quantity: 1 }]);
                 }}
+                className="rounded-lg border border-slate-300 bg-slate-100 px-2.5 py-2 text-xs font-semibold text-slate-900 transition-colors hover:bg-slate-200 sm:px-3 sm:py-2.5 sm:text-sm"
               >
                 Ajouter une ligne
               </button>
-              <span className="muted">Total estime: {formatPriceCFA(totalPreview)}</span>
+              <span className="text-xs text-slate-600 sm:text-sm">Total estime: {formatPriceCFA(totalPreview)}</span>
             </div>
           </div>
 
-          <div className="full-width">
-            <button type="submit" disabled={submitting}>
+          <div className="col-span-full">
+            <button type="submit" disabled={submitting} className="w-full rounded-lg border border-emerald-600 bg-gradient-to-b from-emerald-600 to-emerald-700 px-3 py-2 font-bold text-white transition-colors hover:from-emerald-700 hover:to-emerald-800 disabled:opacity-65 sm:w-auto sm:px-4 sm:py-2.5">
               {submitting ? "Creation..." : "Creer la commande"}
             </button>
           </div>
         </form>
 
-        {feedback ? <p className="feedback success">{feedback}</p> : null}
-        {error ? <p className="feedback error">{error}</p> : null}
+        {feedback ? <p className="mt-3 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700 sm:py-2.5 sm:text-base">{feedback}</p> : null}
+        {error ? <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 sm:py-2.5 sm:text-base">{error}</p> : null}
       </section>
 
-      <section className="card merchant-surface">
-        <div className="section-head">
-          <h2>Suivi des commandes</h2>
-          <div className="segmented" role="tablist" aria-label="Filtre de statut">
+      <section className="rounded-2xl border border-slate-200 bg-gradient-to-b from-white to-slate-50 p-4 sm:p-5">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-xl font-bold text-slate-900 sm:text-2xl">Suivi des commandes</h2>
+          <div className="inline-flex gap-0 border border-slate-300 rounded-lg overflow-hidden bg-slate-50" role="tablist" aria-label="Filtre de statut">
             <button
               type="button"
-              className={statusFilter === "" ? "active" : ""}
+              className={`border-r border-slate-300 bg-slate-50 px-2 py-1.5 text-xs font-semibold transition-colors sm:px-3 sm:py-2 sm:text-sm ${statusFilter === "" ? "bg-emerald-50 text-emerald-700 border-slate-300" : "text-slate-700 hover:bg-slate-100"}`}
               onClick={() => setStatusFilter("")}
             >
               Toutes
             </button>
             <button
               type="button"
-              className={statusFilter === "new" ? "active" : ""}
+              className={`border-r border-slate-300 bg-slate-50 px-2 py-1.5 text-xs font-semibold transition-colors sm:px-3 sm:py-2 sm:text-sm ${statusFilter === "new" ? "bg-emerald-50 text-emerald-700" : "text-slate-700 hover:bg-slate-100"}`}
               onClick={() => setStatusFilter("new")}
             >
               Nouvelles
             </button>
             <button
               type="button"
-              className={statusFilter === "in_progress" ? "active" : ""}
+              className={`border-r border-slate-300 bg-slate-50 px-2 py-1.5 text-xs font-semibold transition-colors sm:px-3 sm:py-2 sm:text-sm ${statusFilter === "in_progress" ? "bg-emerald-50 text-emerald-700" : "text-slate-700 hover:bg-slate-100"}`}
               onClick={() => setStatusFilter("in_progress")}
             >
               En cours
             </button>
             <button
               type="button"
-              className={statusFilter === "delivered" ? "active" : ""}
+              className={`bg-slate-50 px-2 py-1.5 text-xs font-semibold transition-colors sm:px-3 sm:py-2 sm:text-sm ${statusFilter === "delivered" ? "bg-emerald-50 text-emerald-700 border-slate-300" : "text-slate-700 hover:bg-slate-100"}`}
               onClick={() => setStatusFilter("delivered")}
             >
               Livrees
@@ -411,14 +415,14 @@ export default function OrdersPage() {
           </div>
         </div>
 
-        {loading ? <p className="muted">Chargement des commandes...</p> : null}
+        {loading ? <p className="py-4 text-center text-sm text-slate-600">Chargement des commandes...</p> : null}
 
         {!loading && orders.length === 0 ? (
-          <p className="muted">Aucune commande pour le moment.</p>
+          <p className="py-4 text-center text-sm text-slate-600">Aucune commande pour le moment.</p>
         ) : null}
 
         {!loading && orders.length > 0 ? (
-          <div className="list-cards">
+          <div className="grid gap-2 grid-cols-1 sm:gap-2.5 lg:grid-cols-2">
             {orders.map((order) => {
               const initials = order.customer.fullName
                 .split(" ")
@@ -427,31 +431,31 @@ export default function OrdersPage() {
                 .join("");
 
               return (
-                <article key={order.id} className="order-card">
-                  <div className="order-card-head">
-                    <div className="order-card-meta">
-                      <span className="avatar">{initials || "C"}</span>
-                      <div className="list-main">
-                        <strong>{order.customer.fullName}</strong>
-                        <span className="order-id">ID: {order.id}</span>
-                        <span>{new Date(order.createdAt).toLocaleDateString()}</span>
+                <article key={order.id} className="rounded-lg border border-slate-200 BG-white p-3 grid gap-2 sm:gap-3 sm:p-3.5">
+                  <div className="flex flex-wrap justify-between gap-3 items-start">
+                    <div className="flex gap-2 items-start">
+                      <span className="inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border border-slate-200 bg-gradient-to-b from-emerald-500 to-emerald-600 font-semibold text-xs text-white sm:h-10 sm:w-10 sm:text-sm">{initials || "C"}</span>
+                      <div className="grid gap-px">
+                        <strong className="text-xs text-slate-900 sm:text-sm">{order.customer.fullName}</strong>
+                        <span className="inline-block rounded-md border border-emerald-100 bg-emerald-50 px-1.5 py-0.5 font-mono text-xs text-emerald-700 sm:px-2">ID: {order.id}</span>
+                        <span className="text-xs text-slate-600 sm:text-sm">{new Date(order.createdAt).toLocaleDateString()}</span>
                       </div>
                     </div>
-                    <strong className="price">{formatPriceCFA(order.totalAmount)}</strong>
+                    <strong className="font-mono text-xs text-slate-900 sm:text-sm">{formatPriceCFA(order.totalAmount)}</strong>
                   </div>
 
-                  <div className="status-chips">
-                    <span>{statusLabel(order.status)}</span>
-                    <span>{paymentLabel(order.paymentStatus)}</span>
-                    <span>
+                  <div className="flex flex-wrap gap-1 sm:gap-2">
+                    <span className="inline-block rounded-full border border-slate-300 bg-slate-100 px-1.5 py-0.5 text-xs font-semibold text-slate-700">{statusLabel(order.status)}</span>
+                    <span className="inline-block rounded-full border border-slate-300 bg-slate-100 px-1.5 py-0.5 text-xs font-semibold text-slate-700">{paymentLabel(order.paymentStatus)}</span>
+                    <span className="inline-block rounded-full border border-slate-300 bg-slate-100 px-1.5 py-0.5 text-xs font-semibold text-slate-700">
                       {order.paymentMethod
                         ? paymentMethodLabel(order.paymentMethod)
                         : "Mode non defini"}
                     </span>
-                    <span>Articles: {order.items.reduce((sum, item) => sum + item.quantity, 0)}</span>
+                    <span className="inline-block rounded-full border border-slate-300 bg-slate-100 px-1.5 py-0.5 text-xs font-semibold text-slate-700">Articles: {order.items.reduce((sum, item) => sum + item.quantity, 0)}</span>
                   </div>
 
-                  <div className="order-controls">
+                  <div className="grid gap-2 grid-cols-1 sm:grid-cols-2">
                     <select
                       value={order.status}
                       onChange={(event) => {
@@ -459,6 +463,7 @@ export default function OrdersPage() {
                           status: event.target.value as Order["status"],
                         });
                       }}
+                      className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs transition-colors focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100 sm:px-2.5 sm:py-2 sm:text-sm"
                     >
                       {orderStatuses.map((status) => (
                         <option key={status} value={status}>
@@ -483,6 +488,7 @@ export default function OrdersPage() {
                           paidAmount: nextPaidAmount,
                         });
                       }}
+                      className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs transition-colors focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100 sm:px-2.5 sm:py-2 sm:text-sm"
                     >
                       {paymentStatuses.map((status) => (
                         <option key={status} value={status}>
@@ -498,6 +504,7 @@ export default function OrdersPage() {
                           paymentMethod: event.target.value as NonNullable<Order["paymentMethod"]>,
                         });
                       }}
+                      className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs transition-colors focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100 sm:px-2.5 sm:py-2 sm:text-sm"
                     >
                       {paymentMethods.map((method) => (
                         <option key={method} value={method}>
@@ -518,6 +525,7 @@ export default function OrdersPage() {
                         }
                         void updateOrder(order.id, { paidAmount: value });
                       }}
+                      className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs transition-colors focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100 sm:px-2.5 sm:py-2 sm:text-sm"
                     />
                   </div>
                 </article>

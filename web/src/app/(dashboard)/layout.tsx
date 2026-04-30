@@ -28,26 +28,34 @@ export default async function DashboardLayout({
     : links;
 
   return (
-    <section className="app-shell">
-      <aside className="app-sidebar card">
+    <section className="app-shell dashboard-shell">
+      <aside className="app-sidebar dashboard-sidebar card">
         <div className="sidebar-brand">
           <span className="brand-mark" aria-hidden>
             BM
           </span>
-          <div>
+          <div className="sidebar-brand-copy">
             <strong>BizManager</strong>
             <p>Back-office commerçant</p>
           </div>
         </div>
 
+        <div className="sidebar-account">
+          <span>Compte connecté</span>
+          <strong>{session.email}</strong>
+        </div>
+
         <MerchantNav links={navLinks} />
 
-        <form className="sidebar-logout" action="/api/auth/logout" method="post">
-          <button type="submit">Deconnexion</button>
-        </form>
+        <div className="sidebar-footer">
+          <p>Suivi des ventes, commandes et clients en temps réel.</p>
+          <form className="sidebar-logout" action="/api/auth/logout" method="post">
+            <button type="submit">Déconnexion</button>
+          </form>
+        </div>
       </aside>
 
-      <div className="app-main">{children}</div>
+      <div className="app-main dashboard-main">{children}</div>
     </section>
   );
 }

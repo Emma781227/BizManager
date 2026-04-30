@@ -188,80 +188,107 @@ export default function PublicShopPage() {
 
   if (!slug) {
     return (
-      <main className="home">
-        <p className="feedback error">Boutique invalide.</p>
+      <main className="min-h-screen bg-[linear-gradient(180deg,#f7faf7_0%,#edf5ef_100%)] px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mx-auto w-full max-w-3xl rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          Boutique invalide.
+        </div>
       </main>
     );
   }
 
   if (loading && !hasLoadedRef.current) {
-    return <main className="home"><p>Chargement de la boutique...</p></main>;
+    return (
+      <main className="min-h-screen bg-[linear-gradient(180deg,#f7faf7_0%,#edf5ef_100%)] px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mx-auto w-full max-w-3xl rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 shadow-sm">
+          Chargement de la boutique...
+        </div>
+      </main>
+    );
   }
 
   if (error || !shop) {
     return (
-      <main className="home">
-        <p className="feedback error">{error ?? "Boutique introuvable"}</p>
+      <main className="min-h-screen bg-[linear-gradient(180deg,#f7faf7_0%,#edf5ef_100%)] px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mx-auto w-full max-w-3xl rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          {error ?? "Boutique introuvable"}
+        </div>
       </main>
     );
   }
 
   return (
-    <main className="storefront-wrap">
-      <section className="storefront-phone">
-        <header className="storefront-topbar">
-          <span className="storefront-brandmark">BM</span>
-          <strong>{shop.name}</strong>
-          <span className="storefront-icon">🔔</span>
+    <main className="min-h-screen bg-[linear-gradient(180deg,#f7faf7_0%,#edf5ef_100%)] px-4 py-6 text-slate-900 sm:px-6 lg:px-8">
+      <section className="mx-auto w-full max-w-7xl rounded-3xl border border-emerald-100 bg-white p-5 shadow-[0_24px_80px_rgba(15,23,42,0.10)] sm:p-8">
+        <header className="mb-6 flex items-center justify-between border-b border-slate-200 pb-4">
+          <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600 text-xs font-bold text-white">BM</div>
+          <strong className="truncate px-4 text-lg font-semibold text-slate-950">{shop.name}</strong>
+          <span className="inline-flex h-10 min-w-10 items-center justify-center rounded-xl bg-emerald-50 px-3 text-sm font-semibold text-emerald-700">Live</span>
         </header>
 
-        <section className="storefront-hero">
-          {shop.coverUrl ? <img src={shop.coverUrl} alt={shop.name} className="storefront-cover" /> : null}
-          <div className="storefront-hero-card">
-            {shop.logoUrl ? <img src={shop.logoUrl} alt={shop.name} className="storefront-logo" /> : <span className="storefront-logo-fallback">🏪</span>}
-            <h1>{shop.name}</h1>
-            <p>{shop.description ?? "Decouvrez notre selection de produits."}</p>
-            <div className="storefront-hero-actions">
-              <button type="button" className="storefront-cta" onClick={scrollToProducts}>
+        <section className="relative overflow-hidden rounded-3xl border border-slate-200 bg-slate-50" ref={productsSectionRef}>
+          {shop.coverUrl ? <img src={shop.coverUrl} alt={shop.name} className="h-48 w-full object-cover sm:h-56" /> : null}
+
+          <div className="relative grid gap-4 p-5 sm:p-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-end">
+            <div className="space-y-3">
+              <div className="inline-flex items-center gap-3 rounded-full border border-emerald-100 bg-white px-3 py-2">
+                {shop.logoUrl ? (
+                  <img src={shop.logoUrl} alt={shop.name} className="h-8 w-8 rounded-full object-cover" />
+                ) : (
+                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-600 text-xs font-semibold text-white">BM</span>
+                )}
+                <span className="text-sm font-medium text-emerald-700">Boutique en ligne</span>
+              </div>
+
+              <h1 className="text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">{shop.name}</h1>
+              <p className="max-w-2xl text-sm leading-7 text-slate-600 sm:text-base">{shop.description ?? "Decouvrez notre selection de produits."}</p>
+            </div>
+
+            <div className="flex flex-wrap gap-3 lg:justify-end">
+              <button
+                type="button"
+                className="inline-flex items-center justify-center rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700"
+                onClick={scrollToProducts}
+              >
                 Voir les produits
               </button>
-              <button type="button" className="storefront-icon-btn" aria-label="Rechercher">
-                🔍
+              <button type="button" className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50" onClick={openMobileFilters}>
+                Filtrer
               </button>
             </div>
           </div>
         </section>
 
-        <section className="storefront-section" ref={productsSectionRef}>
-          <div className="storefront-section-head">
-            <h2>Nos produits</h2>
-            {isFiltering ? <span className="muted">Mise a jour des filtres...</span> : null}
-            <label className="inline-check">
-              <input type="checkbox" checked={inStockOnly} onChange={(event) => setInStockOnly(event.target.checked)} />
+        <section className="mt-6" ref={productsSectionRef}>
+          <div className="mb-4 flex flex-wrap items-center gap-3">
+            <h2 className="text-xl font-semibold text-slate-950">Nos produits</h2>
+            {isFiltering ? <span className="text-sm text-slate-500">Mise a jour des filtres...</span> : null}
+            <label className="ml-auto inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+              <input type="checkbox" checked={inStockOnly} onChange={(event) => setInStockOnly(event.target.checked)} className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" />
               En stock
             </label>
           </div>
 
-          <div className="storefront-search-row">
+          <div className="mb-5 grid gap-3 sm:grid-cols-[1fr_auto_auto]">
             <input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Rechercher un produit"
               aria-label="Recherche produits"
+              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
             />
-            <button type="button" className="storefront-filter-trigger" onClick={openMobileFilters}>
+            <button type="button" className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 lg:hidden" onClick={openMobileFilters}>
               Filtrer
             </button>
-            <button type="button" className="storefront-reset-btn" onClick={resetFilters}>
+            <button type="button" className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 px-5 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-100" onClick={resetFilters}>
               Reinitialiser
             </button>
           </div>
 
-          <div className="storefront-layout">
-            <aside className="storefront-filters" aria-label="Filtres produits">
-              <div className="storefront-filter-card">
-                <h3>Trier</h3>
-                <select value={sortBy} onChange={(event) => setSortBy(event.target.value as typeof sortBy)}>
+          <div className="grid gap-5 lg:grid-cols-[280px_1fr]">
+            <aside className="hidden h-fit space-y-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 lg:block" aria-label="Filtres produits">
+              <div>
+                <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-emerald-700">Trier</h3>
+                <select value={sortBy} onChange={(event) => setSortBy(event.target.value as typeof sortBy)} className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100">
                   <option value="newest">Les plus recents</option>
                   <option value="price_asc">Prix croissant</option>
                   <option value="price_desc">Prix decroissant</option>
@@ -269,120 +296,81 @@ export default function PublicShopPage() {
                 </select>
               </div>
 
-              <div className="storefront-filter-card">
-                <h3>Categorie</h3>
-                <div className="storefront-filter-list">
-                  {availableCategories.length === 0 ? <p className="muted">Aucune categorie</p> : null}
+              <div>
+                <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-emerald-700">Categorie</h3>
+                <div className="mt-2 grid gap-2 text-sm text-slate-700">
+                  {availableCategories.length === 0 ? <p className="text-sm text-slate-500">Aucune categorie</p> : null}
                   {availableCategories.map((category) => (
-                    <label key={category} className="storefront-check-row">
-                      <input
-                        type="checkbox"
-                        checked={selectedCategories.includes(category)}
-                        onChange={() => toggleCategory(category)}
-                      />
+                    <label key={category} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2">
+                      <input type="checkbox" checked={selectedCategories.includes(category)} onChange={() => toggleCategory(category)} className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" />
                       <span>{category}</span>
                     </label>
                   ))}
                 </div>
               </div>
 
-              <div className="storefront-filter-card">
-                <h3>Prix</h3>
-                <div className="storefront-price-filter">
-                  <input
-                    value={minPrice}
-                    onChange={(event) => setMinPrice(event.target.value)}
-                    placeholder="Min"
-                    inputMode="decimal"
-                  />
-                  <span>-</span>
-                  <input
-                    value={maxPrice}
-                    onChange={(event) => setMaxPrice(event.target.value)}
-                    placeholder="Max"
-                    inputMode="decimal"
-                  />
+              <div>
+                <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-emerald-700">Prix</h3>
+                <div className="mt-2 grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+                  <input value={minPrice} onChange={(event) => setMinPrice(event.target.value)} placeholder="Min" inputMode="decimal" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100" />
+                  <span className="text-slate-400">-</span>
+                  <input value={maxPrice} onChange={(event) => setMaxPrice(event.target.value)} placeholder="Max" inputMode="decimal" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100" />
                 </div>
               </div>
 
-              <div className="storefront-filter-card">
-                <h3>Disponibilite</h3>
-                <div className="storefront-filter-list">
-                  <label className="storefront-check-row">
-                    <input
-                      type="radio"
-                      name="stockStatus"
-                      checked={stockStatus === "all"}
-                      onChange={() => setStockStatus("all")}
-                    />
-                    <span>Tous</span>
-                  </label>
-                  <label className="storefront-check-row">
-                    <input
-                      type="radio"
-                      name="stockStatus"
-                      checked={stockStatus === "in"}
-                      onChange={() => setStockStatus("in")}
-                    />
-                    <span>En stock</span>
-                  </label>
-                  <label className="storefront-check-row">
-                    <input
-                      type="radio"
-                      name="stockStatus"
-                      checked={stockStatus === "low"}
-                      onChange={() => setStockStatus("low")}
-                    />
-                    <span>Stock bas</span>
-                  </label>
-                  <label className="storefront-check-row">
-                    <input
-                      type="radio"
-                      name="stockStatus"
-                      checked={stockStatus === "out"}
-                      onChange={() => setStockStatus("out")}
-                    />
-                    <span>Rupture</span>
-                  </label>
+              <div>
+                <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-emerald-700">Disponibilite</h3>
+                <div className="mt-2 grid gap-2 text-sm text-slate-700">
+                  {[
+                    ["all", "Tous"],
+                    ["in", "En stock"],
+                    ["low", "Stock bas"],
+                    ["out", "Rupture"],
+                  ].map(([value, label]) => (
+                    <label key={value} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2">
+                      <input type="radio" name="stockStatus" checked={stockStatus === value} onChange={() => setStockStatus(value as typeof stockStatus)} className="h-4 w-4 border-slate-300 text-emerald-600 focus:ring-emerald-500" />
+                      <span>{label}</span>
+                    </label>
+                  ))}
                 </div>
               </div>
             </aside>
 
             <div>
-              <div className="storefront-chips">
-                <span className="active">Catalogue</span>
-                {shop.category ? <span>{shop.category}</span> : null}
-                {shop.city ? <span>{shop.city}</span> : null}
-                <span>{products.length} produit(s)</span>
+              <div className="mb-4 flex flex-wrap gap-2">
+                <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">Catalogue</span>
+                {shop.category ? <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-600">{shop.category}</span> : null}
+                {shop.city ? <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-600">{shop.city}</span> : null}
+                <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-600">{products.length} produit(s)</span>
               </div>
 
-              {products.length === 0 ? <p className="muted">Aucun produit disponible pour ces filtres.</p> : null}
+              {products.length === 0 ? <p className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">Aucun produit disponible pour ces filtres.</p> : null}
 
-              <div className="storefront-grid">
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 {products.map((product) => {
                   const previewImage = product.imageUrl || product.imageVariants?.[0] || null;
 
                   return (
-                    <article className="storefront-product-card" key={product.id}>
+                    <article key={product.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
                       {previewImage ? (
-                        <img src={previewImage} alt={product.name} className="storefront-product-image" />
+                        <img src={previewImage} alt={product.name} className="h-40 w-full object-cover" />
                       ) : (
-                        <div className="storefront-product-image placeholder">Image</div>
+                        <div className="flex h-40 w-full items-center justify-center bg-slate-50 text-sm text-slate-500">Image</div>
                       )}
-                      <div className="storefront-product-body">
-                        <strong>{product.name}</strong>
-                        <span className="price">{formatPriceCFA(product.unitPrice)}</span>
-                        <span className={product.stock > 0 ? "stock ok" : "stock out"}>
+                      <div className="grid gap-2 p-4">
+                        <strong className="text-base text-slate-900">{product.name}</strong>
+                        <span className="text-lg font-semibold text-emerald-700">{formatPriceCFA(product.unitPrice)}</span>
+                        <span className={`w-fit rounded-full px-3 py-1 text-xs font-semibold ${product.stock > 0 ? "border border-emerald-200 bg-emerald-50 text-emerald-700" : "border border-rose-200 bg-rose-50 text-rose-700"}`}>
                           {product.stock > 0 ? "En stock" : "Rupture"}
                         </span>
+                        <Link
+                          href={`/shop/${slug}/products/${product.id}`}
+                          aria-label={`Voir ${product.name}`}
+                          className="mt-2 inline-flex items-center justify-center rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                        >
+                          Voir
+                        </Link>
                       </div>
-                      <Link
-                        className="storefront-stretched-link"
-                        href={`/shop/${slug}/products/${product.id}`}
-                        aria-label={`Voir ${product.name}`}
-                      >
-                        Voir
-                      </Link>
                     </article>
                   );
                 })}
@@ -391,123 +379,80 @@ export default function PublicShopPage() {
           </div>
         </section>
 
-        <nav className="storefront-bottom-nav" aria-label="Navigation client">
-          <span className="active">🏠</span>
-          <span>🧭</span>
-          <span>🛍️</span>
-          <span>🛒</span>
-          <span>👤</span>
+        <nav className="mt-8 grid grid-cols-5 gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-2 text-center text-sm text-slate-500" aria-label="Navigation client">
+          <span className="rounded-xl bg-emerald-100 px-2 py-2 font-semibold text-emerald-700">Accueil</span>
+          <span className="rounded-xl px-2 py-2">Explorer</span>
+          <span className="rounded-xl px-2 py-2">Produits</span>
+          <span className="rounded-xl px-2 py-2">Panier</span>
+          <span className="rounded-xl px-2 py-2">Compte</span>
         </nav>
 
         {mobileFiltersOpen ? (
-          <div
-            className="storefront-filter-overlay"
-            role="dialog"
-            aria-modal="true"
-            aria-label="Filtres produits"
-            onClick={() => setMobileFiltersOpen(false)}
-          >
-            <div className="storefront-filter-sheet" onClick={(event) => event.stopPropagation()}>
-              <div className="storefront-filter-sheet-head">
-                <strong>Filtres</strong>
-                <button type="button" onClick={() => setMobileFiltersOpen(false)} aria-label="Fermer les filtres">
+          <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/45 p-4 backdrop-blur-sm lg:hidden" role="dialog" aria-modal="true" aria-label="Filtres produits" onClick={() => setMobileFiltersOpen(false)}>
+            <div className="max-h-[88vh] w-full max-w-lg overflow-y-auto rounded-3xl border border-slate-200 bg-white p-5" onClick={(event) => event.stopPropagation()}>
+              <div className="mb-4 flex items-center justify-between">
+                <strong className="text-lg font-semibold text-slate-950">Filtres</strong>
+                <button type="button" onClick={() => setMobileFiltersOpen(false)} aria-label="Fermer les filtres" className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-600 transition hover:bg-slate-50">
                   ✕
                 </button>
               </div>
 
-              <div className="storefront-filter-card">
-                <h3>Trier</h3>
-                <select value={draftSortBy} onChange={(event) => setDraftSortBy(event.target.value as typeof draftSortBy)}>
-                  <option value="newest">Les plus recents</option>
-                  <option value="price_asc">Prix croissant</option>
-                  <option value="price_desc">Prix decroissant</option>
-                  <option value="name_asc">Nom A-Z</option>
-                </select>
-              </div>
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-emerald-700">Trier</h3>
+                  <select value={draftSortBy} onChange={(event) => setDraftSortBy(event.target.value as typeof draftSortBy)} className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100">
+                    <option value="newest">Les plus recents</option>
+                    <option value="price_asc">Prix croissant</option>
+                    <option value="price_desc">Prix decroissant</option>
+                    <option value="name_asc">Nom A-Z</option>
+                  </select>
+                </div>
 
-              <div className="storefront-filter-card">
-                <h3>Categorie</h3>
-                <div className="storefront-filter-list">
-                  {availableCategories.length === 0 ? <p className="muted">Aucune categorie</p> : null}
-                  {availableCategories.map((category) => (
-                    <label key={`mobile-${category}`} className="storefront-check-row">
-                      <input
-                        type="checkbox"
-                        checked={draftSelectedCategories.includes(category)}
-                        onChange={() => toggleDraftCategory(category)}
-                      />
-                      <span>{category}</span>
-                    </label>
-                  ))}
+                <div>
+                  <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-emerald-700">Categorie</h3>
+                  <div className="mt-2 grid gap-2 text-sm text-slate-700">
+                    {availableCategories.length === 0 ? <p className="text-sm text-slate-500">Aucune categorie</p> : null}
+                    {availableCategories.map((category) => (
+                      <label key={`mobile-${category}`} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2">
+                        <input type="checkbox" checked={draftSelectedCategories.includes(category)} onChange={() => toggleDraftCategory(category)} className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" />
+                        <span>{category}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-emerald-700">Prix</h3>
+                  <div className="mt-2 grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+                    <input value={draftMinPrice} onChange={(event) => setDraftMinPrice(event.target.value)} placeholder="Min" inputMode="decimal" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100" />
+                    <span className="text-slate-400">-</span>
+                    <input value={draftMaxPrice} onChange={(event) => setDraftMaxPrice(event.target.value)} placeholder="Max" inputMode="decimal" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100" />
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-emerald-700">Disponibilite</h3>
+                  <div className="mt-2 grid gap-2 text-sm text-slate-700">
+                    {[
+                      ["all", "Tous"],
+                      ["in", "En stock"],
+                      ["low", "Stock bas"],
+                      ["out", "Rupture"],
+                    ].map(([value, label]) => (
+                      <label key={value} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2">
+                        <input type="radio" name="mobileStockStatus" checked={draftStockStatus === value} onChange={() => setDraftStockStatus(value as typeof draftStockStatus)} className="h-4 w-4 border-slate-300 text-emerald-600 focus:ring-emerald-500" />
+                        <span>{label}</span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
               </div>
 
-              <div className="storefront-filter-card">
-                <h3>Prix</h3>
-                <div className="storefront-price-filter">
-                  <input
-                    value={draftMinPrice}
-                    onChange={(event) => setDraftMinPrice(event.target.value)}
-                    placeholder="Min"
-                    inputMode="decimal"
-                  />
-                  <span>-</span>
-                  <input
-                    value={draftMaxPrice}
-                    onChange={(event) => setDraftMaxPrice(event.target.value)}
-                    placeholder="Max"
-                    inputMode="decimal"
-                  />
-                </div>
-              </div>
-
-              <div className="storefront-filter-card">
-                <h3>Disponibilite</h3>
-                <div className="storefront-filter-list">
-                  <label className="storefront-check-row">
-                    <input
-                      type="radio"
-                      name="mobileStockStatus"
-                      checked={draftStockStatus === "all"}
-                      onChange={() => setDraftStockStatus("all")}
-                    />
-                    <span>Tous</span>
-                  </label>
-                  <label className="storefront-check-row">
-                    <input
-                      type="radio"
-                      name="mobileStockStatus"
-                      checked={draftStockStatus === "in"}
-                      onChange={() => setDraftStockStatus("in")}
-                    />
-                    <span>En stock</span>
-                  </label>
-                  <label className="storefront-check-row">
-                    <input
-                      type="radio"
-                      name="mobileStockStatus"
-                      checked={draftStockStatus === "low"}
-                      onChange={() => setDraftStockStatus("low")}
-                    />
-                    <span>Stock bas</span>
-                  </label>
-                  <label className="storefront-check-row">
-                    <input
-                      type="radio"
-                      name="mobileStockStatus"
-                      checked={draftStockStatus === "out"}
-                      onChange={() => setDraftStockStatus("out")}
-                    />
-                    <span>Rupture</span>
-                  </label>
-                </div>
-              </div>
-
-              <div className="storefront-filter-sheet-actions">
-                <button type="button" className="storefront-reset-btn" onClick={resetMobileDraft}>
+              <div className="mt-6 grid grid-cols-2 gap-3">
+                <button type="button" className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-100" onClick={resetMobileDraft}>
                   Reinitialiser
                 </button>
-                <button type="button" className="storefront-cta" onClick={applyMobileFilters}>
+                <button type="button" className="inline-flex items-center justify-center rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700" onClick={applyMobileFilters}>
                   Appliquer
                 </button>
               </div>
