@@ -7,7 +7,7 @@ import { productSchema } from "@/lib/validators";
 
 export const runtime = "nodejs";
 
-const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+const MAX_MEDIA_SIZE = 20 * 1024 * 1024;
 
 function normalizeCategory(value: string): string {
   return value.trim().replace(/\s+/g, " ");
@@ -60,13 +60,13 @@ function parseIntegerInput(value: FormDataEntryValue | null): number {
   return Math.trunc(parsed);
 }
 
-async function saveProductImage(file: File): Promise<string> {
-  if (!file.type.startsWith("image/")) {
-    throw new Error("Le fichier doit etre une image");
+async function saveProductMedia(file: File): Promise<string> {
+  if (!file.type.startsWith("image/") && !file.type.startsWith("video/")) {
+    throw new Error("Le fichier doit etre une image ou une video");
   }
 
-  if (file.size > MAX_IMAGE_SIZE) {
-    throw new Error("Image trop volumineuse (max 5 MB)");
+  if (file.size > MAX_MEDIA_SIZE) {
+    throw new Error("Media trop volumineux (max 20 MB)");
   }
 
   const buffer = Buffer.from(await file.arrayBuffer());
@@ -164,9 +164,9 @@ export async function PUT(
       let uploadedImageUrl: string | null = null;
       if (fileField instanceof File && fileField.size > 0) {
         try {
-          uploadedImageUrl = await saveProductImage(fileField);
+          uploadedImageUrl = await saveProductMedia(fileField);
         } catch (error) {
-          const message = error instanceof Error ? error.message : "Image invalide";
+          const message = error instanceof Error ? error.message : "Media invalide";
           return NextResponse.json({ error: message }, { status: 400 });
         }
       }
@@ -177,14 +177,14 @@ export async function PUT(
           continue;
         }
 
-        if (uploadedVariants.length >= 4) {
+        if (uploadedVariants.length >= 3) {
           break;
         }
 
         try {
-          uploadedVariants.push(await saveProductImage(field));
+          uploadedVariants.push(await saveProductMedia(field));
         } catch (error) {
-          const message = error instanceof Error ? error.message : "Image variante invalide";
+          const message = error instanceof Error ? error.message : "Media variante invalide";
           return NextResponse.json({ error: message }, { status: 400 });
         }
       }
@@ -204,7 +204,7 @@ export async function PUT(
       ]);
       const mergedImageVariants = Array.from(
         new Set([...imageVariantUrls, ...uploadedVariants].map((item) => item.trim()).filter(Boolean)),
-      ).slice(0, 4);
+      ).slice(0, 3);
 
       body = {
         name: nameValue,
@@ -214,8 +214,8 @@ export async function PUT(
         sku: skuValue || undefined,
         unitPrice: unitPriceValue,
         stock: stockValue,
-        imageUrl: uploadedImageUrl || manualImageUrl || undefined,
-        imageVariants: mergedImageVariants,
+        imageUrl: uploadedImageUrl || manualImageUrl || product.imageUrl || undefined,
+        imageVariants: mergedImageVariants.length > 0 ? mergedImageVariants : (product.imageVariants ?? []),
       };
     } catch {
       return NextResponse.json(
@@ -251,7 +251,7 @@ export async function PUT(
       unitPrice: String(result.data.unitPrice),
       stock: result.data.stock,
       imageUrl: result.data.imageUrl || null,
-      imageVariants: result.data.imageVariants ?? [],
+      imageVariants: result.data.imageVariants ?? product.imageVariants ?? [],
     },
   });
 

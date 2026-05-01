@@ -103,6 +103,8 @@ export default function ProductsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [deletingProductId, setDeletingProductId] = useState<string | null>(null);
   const [form, setForm] = useState<ProductFormState>(EMPTY_FORM);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imageVariantFiles, setImageVariantFiles] = useState<File[]>([]);
 
   const totalStock = useMemo(
     () => products.reduce((sum, product) => sum + product.stock, 0),
@@ -205,6 +207,8 @@ export default function ProductsPage() {
         setDialogMode(null);
         setActiveProductId(null);
         setForm(EMPTY_FORM);
+        setImageFile(null);
+        setImageVariantFiles([]);
       }
     }
 
@@ -216,6 +220,8 @@ export default function ProductsPage() {
     setDialogMode("create");
     setActiveProductId(null);
     setForm(EMPTY_FORM);
+    setImageFile(null);
+    setImageVariantFiles([]);
     setError(null);
     setSuccess(null);
   }
@@ -238,6 +244,8 @@ export default function ProductsPage() {
       imageUrl: product.imageUrl ?? "",
       imageVariants: (product.imageVariants ?? []).join(", "),
     });
+    setImageFile(null);
+    setImageVariantFiles([]);
     setError(null);
     setSuccess(null);
   }
@@ -246,6 +254,8 @@ export default function ProductsPage() {
     setDialogMode(null);
     setActiveProductId(null);
     setForm(EMPTY_FORM);
+    setImageFile(null);
+    setImageVariantFiles([]);
   }
 
   async function handleFormSubmit(event: FormEvent<HTMLFormElement>) {
@@ -255,7 +265,7 @@ export default function ProductsPage() {
     setSuccess(null);
 
     const mergedCategories = cleanList([form.category, form.categories].join(","));
-    const imageVariants = cleanList(form.imageVariants).slice(0, 4);
+    const imageVariants = cleanList(form.imageVariants).slice(0, 3);
 
     const payload = new FormData();
     payload.set("name", form.name);
@@ -265,8 +275,14 @@ export default function ProductsPage() {
     payload.set("sku", form.sku);
     payload.set("unitPrice", form.unitPrice);
     payload.set("stock", form.stock);
-    payload.set("imageUrl", form.imageUrl);
+    if (imageFile) {
+      payload.set("imageFile", imageFile);
+    }
     payload.set("imageVariants", JSON.stringify(imageVariants));
+
+    for (const variantFile of imageVariantFiles.slice(0, 3)) {
+      payload.append("imageVariantFiles", variantFile);
+    }
 
     try {
       const url = dialogMode === "edit" && activeProductId
@@ -354,7 +370,7 @@ export default function ProductsPage() {
             <button
               type="button"
               onClick={openCreateDialog}
-              className="inline-flex w-full items-center justify-between gap-0 self-start overflow-hidden rounded-lg border border-emerald-700 bg-emerald-600 text-sm font-semibold text-white shadow-[0_10px_25px_rgba(20,83,45,0.18)] transition-colors hover:bg-emerald-700 sm:w-[266px]"
+              className="inline-flex w-full items-center justify-between gap-0 self-start overflow-hidden rounded-lg border border-emerald-700 bg-emerald-600 text-sm font-semibold text-white shadow-[0_10px_25px_rgba(20,83,45,0.18)] transition-colors hover:bg-emerald-700 sm:w-full md:w-[266px]"
             >
               <span className="inline-flex items-center gap-2 px-4 py-2.5">
                 <span className="text-lg leading-none">+</span>
@@ -377,52 +393,57 @@ export default function ProductsPage() {
           </div>
         </section>
 
-        <section className="grid gap-2 grid-cols-2 items-stretch sm:grid-cols-4 sm:gap-2.5 lg:gap-3">
-          <article className="h-full rounded-xl border border-slate-200 bg-white px-3 py-3 shadow-sm sm:px-3.5 sm:py-3.5">
-            <div className="flex h-full min-h-[76px] items-center gap-3 sm:min-h-[92px]">
-              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-emerald-100 bg-emerald-50 text-emerald-700 shadow-sm">📦</div>
-              <div className="min-w-0 leading-tight">
-                <p className="text-xs font-semibold text-slate-500">Total produits</p>
-                <strong className="block text-xl font-bold text-slate-900">{products.length}</strong>
+        <section className="grid gap-2.5 sm:grid-cols-3 sm:gap-3 lg:gap-4">
+          <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+            <div className="flex items-start gap-3 sm:items-center sm:gap-4">
+              <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-emerald-100 bg-emerald-50 text-xl text-emerald-700 shadow-sm">
+                📦
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-slate-500">Total produits</p>
+                <div className="flex items-end gap-2">
+                  <strong className="block text-2xl font-semibold tracking-tight text-slate-900">
+                    {products.length}
+                  </strong>
+                  <span className="pb-0.5 text-sm font-semibold text-emerald-600">↗ 6,3%</span>
+                </div>
               </div>
             </div>
-            <p className="mt-2 text-xs text-slate-600">vs hier</p>
+            <p className="mt-3 text-sm text-slate-500">vs hier</p>
           </article>
-          <article className="h-full rounded-xl border border-slate-200 bg-white px-3 py-3 shadow-sm sm:px-3.5 sm:py-3.5">
-            <div className="flex h-full min-h-[76px] items-center gap-3 sm:min-h-[92px]">
-              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-emerald-100 bg-emerald-50 text-emerald-700 shadow-sm">✓</div>
-              <div className="min-w-0 leading-tight">
-                <p className="text-xs font-semibold text-slate-500">En stock</p>
-                <strong className="block text-xl font-bold text-slate-900">{products.filter((product) => product.stock > 8).length}</strong>
+          <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+            <div className="flex items-start gap-3 sm:items-center sm:gap-4">
+              <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-emerald-100 bg-emerald-50 text-xl text-emerald-700 shadow-sm">
+                ✓
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-slate-500">En stock</p>
+                <div className="flex items-end gap-2">
+                  <strong className="block text-2xl font-semibold tracking-tight text-slate-900">
+                    {products.filter((product) => product.stock > 8).length}
+                  </strong>
+                  <span className="pb-0.5 text-sm font-semibold text-emerald-600">↗ 8,1%</span>
+                </div>
               </div>
             </div>
-            <p className="mt-2 text-xs text-emerald-700">77,4% des produits</p>
+            <p className="mt-3 text-sm text-slate-500">77,4% des produits</p>
           </article>
-          <article className="h-full rounded-xl border border-slate-200 bg-white px-3 py-3 shadow-sm sm:px-3.5 sm:py-3.5">
-            <div className="flex h-full min-h-[76px] items-center gap-3 sm:min-h-[92px]">
-              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-rose-100 bg-rose-50 text-rose-600 shadow-sm">!</div>
-              <div className="min-w-0 leading-tight">
-                <p className="text-xs font-semibold text-slate-500">Rupture de stock</p>
-                <strong className="block text-xl font-bold text-slate-900">{outOfStockCount}</strong>
+          <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+            <div className="flex items-start gap-3 sm:items-center sm:gap-4">
+              <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-rose-100 bg-rose-50 text-xl text-rose-600 shadow-sm">
+                !
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-slate-500">Rupture de stock</p>
+                <div className="flex items-end gap-2">
+                  <strong className="block text-2xl font-semibold tracking-tight text-slate-900">
+                    {outOfStockCount}
+                  </strong>
+                  <span className="pb-0.5 text-sm font-semibold text-rose-600">↗ 12,7%</span>
+                </div>
               </div>
             </div>
-            <p className="mt-2 text-xs text-rose-700">22,6% des produits</p>
-          </article>
-          <article className="h-full rounded-xl border border-slate-200 bg-white px-3 py-3 shadow-sm sm:px-3.5 sm:py-3.5">
-            <div className="flex h-full min-h-[76px] items-center gap-3 sm:min-h-[92px]">
-              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-emerald-100 bg-emerald-50 text-emerald-700 shadow-sm">🏷</div>
-              <div className="min-w-0 leading-tight">
-                <p className="text-xs font-semibold text-slate-500">Categories</p>
-                <strong className="block text-xl font-bold text-slate-900">{categoryOptions.length}</strong>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={openCreateDialog}
-              className="mt-2 text-xs font-semibold text-emerald-700 hover:text-emerald-800"
-            >
-              Voir toutes
-            </button>
+            <p className="mt-3 text-sm text-slate-500">22,6% des produits</p>
           </article>
         </section>
 
@@ -442,13 +463,13 @@ export default function ProductsPage() {
             </button>
           </div>
 
-          <div className="mt-4 flex flex-wrap gap-2 sm:gap-2.5">
+          <div className="mt-4 grid gap-2 sm:grid-cols-3 sm:gap-2.5">
             <label className="grid gap-1">
               <span className="text-xs font-semibold text-slate-700">Categorie</span>
               <select
                 value={categoryFilter}
                 onChange={(event) => setCategoryFilter(event.target.value)}
-                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100"
+                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100 sm:w-auto"
               >
                 <option value="all">Toutes categories</option>
                 {categoryOptions.map((value) => (
@@ -463,7 +484,7 @@ export default function ProductsPage() {
               <select
                 value={stockFilter}
                 onChange={(event) => setStockFilter(event.target.value as "all" | "low" | "in_stock")}
-                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100"
+                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100 sm:w-auto"
               >
                 <option value="all">Tous les statuts</option>
                 <option value="low">Stock faible</option>
@@ -475,7 +496,7 @@ export default function ProductsPage() {
               <select
                 value={String(pageSize)}
                 onChange={(event) => setPageSize(Number(event.target.value))}
-                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100"
+                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100 sm:w-auto"
               >
                 <option value="10">Plus recent</option>
                 <option value="20">20 par page</option>
@@ -484,16 +505,76 @@ export default function ProductsPage() {
             </label>
           </div>
 
-          <div className="mt-4 overflow-x-auto rounded-xl border border-slate-200 bg-white">
+          <div className="mt-4 grid gap-3 sm:hidden">
+            {visibleProducts.map((product) => {
+              const tone = stockTone(product.stock);
+              const categoryLabel = [product.category, ...(product.categories ?? [])]
+                .filter((value): value is string => Boolean(value && value.trim()))
+                .map((value) => value.trim())
+                .join(", ") || "Sans categorie";
+
+              return (
+                <article key={product.id} className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+                  <div className="flex items-start gap-3">
+                    <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
+                      {product.imageUrl ? (
+                        <img src={product.imageUrl} alt={product.name} className="h-full w-full object-cover" />
+                      ) : (
+                        <div className="grid h-full w-full place-items-center text-[10px] font-bold text-slate-400">IMG</div>
+                      )}
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold text-slate-900">{product.name}</p>
+                      <p className="mt-0.5 text-xs text-slate-500">SKU: {product.sku || "-"}</p>
+                      <p className="mt-1 text-xs text-slate-500">{categoryLabel}</p>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+                    <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
+                      {formatPriceCFA(product.unitPrice)}
+                    </span>
+                    <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
+                      Stock: {product.stock}
+                    </span>
+                    <span className={`rounded-full border px-2 py-1 font-semibold ${tone.className}`}>
+                      {tone.label}
+                    </span>
+                  </div>
+
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => openEditDialog(product)}
+                      className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-900 transition-colors hover:bg-slate-200"
+                    >
+                      Modifier
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void handleDeleteProduct(product)}
+                      disabled={deletingProductId === product.id}
+                      className="inline-flex items-center justify-center rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 transition-colors hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {deletingProductId === product.id ? "Suppression..." : "Supprimer"}
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+
+          <div className="mt-4 hidden overflow-x-auto rounded-xl border border-slate-200 bg-white sm:block">
             <table className="w-full border-collapse">
               <thead className="bg-slate-50">
                 <tr className="border-b border-slate-200">
                   <th className="px-2.5 py-2 text-left text-xs font-semibold text-slate-700 sm:px-3.5 sm:py-2.5">Produit</th>
-                  <th className="px-2.5 py-2 text-left text-xs font-semibold text-slate-700 sm:px-3.5 sm:py-2.5">Categorie</th>
-                  <th className="px-2.5 py-2 text-left text-xs font-semibold text-slate-700 sm:px-3.5 sm:py-2.5">Prix</th>
+                  <th className="hidden px-2.5 py-2 text-left text-xs font-semibold text-slate-700 sm:table-cell sm:px-3.5 sm:py-2.5">Categorie</th>
+                  <th className="hidden px-2.5 py-2 text-left text-xs font-semibold text-slate-700 md:table-cell sm:px-3.5 sm:py-2.5">Prix</th>
                   <th className="px-2.5 py-2 text-left text-xs font-semibold text-slate-700 sm:px-3.5 sm:py-2.5">Stock</th>
                   <th className="px-2.5 py-2 text-left text-xs font-semibold text-slate-700 sm:px-3.5 sm:py-2.5">Statut</th>
-                  <th className="px-2.5 py-2 text-left text-xs font-semibold text-slate-700 sm:px-3.5 sm:py-2.5">Derniere mise a jour</th>
+                  <th className="hidden px-2.5 py-2 text-left text-xs font-semibold text-slate-700 lg:table-cell sm:px-3.5 sm:py-2.5">Derniere mise a jour</th>
                   <th className="px-2.5 py-2 text-right text-xs font-semibold text-slate-700 sm:px-3.5 sm:py-2.5">Actions</th>
                 </tr>
               </thead>
@@ -529,21 +610,21 @@ export default function ProductsPage() {
                             </div>
                           </div>
                         </td>
-                        <td className="px-2.5 py-2.5 text-sm text-slate-700 sm:px-3.5 sm:py-3">{categoryLabel}</td>
-                        <td className="px-2.5 py-2.5 text-sm text-slate-900 sm:px-3.5 sm:py-3">{formatPriceCFA(product.unitPrice)}</td>
+                        <td className="hidden px-2.5 py-2.5 text-sm text-slate-700 sm:table-cell sm:px-3.5 sm:py-3">{categoryLabel}</td>
+                        <td className="hidden px-2.5 py-2.5 text-sm text-slate-900 md:table-cell sm:px-3.5 sm:py-3">{formatPriceCFA(product.unitPrice)}</td>
                         <td className="px-2.5 py-2.5 text-sm text-slate-900 sm:px-3.5 sm:py-3">{product.stock}</td>
                         <td className="px-2.5 py-2.5 sm:px-3.5 sm:py-3">
                           <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${tone.className}`}>
                             {tone.label}
                           </span>
                         </td>
-                        <td className="px-2.5 py-2.5 text-sm text-slate-700 sm:px-3.5 sm:py-3">{formatDate(product.updatedAt ?? product.createdAt)}</td>
+                        <td className="hidden px-2.5 py-2.5 text-sm text-slate-700 lg:table-cell sm:px-3.5 sm:py-3">{formatDate(product.updatedAt ?? product.createdAt)}</td>
                         <td className="px-2.5 py-2.5 sm:px-3.5 sm:py-3">
-                          <div className="flex justify-end gap-1.5">
+                          <div className="flex flex-col justify-end gap-1 sm:flex-row sm:gap-1.5">
                             <button
                               type="button"
                               onClick={() => openEditDialog(product)}
-                              className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-slate-100 px-2.5 py-1.5 text-xs font-semibold text-slate-900 transition-colors hover:bg-slate-200"
+                              className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-slate-100 px-2.5 py-1.5 text-xs font-semibold text-slate-900 transition-colors hover:bg-slate-200 sm:px-3"
                             >
                               Modifier
                             </button>
@@ -551,7 +632,7 @@ export default function ProductsPage() {
                               type="button"
                               onClick={() => void handleDeleteProduct(product)}
                               disabled={deletingProductId === product.id}
-                              className="inline-flex items-center justify-center rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-semibold text-red-700 transition-colors hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                              className="inline-flex items-center justify-center rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-semibold text-red-700 transition-colors hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60 sm:px-3"
                             >
                               {deletingProductId === product.id ? "Suppression..." : "Supprimer"}
                             </button>
@@ -700,7 +781,7 @@ export default function ProductsPage() {
             }
           }}
         >
-          <section className="w-full max-w-3xl rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl sm:p-5">
+          <section className="w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl sm:p-5">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-700">
@@ -790,22 +871,37 @@ export default function ProductsPage() {
                 />
               </label>
               <label className="grid gap-1 sm:col-span-2">
-                <span className="text-sm font-semibold text-slate-700">URL image</span>
+                <span className="text-sm font-semibold text-slate-700">Media principal</span>
                 <input
-                  value={form.imageUrl}
-                  onChange={(event) => setForm((previous) => ({ ...previous, imageUrl: event.target.value }))}
+                  type="file"
+                  accept="image/*,video/*"
+                  onChange={(event) => setImageFile(event.currentTarget.files?.[0] ?? null)}
                   className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100"
-                  placeholder="https://..."
                 />
+                {imageFile ? (
+                  <p className="text-xs text-slate-500">Selectionne: {imageFile.name}</p>
+                ) : (
+                  <p className="text-xs text-slate-500">Choisis une image ou une video depuis l'appareil.</p>
+                )}
               </label>
               <label className="grid gap-1 sm:col-span-2">
-                <span className="text-sm font-semibold text-slate-700">Variantes d'image (virgules)</span>
+                <span className="text-sm font-semibold text-slate-700">Variantes media</span>
                 <input
-                  value={form.imageVariants}
-                  onChange={(event) => setForm((previous) => ({ ...previous, imageVariants: event.target.value }))}
+                  type="file"
+                  accept="image/*,video/*"
+                  multiple
+                  onChange={(event) => {
+                    const files = Array.from(event.currentTarget.files ?? []).slice(0, 3);
+                    setImageVariantFiles(files);
+                  }}
                   className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100"
-                  placeholder="https://..., https://..."
                 />
+                <p className="text-xs text-slate-500">Maximum 3 variantes en image ou video.</p>
+                {imageVariantFiles.length > 0 ? (
+                  <p className="text-xs text-slate-600">
+                    Selectionne: {imageVariantFiles.map((file) => file.name).join(", ")}
+                  </p>
+                ) : null}
               </label>
 
               <div className="sm:col-span-2 flex flex-wrap items-center justify-between gap-3 pt-2">
