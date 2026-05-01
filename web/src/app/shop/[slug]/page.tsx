@@ -217,46 +217,48 @@ export default function PublicShopPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[linear-gradient(180deg,#f7faf7_0%,#edf5ef_100%)] px-4 py-6 text-slate-900 sm:px-6 lg:px-8">
-      <section className="mx-auto w-full max-w-7xl rounded-3xl border border-emerald-100 bg-white p-5 shadow-[0_24px_80px_rgba(15,23,42,0.10)] sm:p-8">
-        <header className="mb-6 flex items-center justify-between border-b border-slate-200 pb-4">
-          <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600 text-xs font-bold text-white">BM</div>
-          <strong className="truncate px-4 text-lg font-semibold text-slate-950">{shop.name}</strong>
-          <span className="inline-flex h-10 min-w-10 items-center justify-center rounded-xl bg-emerald-50 px-3 text-sm font-semibold text-emerald-700">Live</span>
-        </header>
+    <main className="min-h-screen bg-white text-slate-900">
+      {/* Shop Banner Section */}
+      <section className="relative overflow-hidden bg-slate-50" ref={productsSectionRef}>
+        {shop.coverUrl ? (
+          <img src={shop.coverUrl} alt={shop.name} className="h-40 w-full object-cover sm:h-48 lg:h-56" />
+        ) : (
+          <div className="h-40 w-full bg-gradient-to-br from-emerald-50 to-slate-100 sm:h-48 lg:h-56" />
+        )}
 
-        <section className="relative overflow-hidden rounded-3xl border border-slate-200 bg-slate-50" ref={productsSectionRef}>
-          {shop.coverUrl ? <img src={shop.coverUrl} alt={shop.name} className="h-48 w-full object-cover sm:h-56" /> : null}
+        {/* Shop Info Overlay */}
+        <div className="relative -mt-8 px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto w-full max-w-3xl">
+            <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-md sm:p-5">
+              <div className="flex items-start gap-3 sm:gap-4">
+                {/* Logo */}
+                <div className="h-12 w-12 shrink-0 rounded-xl sm:h-14 sm:w-14">
+                  {shop.logoUrl ? (
+                    <img src={shop.logoUrl} alt={shop.name} className="h-full w-full rounded-xl object-cover" />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center rounded-xl bg-emerald-600 text-sm font-bold text-white">
+                      {shop.name.charAt(0)}
+                    </div>
+                  )}
+                </div>
 
-          <div className="relative grid gap-4 p-5 sm:p-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-end">
-            <div className="space-y-3">
-              <div className="inline-flex items-center gap-3 rounded-full border border-emerald-100 bg-white px-3 py-2">
-                {shop.logoUrl ? (
-                  <img src={shop.logoUrl} alt={shop.name} className="h-8 w-8 rounded-full object-cover" />
-                ) : (
-                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-600 text-xs font-semibold text-white">BM</span>
-                )}
-                <span className="text-sm font-medium text-emerald-700">Boutique en ligne</span>
+                {/* Shop Details */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-baseline gap-2 mb-1">
+                    <h1 className="text-lg font-semibold text-slate-950 sm:text-xl truncate">{shop.name}</h1>
+                    <span className="inline-flex h-5 items-center rounded-full bg-emerald-100 px-2 text-xs font-semibold text-emerald-700 shrink-0">Live</span>
+                  </div>
+                  <p className="text-xs text-slate-600 leading-relaxed sm:text-sm">{shop.description ?? "Découvrez notre sélection de produits."}</p>
+                </div>
               </div>
-
-              <h1 className="text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">{shop.name}</h1>
-              <p className="max-w-2xl text-sm leading-7 text-slate-600 sm:text-base">{shop.description ?? "Decouvrez notre selection de produits."}</p>
-            </div>
-
-            <div className="flex flex-wrap gap-3 lg:justify-end">
-              <button
-                type="button"
-                className="inline-flex items-center justify-center rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700"
-                onClick={scrollToProducts}
-              >
-                Voir les produits
-              </button>
-              <button type="button" className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50" onClick={openMobileFilters}>
-                Filtrer
-              </button>
             </div>
           </div>
-        </section>
+        </div>
+      </section>
+
+      {/* Main Content */}
+      <section className="px-4 py-6 sm:px-6 lg:px-8">
+        <div className="mx-auto w-full max-w-3xl space-y-5">
 
         <section className="mt-6" ref={productsSectionRef}>
           <div className="mb-4 flex flex-wrap items-center gap-3">
@@ -270,7 +272,7 @@ export default function PublicShopPage() {
 
           <div className="mb-5 grid gap-3 sm:grid-cols-[1fr_auto_auto]">
             <input
-              value={search}
+                value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Rechercher un produit"
               aria-label="Recherche produits"
@@ -346,32 +348,81 @@ export default function PublicShopPage() {
 
               {products.length === 0 ? <p className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">Aucun produit disponible pour ces filtres.</p> : null}
 
-              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {products.map((product) => {
                   const previewImage = product.imageUrl || product.imageVariants?.[0] || null;
 
                   return (
-                    <article key={product.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-                      {previewImage ? (
-                        <img src={previewImage} alt={product.name} className="h-40 w-full object-cover" />
-                      ) : (
-                        <div className="flex h-40 w-full items-center justify-center bg-slate-50 text-sm text-slate-500">Image</div>
-                      )}
-                      <div className="grid gap-2 p-4">
-                        <strong className="text-base text-slate-900">{product.name}</strong>
-                        <span className="text-lg font-semibold text-emerald-700">{formatPriceCFA(product.unitPrice)}</span>
-                        <span className={`w-fit rounded-full px-3 py-1 text-xs font-semibold ${product.stock > 0 ? "border border-emerald-200 bg-emerald-50 text-emerald-700" : "border border-rose-200 bg-rose-50 text-rose-700"}`}>
-                          {product.stock > 0 ? "En stock" : "Rupture"}
-                        </span>
-                        <Link
-                          href={`/shop/${slug}/products/${product.id}`}
-                          aria-label={`Voir ${product.name}`}
-                          className="mt-2 inline-flex items-center justify-center rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-                        >
-                          Voir
-                        </Link>
-                      </div>
-                    </article>
+                    <Link
+                      key={product.id}
+                      href={`/shop/${slug}/products/${product.id}`}
+                      className="group overflow-hidden rounded-xl border border-slate-100 bg-white shadow-sm transition duration-300 hover:shadow-lg hover:-translate-y-1"
+                    >
+                      <article className="flex flex-col h-full">
+                        {/* Product Image */}
+                        <div className="relative aspect-square overflow-hidden bg-slate-50">
+                          {previewImage ? (
+                            <img 
+                              src={previewImage} 
+                              alt={product.name} 
+                              className="h-full w-full object-cover transition duration-300 group-hover:scale-105" 
+                            />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center text-sm text-slate-400">
+                              <svg className="h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Product Info */}
+                        <div className="flex flex-col gap-3 p-4 flex-1">
+                          <div className="space-y-1">
+                            <h3 className="font-semibold text-slate-900 line-clamp-2 text-sm group-hover:text-emerald-600 transition">
+                              {product.name}
+                            </h3>
+                            {product.category && (
+                              <p className="text-xs text-slate-500">{product.category}</p>
+                            )}
+                          </div>
+
+                          <div className="space-y-2 mt-auto">
+                            {/* Price */}
+                            <div className="flex items-baseline gap-2">
+                              <span className="text-lg font-bold text-emerald-700">
+                                {formatPriceCFA(product.unitPrice)}
+                              </span>
+                            </div>
+
+                            {/* Stock Status */}
+                            <div className="flex items-center gap-2">
+                              <span className={`w-fit rounded-full px-2.5 py-1 text-xs font-semibold transition ${
+                                product.stock > 5
+                                  ? "border border-emerald-300 bg-emerald-50 text-emerald-700"
+                                  : product.stock > 0
+                                  ? "border border-amber-300 bg-amber-50 text-amber-700"
+                                  : "border border-rose-300 bg-rose-50 text-rose-700"
+                              }`}>
+                                {product.stock > 5
+                                  ? "En stock"
+                                  : product.stock > 0
+                                  ? `${product.stock} restant(s)`
+                                  : "Rupture"}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* CTA Button */}
+                          <button
+                            className="mt-3 w-full inline-flex items-center justify-center rounded-xl bg-emerald-600 px-3 py-2.5 text-sm font-semibold text-white transition duration-300 hover:bg-emerald-700 active:scale-95"
+                            onClick={(e) => e.preventDefault()}
+                          >
+                            Voir le produit
+                          </button>
+                        </div>
+                      </article>
+                    </Link>
                   );
                 })}
               </div>
@@ -459,6 +510,7 @@ export default function PublicShopPage() {
             </div>
           </div>
         ) : null}
+      </div>
       </section>
     </main>
   );

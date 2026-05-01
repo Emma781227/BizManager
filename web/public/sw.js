@@ -1,6 +1,6 @@
 // Stratégie: Network-first pour les pages HTML, cache-first pour les assets
-const CACHE_STATIC = 'bizmanager-static-v1';
-const CACHE_DYNAMIC = 'bizmanager-dynamic-v1';
+const CACHE_STATIC = 'bizmanager-static-v2';
+const CACHE_DYNAMIC = 'bizmanager-dynamic-v2';
 const OFFLINE_URL = '/';
 
 const STATIC_ASSETS = [
@@ -61,51 +61,35 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 1️⃣ NETWORK-FIRST pour les pages HTML (important pour pages à jour)
+  // Toujours laisser Next.js gerer ses bundles pour eviter les mismatch d'hydratation.
+  if (url.pathname.startsWith('/_next/')) {
+    return;
+  }
+
+  // 1️⃣ NETWORK-ONLY pour les pages HTML (toujours fraiches)
   if (request.mode === 'navigate' || url.pathname.endsWith('.html') || url.pathname === '/') {
     event.respondWith(
-      fetch(request)
-        .then((response) => {
-          if (!response || response.status !== 200) {
-            return response;
-          }
-          const clonedResponse = response.clone();
-          caches.open(CACHE_DYNAMIC).then((cache) => {
-            cache.put(request, clonedResponse);
-          });
-          return response;
-        })
+      fetch(request, { cache: 'no-store' })
         .catch(() => {
-          console.log('[SW] Réseau indisponible, utilisation du cache pour:', url.pathname);
-          return caches.match(request).then((cachedResponse) => {
-            return cachedResponse || new Response('Hors ligne - contenu indisponible', {
-              status: 503,
-              statusText: 'Service Unavailable'
-            });
+          console.log('[SW] Réseau indisponible pour la navigation:', url.pathname);
+          return new Response('Hors ligne - contenu indisponible', {
+            status: 503,
+            statusText: 'Service Unavailable'
           });
         })
     );
     return;
   }
 
-  // 2️⃣ NETWORK-FIRST pour les API (données fraîches)
+  // 2️⃣ NETWORK-ONLY pour les API (toujours fraiches)
   if (request.url.includes('/api/')) {
     event.respondWith(
       fetch(request)
-        .then((response) => {
-          const clonedResponse = response.clone();
-          caches.open(CACHE_DYNAMIC).then((cache) => {
-            cache.put(request, clonedResponse);
-          });
-          return response;
-        })
         .catch(() => {
-          return caches.match(request).then((cachedResponse) => {
-            return cachedResponse || new Response(JSON.stringify({ offline: true }), {
-              status: 503,
-              statusText: 'Service Unavailable',
-              headers: { 'Content-Type': 'application/json' }
-            });
+          return new Response(JSON.stringify({ offline: true }), {
+            status: 503,
+            statusText: 'Service Unavailable',
+            headers: { 'Content-Type': 'application/json' }
           });
         })
     );

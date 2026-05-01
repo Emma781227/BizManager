@@ -72,7 +72,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr" className={`${appSans.variable} ${appMono.variable}`}>
+    <html lang="fr" className={`${appSans.variable} ${appMono.variable}`} data-scroll-behavior="smooth">
       <head>
         <meta name="description" content="Plateforme de gestion commerciale pour petits commerçants" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -85,25 +85,49 @@ export default function RootLayout({
       </head>
       <body>
         {children}
-        <Script
-          id="register-sw"
-          strategy="afterInteractive"
-          dangerouslySetInnerHTML={{
-            __html: `
-              if ('serviceWorker' in navigator) {
-                window.addEventListener('load', () => {
-                  navigator.serviceWorker.register('/sw.js', { scope: '/' })
-                    .then((registration) => {
-                      console.log('[PWA] Service Worker enregistré:', registration);
+        {process.env.NODE_ENV === "production" ? (
+          <Script
+            id="register-sw"
+            strategy="afterInteractive"
+            dangerouslySetInnerHTML={{
+              __html: `
+                if ('serviceWorker' in navigator) {
+                  window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('/sw.js', { scope: '/' })
+                      .then((registration) => {
+                        console.log('[PWA] Service Worker enregistré:', registration);
+                      })
+                      .catch((error) => {
+                        console.log('[PWA] Erreur enregistrement Service Worker:', error);
+                      });
+                  });
+                }
+              `,
+            }}
+          />
+        ) : (
+          <Script
+            id="unregister-sw-dev"
+            strategy="afterInteractive"
+            dangerouslySetInnerHTML={{
+              __html: `
+                if ('serviceWorker' in navigator) {
+                  navigator.serviceWorker.getRegistrations()
+                    .then((registrations) => {
+                      registrations.forEach((registration) => registration.unregister());
                     })
-                    .catch((error) => {
-                      console.log('[PWA] Erreur enregistrement Service Worker:', error);
-                    });
-                });
-              }
-            `,
-          }}
-        />
+                    .catch(() => undefined);
+
+                  if (window.caches) {
+                    caches.keys()
+                      .then((keys) => Promise.all(keys.map((key) => caches.delete(key))))
+                      .catch(() => undefined);
+                  }
+                }
+              `,
+            }}
+          />
+        )}
       </body>
     </html>
   );

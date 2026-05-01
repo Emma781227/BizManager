@@ -83,25 +83,24 @@ function paymentMethodLabel(method: NonNullable<Order["paymentMethod"]>) {
   return "Paiement a la livraison";
 }
 
+type FormData = { customerId: string; lines: NewLine[] };
+type UIMessages = { feedback: string | null; error: string | null; liveNotice: string | null };
+type UIState = { loading: boolean; submitting: boolean };
+
 export default function OrdersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
 
-  const [customerId, setCustomerId] = useState("");
-  const [lines, setLines] = useState<NewLine[]>([{ productId: "", quantity: 1 }]);
+  const [form, setForm] = useState<FormData>({ customerId: "", lines: [{ productId: "", quantity: 1 }] });
   const [statusFilter, setStatusFilter] = useState<string>("");
-
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [feedback, setFeedback] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [liveNotice, setLiveNotice] = useState<string | null>(null);
+  const [uiState, setUIState] = useState<UIState>({ loading: true, submitting: false });
+  const [messages, setMessages] = useState<UIMessages>({ feedback: null, error: null, liveNotice: null });
   const previousOrderCountRef = useRef<number | null>(null);
 
   const fetchData = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+    setUIState(prev => ({ ...prev, loading: true }));
+    setMessages(prev => ({ ...prev, error: null }));
 
     try {
       const [customersRes, productsRes, ordersRes] = await Promise.all([
@@ -130,18 +129,19 @@ export default function OrdersPage() {
         const previousCount = previousOrderCountRef.current;
         if (previousCount !== null && nextOrders.length > previousCount) {
           const delta = nextOrders.length - previousCount;
-          setLiveNotice(
-            `${delta} nouvelle${delta > 1 ? "s" : ""} commande${delta > 1 ? "s" : ""} recue${delta > 1 ? "s" : "e"}.`,
-          );
+          setMessages(prev => ({
+            ...prev,
+            liveNotice: `${delta} nouvelle${delta > 1 ? "s" : ""} commande${delta > 1 ? "s" : ""} recue${delta > 1 ? "s" : "e"}.`,
+          }));
         }
         previousOrderCountRef.current = nextOrders.length;
       }
     } catch (fetchError) {
       const message =
         fetchError instanceof Error ? fetchError.message : "Erreur de chargement.";
-      setError(message);
+      setMessages(prev => ({ ...prev, error: message }));
     } finally {
-      setLoading(false);
+      setUIState(prev => ({ ...prev, loading: false }));
     }
   }, [statusFilter]);
 
@@ -162,7 +162,7 @@ export default function OrdersPage() {
   }, [fetchData, statusFilter]);
 
   const totalPreview = useMemo(() => {
-    return lines
+    return form.lines
       .reduce((sum, line) => {
         const product = products.find((item) => item.id === line.productId);
         if (!product) {
@@ -171,7 +171,7 @@ export default function OrdersPage() {
 
         return sum + Number(product.unitPrice) * line.quantity;
       }, 0);
-  }, [lines, products]);
+  }, [form.lines, products]);
 
   const deliveredCount = useMemo(
     () => orders.filter((order) => order.status === "delivered").length,
@@ -185,22 +185,21 @@ export default function OrdersPage() {
 
   async function handleCreateOrder(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setFeedback(null);
-    setError(null);
+    setMessages(prev => ({ ...prev, feedback: null, error: null }));
 
-    const cleanLines = lines.filter((line) => line.productId && line.quantity > 0);
-    if (!customerId || cleanLines.length === 0) {
-      setError("Selectionne un client et au moins une ligne produit.");
+    const cleanLines = form.lines.filter((line) => line.productId && line.quantity > 0);
+    if (!form.customerId || cleanLines.length === 0) {
+      setMessages(prev => ({ ...prev, error: "Selectionne un client et au moins une ligne produit." }));
       return;
     }
 
-    setSubmitting(true);
+    setUIState(prev => ({ ...prev, submitting: true }));
 
     try {
       const response = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ customerId, items: cleanLines }),
+        body: JSON.stringify({ customerId: form.customerId, items: cleanLines }),
       });
 
       const json = await response.json().catch(() => ({}));
@@ -209,18 +208,17 @@ export default function OrdersPage() {
         throw new Error(json.error ?? "Creation de commande impossible.");
       }
 
-      setCustomerId("");
-      setLines([{ productId: "", quantity: 1 }]);
-      setFeedback("Commande creee avec succes.");
+      setForm({ customerId: "", lines: [{ productId: "", quantity: 1 }] });
+      setMessages(prev => ({ ...prev, feedback: "Commande creee avec succes." }));
       await fetchData();
     } catch (creationError) {
       const message =
         creationError instanceof Error
           ? creationError.message
           : "Creation de commande impossible.";
-      setError(message);
+      setMessages(prev => ({ ...prev, error: message }));
     } finally {
-      setSubmitting(false);
+      setUIState(prev => ({ ...prev, submitting: false }));
     }
   }
 
@@ -233,8 +231,7 @@ export default function OrdersPage() {
       paidAmount?: number;
     },
   ) {
-    setFeedback(null);
-    setError(null);
+    setMessages(prev => ({ ...prev, feedback: null, error: null }));
 
     try {
       const response = await fetch(`/api/orders/${orderId}`, {
@@ -249,12 +246,12 @@ export default function OrdersPage() {
         throw new Error(json.error ?? "Mise a jour impossible.");
       }
 
-      setFeedback("Commande mise a jour.");
+      setMessages(prev => ({ ...prev, feedback: "Commande mise a jour." }));
       await fetchData();
     } catch (updateError) {
       const message =
         updateError instanceof Error ? updateError.message : "Mise a jour impossible.";
-      setError(message);
+      setMessages(prev => ({ ...prev, error: message }));
     }
   }
 
@@ -285,12 +282,12 @@ export default function OrdersPage() {
       </section>
 
       <section className="rounded-2xl border border-slate-200 bg-gradient-to-b from-white to-slate-50 p-4 sm:p-5">
-        {liveNotice ? <p className="mb-3 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700 sm:py-2.5 sm:text-base">{liveNotice}</p> : null}
+        {messages.liveNotice ? <p className="mb-3 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700 sm:py-2.5 sm:text-base">{messages.liveNotice}</p> : null}
 
         <form className="mt-3 grid gap-2 grid-cols-1 sm:grid-cols-[repeat(auto-fit,minmax(220px,1fr))] lg:grid-cols-[repeat(auto-fit,minmax(250px,1fr))] lg:gap-3" onSubmit={handleCreateOrder}>
           <label className="grid gap-1">
             <span className="text-xs font-semibold text-slate-700 sm:text-sm">Client</span>
-            <select value={customerId} onChange={(event) => setCustomerId(event.target.value)} className="rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm transition-colors focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100 sm:px-3 sm:py-2.5 sm:text-base">
+            <select value={form.customerId} onChange={(event) => setForm(prev => ({ ...prev, customerId: event.target.value }))} className="rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm transition-colors focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100 sm:px-3 sm:py-2.5 sm:text-base">
               <option value="">Selectionner un client</option>
               {customers.map((customer) => (
                 <option key={customer.id} value={customer.id}>
@@ -301,19 +298,21 @@ export default function OrdersPage() {
           </label>
 
           <div className="col-span-full grid gap-2 sm:gap-2.5">
-            {lines.map((line, index) => (
+            {form.lines.map((line, index) => (
               <div className="grid gap-2 grid-cols-1 sm:grid-cols-[minmax(180px,2fr)_minmax(100px,1fr)_auto] items-end sm:gap-2.5" key={`${index}-${line.productId || "new"}`}>
                 <label className="grid gap-1">
                   <span className="text-xs font-semibold text-slate-700 sm:text-sm">Produit</span>
                   <select
                     value={line.productId}
                     onChange={(event) => {
-                      const next = [...lines];
-                      next[index] = {
-                        ...next[index],
-                        productId: event.target.value,
-                      };
-                      setLines(next);
+                      setForm(prev => {
+                        const next = [...prev.lines];
+                        next[index] = {
+                          ...next[index],
+                          productId: event.target.value,
+                        };
+                        return { ...prev, lines: next };
+                      });
                     }}
                     className="rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm transition-colors focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100 sm:px-3 sm:py-2.5 sm:text-base"
                   >
@@ -334,9 +333,11 @@ export default function OrdersPage() {
                     value={line.quantity}
                     onChange={(event) => {
                       const value = Number(event.target.value) || 1;
-                      const next = [...lines];
-                      next[index] = { ...next[index], quantity: value };
-                      setLines(next);
+                      setForm(prev => {
+                        const next = [...prev.lines];
+                        next[index] = { ...next[index], quantity: value };
+                        return { ...prev, lines: next };
+                      });
                     }}
                     className="rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm transition-colors focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100 sm:px-3 sm:py-2.5 sm:text-base"
                   />
@@ -345,9 +346,9 @@ export default function OrdersPage() {
                 <button
                   type="button"
                   onClick={() => {
-                    setLines((current) => current.filter((_, currentIndex) => currentIndex !== index));
+                    setForm(prev => ({ ...prev, lines: prev.lines.filter((_, currentIndex) => currentIndex !== index) }));
                   }}
-                  disabled={lines.length === 1}
+                  disabled={form.lines.length === 1}
                   className="rounded-lg border border-slate-300 bg-slate-100 px-2.5 py-2 text-xs font-semibold text-slate-900 transition-colors hover:bg-slate-200 disabled:opacity-50 sm:px-3 sm:py-2.5 sm:text-sm"
                 >
                   Retirer
@@ -359,7 +360,7 @@ export default function OrdersPage() {
               <button
                 type="button"
                 onClick={() => {
-                  setLines((current) => [...current, { productId: "", quantity: 1 }]);
+                  setForm(prev => ({ ...prev, lines: [...prev.lines, { productId: "", quantity: 1 }] }));
                 }}
                 className="rounded-lg border border-slate-300 bg-slate-100 px-2.5 py-2 text-xs font-semibold text-slate-900 transition-colors hover:bg-slate-200 sm:px-3 sm:py-2.5 sm:text-sm"
               >
@@ -370,14 +371,14 @@ export default function OrdersPage() {
           </div>
 
           <div className="col-span-full">
-            <button type="submit" disabled={submitting} className="w-full rounded-lg border border-emerald-600 bg-gradient-to-b from-emerald-600 to-emerald-700 px-3 py-2 font-bold text-white transition-colors hover:from-emerald-700 hover:to-emerald-800 disabled:opacity-65 sm:w-auto sm:px-4 sm:py-2.5">
-              {submitting ? "Creation..." : "Creer la commande"}
+            <button type="submit" disabled={uiState.submitting} className="w-full rounded-lg border border-emerald-600 bg-gradient-to-b from-emerald-600 to-emerald-700 px-3 py-2 font-bold text-white transition-colors hover:from-emerald-700 hover:to-emerald-800 disabled:opacity-65 sm:w-auto sm:px-4 sm:py-2.5">
+              {uiState.submitting ? "Creation..." : "Creer la commande"}
             </button>
           </div>
         </form>
 
-        {feedback ? <p className="mt-3 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700 sm:py-2.5 sm:text-base">{feedback}</p> : null}
-        {error ? <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 sm:py-2.5 sm:text-base">{error}</p> : null}
+        {messages.feedback ? <p className="mt-3 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700 sm:py-2.5 sm:text-base">{messages.feedback}</p> : null}
+        {messages.error ? <p className="mt-3 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700 sm:py-2.5 sm:text-base">{messages.error}</p> : null}
       </section>
 
       <section className="rounded-2xl border border-slate-200 bg-gradient-to-b from-white to-slate-50 p-4 sm:p-5">
@@ -415,13 +416,13 @@ export default function OrdersPage() {
           </div>
         </div>
 
-        {loading ? <p className="py-4 text-center text-sm text-slate-600">Chargement des commandes...</p> : null}
+        {uiState.loading ? <p className="py-4 text-center text-sm text-slate-600">Chargement des commandes...</p> : null}
 
-        {!loading && orders.length === 0 ? (
+        {!uiState.loading && orders.length === 0 ? (
           <p className="py-4 text-center text-sm text-slate-600">Aucune commande pour le moment.</p>
         ) : null}
 
-        {!loading && orders.length > 0 ? (
+        {!uiState.loading && orders.length > 0 ? (
           <div className="grid gap-2 grid-cols-1 sm:gap-2.5 lg:grid-cols-2">
             {orders.map((order) => {
               const initials = order.customer.fullName

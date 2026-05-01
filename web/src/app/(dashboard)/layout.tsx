@@ -4,13 +4,14 @@ import { getSessionFromCookieStore, isPlatformAdmin } from "@/lib/auth";
 import MerchantNav from "./MerchantNav";
 
 const links = [
-  { href: "/dashboard", label: "Dashboard", short: "DB" },
+  { href: "/dashboard", label: "Tableau de bord", short: "DB" },
   { href: "/products", label: "Produits", short: "PR" },
-  { href: "/customers", label: "Clients", short: "CL" },
   { href: "/orders", label: "Commandes", short: "CO" },
-  { href: "/whatsapp", label: "WhatsApp", short: "WA" },
+  { href: "/customers", label: "Clients", short: "CL" },
   { href: "/settings", label: "Boutique", short: "BT" },
-  { href: "/share", label: "Partage", short: "SH" },
+  { href: "/payments", label: "Paiements", short: "PA" },
+  { href: "/whatsapp", label: "WhatsApp", short: "WA" },
+  { href: "/admin", label: "Paramètres", short: "PM" },
 ];
 
 export default async function DashboardLayout({
@@ -46,6 +47,17 @@ export default async function DashboardLayout({
         </div>
 
         <MerchantNav links={navLinks} />
+
+        <div className="sidebar-promo">
+          <div className="promo-icon">
+            <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+          </div>
+          <h3 className="promo-title">Développez votre activité</h3>
+          <p className="promo-text">Découvrez nos plans premium pour booster vos ventes</p>
+          <a href="#plans" className="promo-button">Découvrir les plans</a>
+        </div>
 
         <div className="sidebar-footer">
           <p>Suivi des ventes, commandes et clients en temps réel.</p>

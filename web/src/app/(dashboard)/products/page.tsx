@@ -86,25 +86,27 @@ function normalizeCurrency(value: number | string) {
   return Number.isFinite(numeric) ? numeric : 0;
 }
 
+type UIState = { loading: boolean; error: string | null; success: string | null };
+type FilterState = { categoryFilter: string; stockFilter: "all" | "low" | "in_stock"; currentPage: number; pageSize: number };
+type DialogState = { mode: "create" | "edit" | null; productId: string | null };
+type SubmitState = { submitting: boolean; deletingProductId: string | null };
+type FileState = { imageFile: File | null; imageVariantFiles: File[] };
+
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categoryOptions, setCategoryOptions] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
-  const [query, setQuery] = useState("");
-  const [searchValue, setSearchValue] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("all");
-  const [stockFilter, setStockFilter] = useState<"all" | "low" | "in_stock">("all");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const [dialogMode, setDialogMode] = useState<"create" | "edit" | null>(null);
-  const [activeProductId, setActiveProductId] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-  const [deletingProductId, setDeletingProductId] = useState<string | null>(null);
+  const [uiState, setUIState] = useState<UIState>({ loading: true, error: null, success: null });
+  const query = "";
+  const [filters, setFilters] = useState<FilterState>({
+    categoryFilter: "all",
+    stockFilter: "all",
+    currentPage: 1,
+    pageSize: 10,
+  });
+  const [dialog, setDialog] = useState<DialogState>({ mode: null, productId: null });
+  const [submitState, setSubmitState] = useState<SubmitState>({ submitting: false, deletingProductId: null });
+  const [files, setFiles] = useState<FileState>({ imageFile: null, imageVariantFiles: [] });
   const [form, setForm] = useState<ProductFormState>(EMPTY_FORM);
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imageVariantFiles, setImageVariantFiles] = useState<File[]>([]);
 
   const totalStock = useMemo(
     () => products.reduce((sum, product) => sum + product.stock, 0),
@@ -127,11 +129,11 @@ export default function ProductsPage() {
   );
 
   const visibleProducts = useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
-    return products.slice(start, start + pageSize);
-  }, [currentPage, pageSize, products]);
+    const start = (filters.currentPage - 1) * filters.pageSize;
+    return products.slice(start, start + filters.pageSize);
+  }, [filters.currentPage, filters.pageSize, products]);
 
-  const totalPages = Math.max(1, Math.ceil(products.length / pageSize));
+  const totalPages = Math.max(1, Math.ceil(products.length / filters.pageSize));
 
   const categorySummary = useMemo(() => {
     const counts = new Map<string, number>();
@@ -154,8 +156,7 @@ export default function ProductsPage() {
   }, [products]);
 
   async function loadProducts(nextQuery: string, nextCategory: string, nextStock: "all" | "low" | "in_stock") {
-    setLoading(true);
-    setError(null);
+    setUIState(prev => ({ ...prev, loading: true, error: null }));
 
     const params = new URLSearchParams();
     if (nextQuery.trim()) {
@@ -177,7 +178,7 @@ export default function ProductsPage() {
       if (!response.ok || !json.data) {
         setProducts([]);
         setCategoryOptions([]);
-        setError(json.error ?? "Impossible de charger les produits.");
+        setUIState(prev => ({ ...prev, error: json.error ?? "Impossible de charger les produits." }));
         return;
       }
 
@@ -186,44 +187,39 @@ export default function ProductsPage() {
     } catch {
       setProducts([]);
       setCategoryOptions([]);
-      setError("Erreur reseau pendant le chargement des produits.");
+      setUIState(prev => ({ ...prev, error: "Erreur reseau pendant le chargement des produits." }));
     } finally {
-      setLoading(false);
+      setUIState(prev => ({ ...prev, loading: false }));
     }
   }
 
   useEffect(() => {
-    void loadProducts(query, categoryFilter, stockFilter);
-    setCurrentPage(1);
-  }, [query, categoryFilter, stockFilter]);
+    void loadProducts(query, filters.categoryFilter, filters.stockFilter);
+    setFilters(prev => ({ ...prev, currentPage: 1 }));
+  }, [query, filters.categoryFilter, filters.stockFilter]);
 
   useEffect(() => {
-    if (!dialogMode) {
+    if (!dialog.mode) {
       return;
     }
 
     function handleEscape(event: KeyboardEvent) {
       if (event.key === "Escape") {
-        setDialogMode(null);
-        setActiveProductId(null);
+        setDialog({ mode: null, productId: null });
         setForm(EMPTY_FORM);
-        setImageFile(null);
-        setImageVariantFiles([]);
+        setFiles({ imageFile: null, imageVariantFiles: [] });
       }
     }
 
     window.addEventListener("keydown", handleEscape);
     return () => window.removeEventListener("keydown", handleEscape);
-  }, [dialogMode]);
+  }, [dialog.mode]);
 
   function openCreateDialog() {
-    setDialogMode("create");
-    setActiveProductId(null);
+    setDialog({ mode: "create", productId: null });
     setForm(EMPTY_FORM);
-    setImageFile(null);
-    setImageVariantFiles([]);
-    setError(null);
-    setSuccess(null);
+    setFiles({ imageFile: null, imageVariantFiles: [] });
+    setUIState(prev => ({ ...prev, error: null, success: null }));
   }
 
   function openEditDialog(product: Product) {
@@ -231,8 +227,7 @@ export default function ProductsPage() {
       [product.category ?? "", ...(product.categories ?? [])].join(","),
     );
 
-    setDialogMode("edit");
-    setActiveProductId(product.id);
+    setDialog({ mode: "edit", productId: product.id });
     setForm({
       name: product.name,
       category: normalizedCategories[0] ?? "",
@@ -244,25 +239,20 @@ export default function ProductsPage() {
       imageUrl: product.imageUrl ?? "",
       imageVariants: (product.imageVariants ?? []).join(", "),
     });
-    setImageFile(null);
-    setImageVariantFiles([]);
-    setError(null);
-    setSuccess(null);
+    setFiles({ imageFile: null, imageVariantFiles: [] });
+    setUIState(prev => ({ ...prev, error: null, success: null }));
   }
 
   function closeDialog() {
-    setDialogMode(null);
-    setActiveProductId(null);
+    setDialog({ mode: null, productId: null });
     setForm(EMPTY_FORM);
-    setImageFile(null);
-    setImageVariantFiles([]);
+    setFiles({ imageFile: null, imageVariantFiles: [] });
   }
 
   async function handleFormSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setSubmitting(true);
-    setError(null);
-    setSuccess(null);
+    setSubmitState(prev => ({ ...prev, submitting: true }));
+    setUIState(prev => ({ ...prev, error: null, success: null }));
 
     const mergedCategories = cleanList([form.category, form.categories].join(","));
     const imageVariants = cleanList(form.imageVariants).slice(0, 3);
@@ -275,38 +265,38 @@ export default function ProductsPage() {
     payload.set("sku", form.sku);
     payload.set("unitPrice", form.unitPrice);
     payload.set("stock", form.stock);
-    if (imageFile) {
-      payload.set("imageFile", imageFile);
+    if (files.imageFile) {
+      payload.set("imageFile", files.imageFile);
     }
     payload.set("imageVariants", JSON.stringify(imageVariants));
 
-    for (const variantFile of imageVariantFiles.slice(0, 3)) {
+    for (const variantFile of files.imageVariantFiles.slice(0, 3)) {
       payload.append("imageVariantFiles", variantFile);
     }
 
     try {
-      const url = dialogMode === "edit" && activeProductId
-        ? `/api/products/${activeProductId}`
+      const url = dialog.mode === "edit" && dialog.productId
+        ? `/api/products/${dialog.productId}`
         : "/api/products";
 
       const response = await fetch(url, {
-        method: dialogMode === "edit" ? "PUT" : "POST",
+        method: dialog.mode === "edit" ? "PUT" : "POST",
         body: payload,
       });
       const json = (await response.json()) as ApiResponse<Product>;
 
       if (!response.ok || !json.data) {
-        setError(json.error ?? (dialogMode === "edit" ? "Impossible de modifier le produit." : "Impossible de creer le produit."));
+        setUIState(prev => ({ ...prev, error: json.error ?? (dialog.mode === "edit" ? "Impossible de modifier le produit." : "Impossible de creer le produit.") }));
         return;
       }
 
-      setSuccess(dialogMode === "edit" ? "Produit modifie avec succes." : "Produit cree avec succes.");
+      setUIState(prev => ({ ...prev, success: dialog.mode === "edit" ? "Produit modifie avec succes." : "Produit cree avec succes." }));
       closeDialog();
-      await loadProducts(query, categoryFilter, stockFilter);
+      await loadProducts(query, filters.categoryFilter, filters.stockFilter);
     } catch {
-      setError(dialogMode === "edit" ? "Erreur reseau pendant la modification du produit." : "Erreur reseau pendant la creation du produit.");
+      setUIState(prev => ({ ...prev, error: dialog.mode === "edit" ? "Erreur reseau pendant la modification du produit." : "Erreur reseau pendant la creation du produit." }));
     } finally {
-      setSubmitting(false);
+      setSubmitState(prev => ({ ...prev, submitting: false }));
     }
   }
 
@@ -319,9 +309,8 @@ export default function ProductsPage() {
       return;
     }
 
-    setDeletingProductId(product.id);
-    setError(null);
-    setSuccess(null);
+    setSubmitState(prev => ({ ...prev, deletingProductId: product.id }));
+    setUIState(prev => ({ ...prev, error: null, success: null }));
 
     try {
       const response = await fetch(`/api/products/${product.id}`, {
@@ -330,31 +319,25 @@ export default function ProductsPage() {
       const json = (await response.json()) as ApiResponse<{ success: boolean }>;
 
       if (!response.ok || !json.data?.success) {
-        setError(json.error ?? "Impossible de supprimer le produit.");
+        setUIState(prev => ({ ...prev, error: json.error ?? "Impossible de supprimer le produit." }));
         return;
       }
 
-      if (activeProductId === product.id) {
+      if (dialog.productId === product.id) {
         closeDialog();
       }
 
-      setSuccess("Produit supprime avec succes.");
-      await loadProducts(query, categoryFilter, stockFilter);
+      setUIState(prev => ({ ...prev, success: "Produit supprime avec succes." }));
+      await loadProducts(query, filters.categoryFilter, filters.stockFilter);
     } catch {
-      setError("Erreur reseau pendant la suppression du produit.");
+      setUIState(prev => ({ ...prev, error: "Erreur reseau pendant la suppression du produit." }));
     } finally {
-      setDeletingProductId(null);
+      setSubmitState(prev => ({ ...prev, deletingProductId: null }));
     }
   }
 
-  function handleSearchSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setQuery(searchValue);
-    setCurrentPage(1);
-  }
-
-  const productsStart = products.length === 0 ? 0 : (currentPage - 1) * pageSize + 1;
-  const productsEnd = Math.min(currentPage * pageSize, products.length);
+  const productsStart = products.length === 0 ? 0 : (filters.currentPage - 1) * filters.pageSize + 1;
+  const productsEnd = Math.min(filters.currentPage * filters.pageSize, products.length);
 
   return (
     <main className="grid gap-2.5 p-3 sm:gap-3.5 sm:p-4 lg:grid-cols-[minmax(0,1fr)_280px] lg:gap-4 lg:p-5">
@@ -467,8 +450,8 @@ export default function ProductsPage() {
             <label className="grid gap-1">
               <span className="text-xs font-semibold text-slate-700">Categorie</span>
               <select
-                value={categoryFilter}
-                onChange={(event) => setCategoryFilter(event.target.value)}
+                value={filters.categoryFilter}
+                onChange={(event) => setFilters((prev) => ({ ...prev, categoryFilter: event.target.value, currentPage: 1 }))}
                 className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100 sm:w-auto"
               >
                 <option value="all">Toutes categories</option>
@@ -482,8 +465,8 @@ export default function ProductsPage() {
             <label className="grid gap-1">
               <span className="text-xs font-semibold text-slate-700">Stock</span>
               <select
-                value={stockFilter}
-                onChange={(event) => setStockFilter(event.target.value as "all" | "low" | "in_stock")}
+                value={filters.stockFilter}
+                onChange={(event) => setFilters((prev) => ({ ...prev, stockFilter: event.target.value as "all" | "low" | "in_stock", currentPage: 1 }))}
                 className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100 sm:w-auto"
               >
                 <option value="all">Tous les statuts</option>
@@ -494,8 +477,8 @@ export default function ProductsPage() {
             <label className="grid gap-1">
               <span className="text-xs font-semibold text-slate-700">Trier par</span>
               <select
-                value={String(pageSize)}
-                onChange={(event) => setPageSize(Number(event.target.value))}
+                value={String(filters.pageSize)}
+                onChange={(event) => setFilters((prev) => ({ ...prev, pageSize: Number(event.target.value), currentPage: 1 }))}
                 className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100 sm:w-auto"
               >
                 <option value="10">Plus recent</option>
@@ -554,10 +537,10 @@ export default function ProductsPage() {
                     <button
                       type="button"
                       onClick={() => void handleDeleteProduct(product)}
-                      disabled={deletingProductId === product.id}
+                      disabled={submitState.deletingProductId === product.id}
                       className="inline-flex items-center justify-center rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 transition-colors hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      {deletingProductId === product.id ? "Suppression..." : "Supprimer"}
+                      {submitState.deletingProductId === product.id ? "Suppression..." : "Supprimer"}
                     </button>
                   </div>
                 </article>
@@ -579,7 +562,7 @@ export default function ProductsPage() {
                 </tr>
               </thead>
               <tbody>
-                {loading ? (
+                {uiState.loading ? (
                   <tr>
                     <td className="px-3 py-5 text-sm text-slate-600" colSpan={7}>
                       Chargement des produits...
@@ -631,10 +614,10 @@ export default function ProductsPage() {
                             <button
                               type="button"
                               onClick={() => void handleDeleteProduct(product)}
-                              disabled={deletingProductId === product.id}
+                              disabled={submitState.deletingProductId === product.id}
                               className="inline-flex items-center justify-center rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-semibold text-red-700 transition-colors hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60 sm:px-3"
                             >
-                              {deletingProductId === product.id ? "Suppression..." : "Supprimer"}
+                              {submitState.deletingProductId === product.id ? "Suppression..." : "Supprimer"}
                             </button>
                           </div>
                         </td>
@@ -659,19 +642,19 @@ export default function ProductsPage() {
             <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
-                onClick={() => setCurrentPage((value) => Math.max(1, value - 1))}
-                disabled={currentPage <= 1}
+                onClick={() => setFilters((prev) => ({ ...prev, currentPage: Math.max(1, prev.currentPage - 1) }))}
+                disabled={filters.currentPage <= 1}
                 className="rounded-lg border border-slate-300 bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-900 transition-colors hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Prev
               </button>
               <span className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700">
-                {currentPage}
+                {filters.currentPage}
               </span>
               <button
                 type="button"
-                onClick={() => setCurrentPage((value) => Math.min(totalPages, value + 1))}
-                disabled={currentPage >= totalPages}
+                onClick={() => setFilters((prev) => ({ ...prev, currentPage: Math.min(totalPages, prev.currentPage + 1) }))}
+                disabled={filters.currentPage >= totalPages}
                 className="rounded-lg border border-slate-300 bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-900 transition-colors hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Next
@@ -680,13 +663,13 @@ export default function ProductsPage() {
           </div>
         </section>
 
-        {loading ? null : error ? (
+        {uiState.loading ? null : uiState.error ? (
           <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-            {error}
+            {uiState.error}
           </p>
-        ) : success ? (
+        ) : uiState.success ? (
           <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
-            {success}
+            {uiState.success}
           </p>
         ) : null}
       </div>
@@ -759,18 +742,18 @@ export default function ProductsPage() {
         </section>
 
         <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-          <h3 className="text-sm font-bold text-slate-900">Besoin d'aide ?</h3>
+          <h3 className="text-sm font-bold text-slate-900">Besoin d&apos;aide ?</h3>
           <p className="mt-2 text-sm text-slate-600">Consultez vos guides ou contactez notre equipe support.</p>
           <button
             type="button"
             className="mt-3 w-full rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700 transition-colors hover:bg-emerald-100"
           >
-            Acceder a l'aide
+            Acceder a l&apos;aide
           </button>
         </section>
       </aside>
 
-      {dialogMode ? (
+      {dialog.mode ? (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-sm"
           role="dialog"
@@ -785,10 +768,10 @@ export default function ProductsPage() {
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-700">
-                  {dialogMode === "edit" ? "Modifier produit" : "Nouveau produit"}
+                  {dialog.mode === "edit" ? "Modifier produit" : "Nouveau produit"}
                 </p>
                 <h2 className="mt-1 text-xl font-bold text-slate-900 sm:text-2xl">
-                  {dialogMode === "edit" ? "Mettre a jour le produit" : "Creer un nouveau produit"}
+                  {dialog.mode === "edit" ? "Mettre a jour le produit" : "Creer un nouveau produit"}
                 </h2>
               </div>
               <button
@@ -875,13 +858,13 @@ export default function ProductsPage() {
                 <input
                   type="file"
                   accept="image/*,video/*"
-                  onChange={(event) => setImageFile(event.currentTarget.files?.[0] ?? null)}
+                  onChange={(event) => setFiles((prev) => ({ ...prev, imageFile: event.currentTarget.files?.[0] ?? null }))}
                   className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100"
                 />
-                {imageFile ? (
-                  <p className="text-xs text-slate-500">Selectionne: {imageFile.name}</p>
+                {files.imageFile ? (
+                  <p className="text-xs text-slate-500">Selectionne: {files.imageFile.name}</p>
                 ) : (
-                  <p className="text-xs text-slate-500">Choisis une image ou une video depuis l'appareil.</p>
+                  <p className="text-xs text-slate-500">Choisis une image ou une video depuis l&apos;appareil.</p>
                 )}
               </label>
               <label className="grid gap-1 sm:col-span-2">
@@ -891,15 +874,15 @@ export default function ProductsPage() {
                   accept="image/*,video/*"
                   multiple
                   onChange={(event) => {
-                    const files = Array.from(event.currentTarget.files ?? []).slice(0, 3);
-                    setImageVariantFiles(files);
+                    const nextFiles = Array.from(event.currentTarget.files ?? []).slice(0, 3);
+                    setFiles((prev) => ({ ...prev, imageVariantFiles: nextFiles }));
                   }}
                   className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100"
                 />
                 <p className="text-xs text-slate-500">Maximum 3 variantes en image ou video.</p>
-                {imageVariantFiles.length > 0 ? (
+                {files.imageVariantFiles.length > 0 ? (
                   <p className="text-xs text-slate-600">
-                    Selectionne: {imageVariantFiles.map((file) => file.name).join(", ")}
+                    Selectionne: {files.imageVariantFiles.map((file) => file.name).join(", ")}
                   </p>
                 ) : null}
               </label>
@@ -918,10 +901,10 @@ export default function ProductsPage() {
                   </button>
                   <button
                     type="submit"
-                    disabled={submitting}
+                    disabled={submitState.submitting}
                     className="rounded-lg border border-emerald-600 bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    {submitting ? "Sauvegarde..." : dialogMode === "edit" ? "Mettre a jour" : "Creer le produit"}
+                    {submitState.submitting ? "Sauvegarde..." : dialog.mode === "edit" ? "Mettre a jour" : "Creer le produit"}
                   </button>
                 </div>
               </div>

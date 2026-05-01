@@ -13,7 +13,20 @@ export async function POST(request: Request) {
   }
   //const { email, password, rememberMe } = await req.json();
   const email = result.data.email.toLowerCase().trim();
-  const user = await prisma.user.findUnique({ where: { email } });
+
+  let user;
+  try {
+    user = await prisma.user.findUnique({ where: { email } });
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("Can't reach database server")) {
+      return NextResponse.json(
+        { error: "Base de données indisponible. Lancez PostgreSQL puis réessayez." },
+        { status: 503 },
+      );
+    }
+
+    throw error;
+  }
 
   if (!user) {
     return NextResponse.json({ error: "Identifiants invalides" }, { status: 401 });
