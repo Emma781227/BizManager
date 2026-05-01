@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { formatPriceCFA } from "@/lib/format";
+import { detectMediaKind, type MediaKind } from "@/lib/media";
 
 type Product = {
   id: string;
@@ -38,6 +39,12 @@ type ProductFormState = {
   imageVariants: string;
 };
 
+type MediaSlotState = {
+  file: File | null;
+  preview: string;
+  kind: MediaKind | null;
+};
+
 const EMPTY_FORM: ProductFormState = {
   name: "",
   category: "",
@@ -49,6 +56,28 @@ const EMPTY_FORM: ProductFormState = {
   imageUrl: "",
   imageVariants: "",
 };
+
+const MAX_MEDIA_VARIANTS = 3;
+
+function createEmptyMediaSlot(): MediaSlotState {
+  return {
+    file: null,
+    preview: "",
+    kind: null,
+  };
+}
+
+function createEmptyMediaSlots(): MediaSlotState[] {
+  return Array.from({ length: MAX_MEDIA_VARIANTS }, () => createEmptyMediaSlot());
+}
+
+function createMediaSlotFromSource(source: string): MediaSlotState {
+  return {
+    file: null,
+    preview: source,
+    kind: detectMediaKind(source),
+  };
+}
 
 function cleanList(value: string) {
   return Array.from(
@@ -103,6 +132,8 @@ export default function ProductsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [deletingProductId, setDeletingProductId] = useState<string | null>(null);
   const [form, setForm] = useState<ProductFormState>(EMPTY_FORM);
+  const [mainMedia, setMainMedia] = useState<MediaSlotState>(createEmptyMediaSlot());
+  const [variantMedia, setVariantMedia] = useState<MediaSlotState[]>(createEmptyMediaSlots());
 
   const totalStock = useMemo(
     () => products.reduce((sum, product) => sum + product.stock, 0),
@@ -205,6 +236,7 @@ export default function ProductsPage() {
         setDialogMode(null);
         setActiveProductId(null);
         setForm(EMPTY_FORM);
+        resetMediaState();
       }
     }
 
@@ -212,10 +244,53 @@ export default function ProductsPage() {
     return () => window.removeEventListener("keydown", handleEscape);
   }, [dialogMode]);
 
+  function resetMediaState() {
+    setMainMedia(createEmptyMediaSlot());
+    setVariantMedia(createEmptyMediaSlots());
+  }
+
+  function setMainMediaFile(file: File | null) {
+    if (!file) {
+      setMainMedia(createEmptyMediaSlot());
+      return;
+    }
+
+    const kind = file.type.startsWith("video/") ? "video" : "image";
+    const reader = new FileReader();
+    reader.onload = () => {
+      setMainMedia({ file, preview: String(reader.result ?? ""), kind });
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function setVariantMediaFile(index: number, file: File | null) {
+    setVariantMedia((previous) => {
+      const next = previous.slice();
+      if (!file) {
+        next[index] = createEmptyMediaSlot();
+        return next;
+      }
+
+      const kind = file.type.startsWith("video/") ? "video" : "image";
+      const reader = new FileReader();
+      reader.onload = () => {
+        setVariantMedia((current) => {
+          const updated = current.slice();
+          updated[index] = { file, preview: String(reader.result ?? ""), kind };
+          return updated;
+        });
+      };
+      reader.readAsDataURL(file);
+
+      return next;
+    });
+  }
+
   function openCreateDialog() {
     setDialogMode("create");
     setActiveProductId(null);
     setForm(EMPTY_FORM);
+    resetMediaState();
     setError(null);
     setSuccess(null);
   }
@@ -238,6 +313,17 @@ export default function ProductsPage() {
       imageUrl: product.imageUrl ?? "",
       imageVariants: (product.imageVariants ?? []).join(", "),
     });
+    setMainMedia(
+      product.imageUrl
+        ? createMediaSlotFromSource(product.imageUrl)
+        : createEmptyMediaSlot(),
+    );
+    setVariantMedia(
+      createEmptyMediaSlots().map((slot, index) => {
+        const source = product.imageVariants?.[index];
+        return source ? createMediaSlotFromSource(source) : slot;
+      }),
+    );
     setError(null);
     setSuccess(null);
   }
@@ -246,6 +332,7 @@ export default function ProductsPage() {
     setDialogMode(null);
     setActiveProductId(null);
     setForm(EMPTY_FORM);
+    resetMediaState();
   }
 
   async function handleFormSubmit(event: FormEvent<HTMLFormElement>) {
@@ -255,7 +342,6 @@ export default function ProductsPage() {
     setSuccess(null);
 
     const mergedCategories = cleanList([form.category, form.categories].join(","));
-    const imageVariants = cleanList(form.imageVariants).slice(0, 4);
 
     const payload = new FormData();
     payload.set("name", form.name);
@@ -265,8 +351,16 @@ export default function ProductsPage() {
     payload.set("sku", form.sku);
     payload.set("unitPrice", form.unitPrice);
     payload.set("stock", form.stock);
-    payload.set("imageUrl", form.imageUrl);
-    payload.set("imageVariants", JSON.stringify(imageVariants));
+
+    if (mainMedia.file) {
+      payload.set("imageFile", mainMedia.file);
+    }
+
+    for (const slot of variantMedia) {
+      if (slot.file) {
+        payload.append("imageVariantFiles", slot.file);
+      }
+    }
 
     try {
       const url = dialogMode === "edit" && activeProductId
@@ -377,78 +471,71 @@ export default function ProductsPage() {
           </div>
         </section>
 
-        <section className="grid gap-2 grid-cols-2 items-stretch sm:grid-cols-4 sm:gap-2.5 lg:gap-3">
-          <article className="h-full rounded-xl border border-slate-200 bg-white px-3 py-3 shadow-sm sm:px-3.5 sm:py-3.5">
-            <div className="flex h-full min-h-[76px] items-center gap-3 sm:min-h-[92px]">
-              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-emerald-100 bg-emerald-50 text-emerald-700 shadow-sm">📦</div>
-              <div className="min-w-0 leading-tight">
+        <section className="grid gap-1.5 grid-cols-2 items-stretch sm:grid-cols-3 sm:gap-2 lg:gap-2.5">
+          <article className="h-full rounded-lg border border-slate-200 bg-white px-2 py-2 shadow-sm sm:px-2.5 sm:py-2">
+            <div className="flex h-full items-center min-h-[48px] gap-2 sm:min-h-[52px]">
+              <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-emerald-100 bg-emerald-50 text-emerald-700 shadow-sm">📦</div>
+              <div className="min-w-0 flex-1 leading-tight">
                 <p className="text-xs font-semibold text-slate-500">Total produits</p>
-                <strong className="block text-xl font-bold text-slate-900">{products.length}</strong>
+                <div className="flex items-baseline gap-1">
+                  <strong className="block text-base font-bold text-slate-900">{products.length}</strong>
+                  <span className="text-xs font-semibold text-emerald-600">↑ 6.3%</span>
+                </div>
               </div>
             </div>
-            <p className="mt-2 text-xs text-slate-600">vs hier</p>
+            <p className="mt-1 text-xs text-slate-600">vs hier</p>
           </article>
-          <article className="h-full rounded-xl border border-slate-200 bg-white px-3 py-3 shadow-sm sm:px-3.5 sm:py-3.5">
-            <div className="flex h-full min-h-[76px] items-center gap-3 sm:min-h-[92px]">
-              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-emerald-100 bg-emerald-50 text-emerald-700 shadow-sm">✓</div>
-              <div className="min-w-0 leading-tight">
+          <article className="h-full rounded-lg border border-slate-200 bg-white px-2 py-2 shadow-sm sm:px-2.5 sm:py-2">
+            <div className="flex h-full items-center min-h-[48px] gap-2 sm:min-h-[52px]">
+              <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-emerald-100 bg-emerald-50 text-emerald-700 shadow-sm">✓</div>
+              <div className="min-w-0 flex-1 leading-tight">
                 <p className="text-xs font-semibold text-slate-500">En stock</p>
-                <strong className="block text-xl font-bold text-slate-900">{products.filter((product) => product.stock > 8).length}</strong>
+                <div className="flex items-baseline gap-1">
+                  <strong className="block text-base font-bold text-slate-900">{products.filter((product) => product.stock > 8).length}</strong>
+                  <span className="text-xs font-semibold text-emerald-600">↑ 8.1%</span>
+                </div>
               </div>
             </div>
-            <p className="mt-2 text-xs text-emerald-700">77,4% des produits</p>
+            <p className="mt-1 text-xs text-slate-600">77,4% des produits</p>
           </article>
-          <article className="h-full rounded-xl border border-slate-200 bg-white px-3 py-3 shadow-sm sm:px-3.5 sm:py-3.5">
-            <div className="flex h-full min-h-[76px] items-center gap-3 sm:min-h-[92px]">
-              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-rose-100 bg-rose-50 text-rose-600 shadow-sm">!</div>
-              <div className="min-w-0 leading-tight">
+          <article className="h-full rounded-lg border border-slate-200 bg-white px-2 py-2 shadow-sm sm:px-2.5 sm:py-2">
+            <div className="flex h-full items-center min-h-[48px] gap-2 sm:min-h-[52px]">
+              <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-rose-100 bg-rose-50 text-rose-600 shadow-sm">!</div>
+              <div className="min-w-0 flex-1 leading-tight">
                 <p className="text-xs font-semibold text-slate-500">Rupture de stock</p>
-                <strong className="block text-xl font-bold text-slate-900">{outOfStockCount}</strong>
+                <div className="flex items-baseline gap-1">
+                  <strong className="block text-base font-bold text-slate-900">{outOfStockCount}</strong>
+                  <span className="text-xs font-semibold text-rose-600">↑ 12.7%</span>
+                </div>
               </div>
             </div>
-            <p className="mt-2 text-xs text-rose-700">22,6% des produits</p>
-          </article>
-          <article className="h-full rounded-xl border border-slate-200 bg-white px-3 py-3 shadow-sm sm:px-3.5 sm:py-3.5">
-            <div className="flex h-full min-h-[76px] items-center gap-3 sm:min-h-[92px]">
-              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-emerald-100 bg-emerald-50 text-emerald-700 shadow-sm">🏷</div>
-              <div className="min-w-0 leading-tight">
-                <p className="text-xs font-semibold text-slate-500">Categories</p>
-                <strong className="block text-xl font-bold text-slate-900">{categoryOptions.length}</strong>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={openCreateDialog}
-              className="mt-2 text-xs font-semibold text-emerald-700 hover:text-emerald-800"
-            >
-              Voir toutes
-            </button>
+            <p className="mt-1 text-xs text-slate-600">22,6% des produits</p>
           </article>
         </section>
 
-        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <section className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm sm:p-4">
+          <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <h2 className="text-lg font-bold text-slate-900 sm:text-xl">Catalogue</h2>
-              <p className="text-sm text-slate-600">Retrouvez vite un produit, modifiez-le ou supprimez-le.</p>
+              <h2 className="text-base font-bold text-slate-900 sm:text-lg">Catalogue</h2>
+              <p className="text-xs text-slate-600">Retrouvez vite un produit, modifiez-le ou supprimez-le.</p>
             </div>
             <button
               type="button"
               onClick={openCreateDialog}
-              className="inline-flex items-center gap-2 self-start rounded-lg border border-emerald-600 bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-700"
+              className="inline-flex items-center gap-2 self-start rounded-lg border  border-emerald-600 bg-emerald-600 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-emerald-700\"
             >
-              <span className="text-lg leading-none">+</span>
+              <span className="text-lg  leading-none">+</span>
               Ajouter un produit
             </button>
           </div>
 
-          <div className="mt-4 flex flex-wrap gap-2 sm:gap-2.5">
+          <div className="mt-3 flex flex-wrap gap-2 sm:gap-2">
             <label className="grid gap-1">
               <span className="text-xs font-semibold text-slate-700">Categorie</span>
               <select
                 value={categoryFilter}
                 onChange={(event) => setCategoryFilter(event.target.value)}
-                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100"
+                className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-900 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100"
               >
                 <option value="all">Toutes categories</option>
                 {categoryOptions.map((value) => (
@@ -463,7 +550,7 @@ export default function ProductsPage() {
               <select
                 value={stockFilter}
                 onChange={(event) => setStockFilter(event.target.value as "all" | "low" | "in_stock")}
-                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100"
+                className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-900 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100"
               >
                 <option value="all">Tous les statuts</option>
                 <option value="low">Stock faible</option>
@@ -475,7 +562,7 @@ export default function ProductsPage() {
               <select
                 value={String(pageSize)}
                 onChange={(event) => setPageSize(Number(event.target.value))}
-                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100"
+                className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-900 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100"
               >
                 <option value="10">Plus recent</option>
                 <option value="20">20 par page</option>
@@ -484,23 +571,23 @@ export default function ProductsPage() {
             </label>
           </div>
 
-          <div className="mt-4 overflow-x-auto rounded-xl border border-slate-200 bg-white">
+          <div className="mt-3 overflow-x-auto rounded-lg border border-slate-200 bg-white">
             <table className="w-full border-collapse">
               <thead className="bg-slate-50">
                 <tr className="border-b border-slate-200">
-                  <th className="px-2.5 py-2 text-left text-xs font-semibold text-slate-700 sm:px-3.5 sm:py-2.5">Produit</th>
-                  <th className="px-2.5 py-2 text-left text-xs font-semibold text-slate-700 sm:px-3.5 sm:py-2.5">Categorie</th>
-                  <th className="px-2.5 py-2 text-left text-xs font-semibold text-slate-700 sm:px-3.5 sm:py-2.5">Prix</th>
-                  <th className="px-2.5 py-2 text-left text-xs font-semibold text-slate-700 sm:px-3.5 sm:py-2.5">Stock</th>
-                  <th className="px-2.5 py-2 text-left text-xs font-semibold text-slate-700 sm:px-3.5 sm:py-2.5">Statut</th>
-                  <th className="px-2.5 py-2 text-left text-xs font-semibold text-slate-700 sm:px-3.5 sm:py-2.5">Derniere mise a jour</th>
-                  <th className="px-2.5 py-2 text-right text-xs font-semibold text-slate-700 sm:px-3.5 sm:py-2.5">Actions</th>
+                  <th className="px-2 py-1.5 text-left text-xs font-semibold text-slate-700 sm:px-2.5 sm:py-2">Produit</th>
+                  <th className="px-2 py-1.5 text-left text-xs font-semibold text-slate-700 sm:px-2.5 sm:py-2">Categorie</th>
+                  <th className="px-2 py-1.5 text-left text-xs font-semibold text-slate-700 sm:px-2.5 sm:py-2">Prix</th>
+                  <th className="px-2 py-1.5 text-left text-xs font-semibold text-slate-700 sm:px-2.5 sm:py-2">Stock</th>
+                  <th className="px-2 py-1.5 text-left text-xs font-semibold text-slate-700 sm:px-2.5 sm:py-2">Statut</th>
+                  <th className="px-2 py-1.5 text-left text-xs font-semibold text-slate-700 sm:px-2.5 sm:py-2">Derniere mise a jour</th>
+                  <th className="px-2 py-1.5 text-right text-xs font-semibold text-slate-700 sm:px-2.5 sm:py-2">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
                   <tr>
-                    <td className="px-3 py-5 text-sm text-slate-600" colSpan={7}>
+                    <td className="px-2 py-5 text-sm text-slate-600" colSpan={7}>
                       Chargement des produits...
                     </td>
                   </tr>
@@ -514,9 +601,9 @@ export default function ProductsPage() {
 
                     return (
                       <tr key={product.id} className="border-b border-slate-100 transition-colors hover:bg-slate-50/80">
-                        <td className="px-2.5 py-2.5 sm:px-3.5 sm:py-3">
+                        <td className="px-2 py-1.5 sm:px-2.5 sm:py-2">
                           <div className="flex items-center gap-2.5">
-                            <div className="h-9 w-9 shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
+                            <div className="h-8 w-8 shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-slate-100\">
                               {product.imageUrl ? (
                                 <img src={product.imageUrl} alt={product.name} className="h-full w-full object-cover" />
                               ) : (
@@ -529,21 +616,21 @@ export default function ProductsPage() {
                             </div>
                           </div>
                         </td>
-                        <td className="px-2.5 py-2.5 text-sm text-slate-700 sm:px-3.5 sm:py-3">{categoryLabel}</td>
-                        <td className="px-2.5 py-2.5 text-sm text-slate-900 sm:px-3.5 sm:py-3">{formatPriceCFA(product.unitPrice)}</td>
-                        <td className="px-2.5 py-2.5 text-sm text-slate-900 sm:px-3.5 sm:py-3">{product.stock}</td>
-                        <td className="px-2.5 py-2.5 sm:px-3.5 sm:py-3">
-                          <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${tone.className}`}>
+                        <td className="px-2 py-1.5 text-sm text-slate-700 sm:px-2.5 sm:py-2">{categoryLabel}</td>
+                        <td className="px-2 py-1.5 text-sm text-slate-900 sm:px-2.5 sm:py-2">{formatPriceCFA(product.unitPrice)}</td>
+                        <td className="px-2 py-1.5 text-sm text-slate-900 sm:px-2.5 sm:py-2">{product.stock}</td>
+                        <td className="px-2 py-1.5 sm:px-2.5 sm:py-2">
+                          <span className={`inline-flex rounded-full border px-2 py-0.5 text-xs font-semibold ${tone.className}`}>
                             {tone.label}
                           </span>
                         </td>
-                        <td className="px-2.5 py-2.5 text-sm text-slate-700 sm:px-3.5 sm:py-3">{formatDate(product.updatedAt ?? product.createdAt)}</td>
-                        <td className="px-2.5 py-2.5 sm:px-3.5 sm:py-3">
-                          <div className="flex justify-end gap-1.5">
+                        <td className="px-2 py-1.5 text-sm text-slate-700 sm:px-2.5 sm:py-2">{formatDate(product.updatedAt ?? product.createdAt)}</td>
+                        <td className="px-2 py-1.5 sm:px-2.5 sm:py-2">
+                          <div className="flex justify-end gap-1">
                             <button
                               type="button"
                               onClick={() => openEditDialog(product)}
-                              className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-slate-100 px-2.5 py-1.5 text-xs font-semibold text-slate-900 transition-colors hover:bg-slate-200"
+                              className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-900 transition-colors hover:bg-slate-200"
                             >
                               Modifier
                             </button>
@@ -551,7 +638,7 @@ export default function ProductsPage() {
                               type="button"
                               onClick={() => void handleDeleteProduct(product)}
                               disabled={deletingProductId === product.id}
-                              className="inline-flex items-center justify-center rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-semibold text-red-700 transition-colors hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                              className="inline-flex items-center justify-center rounded-lg border border-red-200 bg-red-50 px-2 py-1 text-xs font-semibold text-red-700 transition-colors hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
                             >
                               {deletingProductId === product.id ? "Suppression..." : "Supprimer"}
                             </button>
@@ -562,7 +649,7 @@ export default function ProductsPage() {
                   })
                 ) : (
                   <tr>
-                    <td className="px-3 py-5 text-sm text-slate-600" colSpan={7}>
+                    <td className="px-2 py-5 text-sm text-slate-600" colSpan={7}>
                       Aucun produit trouve.
                     </td>
                   </tr>
@@ -790,23 +877,81 @@ export default function ProductsPage() {
                 />
               </label>
               <label className="grid gap-1 sm:col-span-2">
-                <span className="text-sm font-semibold text-slate-700">URL image</span>
+                <span className="text-sm font-semibold text-slate-700">Media principal</span>
                 <input
-                  value={form.imageUrl}
-                  onChange={(event) => setForm((previous) => ({ ...previous, imageUrl: event.target.value }))}
+                  type="file"
+                  accept="image/*,video/*"
+                  onChange={(event) => setMainMediaFile(event.currentTarget.files?.[0] ?? null)}
                   className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100"
-                  placeholder="https://..."
                 />
+                {mainMedia.preview ? (
+                  <div className="mt-2 overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+                    {mainMedia.kind === "video" ? (
+                      <video src={mainMedia.preview} controls className="h-40 w-full object-cover" />
+                    ) : (
+                      <img src={mainMedia.preview} alt="Apercu media principal" className="h-40 w-full object-cover" />
+                    )}
+                    <div className="flex items-center justify-between gap-2 border-t border-slate-200 px-3 py-2 text-xs text-slate-600">
+                      <span>Média sélectionné depuis l'appareil</span>
+                      <button
+                        type="button"
+                        onClick={() => setMainMediaFile(null)}
+                        className="font-semibold text-rose-600 hover:text-rose-700"
+                      >
+                        Retirer
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-xs text-slate-500">Image ou video depuis votre appareil.</p>
+                )}
               </label>
-              <label className="grid gap-1 sm:col-span-2">
-                <span className="text-sm font-semibold text-slate-700">Variantes d'image (virgules)</span>
-                <input
-                  value={form.imageVariants}
-                  onChange={(event) => setForm((previous) => ({ ...previous, imageVariants: event.target.value }))}
-                  className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100"
-                  placeholder="https://..., https://..."
-                />
-              </label>
+
+              <div className="grid gap-3 sm:col-span-2">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-sm font-semibold text-slate-700">Variantes média</span>
+                  <span className="text-xs text-slate-500">Maximum 3 variantes image ou video</span>
+                </div>
+
+                <div className="grid gap-3">
+                  {variantMedia.map((slot, index) => (
+                    <div key={index} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                      <div className="flex items-center gap-3">
+                        <label className="grid flex-1 gap-1">
+                          <span className="text-xs font-semibold text-slate-700">Variante {index + 1}</span>
+                          <input
+                            type="file"
+                            accept="image/*,video/*"
+                            onChange={(event) => setVariantMediaFile(index, event.currentTarget.files?.[0] ?? null)}
+                            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100"
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setVariantMediaFile(index, null)}
+                          className="mt-6 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 transition-colors hover:bg-rose-100"
+                        >
+                          Retirer
+                        </button>
+                      </div>
+
+                      {slot.preview ? (
+                        <div className="mt-3 overflow-hidden rounded-lg border border-slate-200 bg-white">
+                          {slot.kind === "video" ? (
+                            <video src={slot.preview} controls className="h-28 w-full object-cover" />
+                          ) : (
+                            <img src={slot.preview} alt={`Variante ${index + 1}`} className="h-28 w-full object-cover" />
+                          )}
+                        </div>
+                      ) : (
+                        <div className="mt-3 rounded-lg border border-dashed border-slate-200 bg-white px-3 py-6 text-center text-xs text-slate-500">
+                          Aucun média sélectionné
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
 
               <div className="sm:col-span-2 flex flex-wrap items-center justify-between gap-3 pt-2">
                 <p className="text-sm text-slate-600">

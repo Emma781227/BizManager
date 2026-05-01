@@ -44,6 +44,7 @@ export const productSchema = z.object({
       z.string().url(),
       z.string().regex(/^\/uploads\/products\//),
       z.string().regex(/^data:image\//),
+      z.string().regex(/^data:video\//),
       z.string().length(0),
     ])
     .optional(),
@@ -53,9 +54,10 @@ export const productSchema = z.object({
         z.string().url(),
         z.string().regex(/^\/uploads\/products\//),
         z.string().regex(/^data:image\//),
+        z.string().regex(/^data:video\//),
       ]),
     )
-    .max(4)
+    .max(3)
     .optional(),
 });
 
