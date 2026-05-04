@@ -348,6 +348,45 @@ a {
   }
 }
 
+/* Settings page specific grid sizing */
+@media (min-width: 1024px) {
+  .settings-grid {
+    grid-template-columns: 1fr 360px;
+  }
+
+  /* right column helper to ensure consistent width and sticky behaviour */
+  .settings-right {
+    width: 360px;
+  }
+}
+
+.shop-kpi-grid {
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+  .shop-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1280px) {
+  .shop-kpi-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .shop-kpi-card {
+    min-height: 90px;
+  }
+
+  .shop-body-grid {
+    grid-template-columns: 1.8fr 1fr 1.1fr;
+    gap: 16px;
+    align-items: start;
+  }
+}
+
 .app-nav {
   padding: 0.2rem 0;
   display: flex;
@@ -372,7 +411,7 @@ a {
   .app-nav {
     flex-direction: column;
     overflow: visible;
-    gap: 0.4rem;
+    gap: 0.5rem;
   }
 }
 
@@ -395,18 +434,18 @@ a {
 .sidebar-brand {
   display: flex;
   align-items: center;
-  gap: 0.7rem;
-  padding-bottom: 0.7rem;
+  gap: 0.8rem;
+  padding-bottom: 0.85rem;
   border-bottom: 1px solid #edf0f2;
 }
 
 .sidebar-brand strong {
-  font-size: 1rem;
+  font-size: 1.1rem;
 }
 
 .sidebar-brand p {
   margin-top: 0.1rem;
-  font-size: 0.78rem;
+  font-size: 0.82rem;
   color: var(--muted);
 }
 
@@ -447,25 +486,26 @@ a {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.5rem;
-  height: 1.5rem;
-  border-radius: 0.45rem;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.5rem;
   border: 1px solid #d8e1e6;
   background: #ffffff;
   color: #5d6874;
-  font-size: 0.65rem;
+  font-size: 0.75rem;
   font-weight: 800;
   letter-spacing: 0.02em;
 }
 
 .app-nav-label {
   line-height: 1;
+  font-size: 0.88rem;
 }
 
 @media (min-width: 640px) {
   .app-nav-link {
-    padding: 0.5rem 0.75rem;
-    font-size: 0.84rem;
+    padding: 0.55rem 0.75rem;
+    font-size: 0.85rem;
   }
 }
 
@@ -475,6 +515,11 @@ a {
     justify-content: flex-start;
     width: 100%;
     border-radius: 0.95rem;
+    padding: 0.7rem 0.9rem;
+    min-height: 2.7rem;
+    display: flex;
+    align-items: center;
+    font-size: 0.9rem;
   }
 }
 
@@ -503,7 +548,7 @@ a {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 1.05rem;
-  padding: 0.75rem;
+  padding: 1rem;
   box-shadow: 0 8px 20px rgba(18, 22, 30, 0.05);
 }
 
@@ -1589,12 +1634,12 @@ th {
 .dashboard-sidebar {
   display: flex;
   flex-direction: column;
-  gap: 0.9rem;
+  gap: 1rem;
 }
 
 @media (min-width: 1024px) {
   .dashboard-sidebar {
-    width: min(290px, 25vw);
+    width: 240px;
     min-height: calc(100vh - 5rem);
     align-content: start;
   }
@@ -1603,14 +1648,14 @@ th {
 .sidebar-account {
   border: 1px solid #e2e6e8;
   border-radius: 1rem;
-  padding: 0.75rem 0.85rem;
+  padding: 0.9rem;
   background: #f8faf9;
   display: grid;
-  gap: 0.2rem;
+  gap: 0.3rem;
 }
 
 .sidebar-account span {
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   color: var(--muted);
   font-weight: 700;
   text-transform: uppercase;
@@ -1618,7 +1663,7 @@ th {
 }
 
 .sidebar-account strong {
-  font-size: 0.86rem;
+  font-size: 0.9rem;
   color: var(--ink);
   word-break: break-word;
 }
@@ -1632,7 +1677,7 @@ th {
 .sidebar-footer p {
   margin: 0;
   color: var(--muted);
-  font-size: 0.82rem;
+  font-size: 0.85rem;
   line-height: 1.45;
 }
 
@@ -1646,6 +1691,61 @@ th {
 
 .sidebar-logout button:hover {
   background: #ffe9e5;
+}
+
+.sidebar-promo {
+  display: grid;
+  gap: 0.6rem;
+  padding: 1rem;
+  background: linear-gradient(135deg, #f0fdf4 0%, #f8fbf7 100%);
+  border: 1px solid #d1fae5;
+  border-radius: 1.15rem;
+  text-align: center;
+}
+
+.promo-icon {
+  display: flex;
+  justify-content: center;
+  margin: 0.4rem 0 0 0;
+  color: #059669;
+}
+
+.promo-icon svg {
+  width: 2.5rem;
+  height: 2.5rem;
+}
+
+.promo-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--ink);
+  line-height: 1.3;
+}
+
+.promo-text {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.promo-button {
+  display: inline-block;
+  padding: 0.6rem 1rem;
+  background: linear-gradient(135deg, #1d7c5f 0%, #166a51 100%);
+  color: #ffffff;
+  border-radius: 0.75rem;
+  text-decoration: none;
+  font-size: 0.78rem;
+  font-weight: 700;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  margin-top: 0.2rem;
+}
+
+.promo-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(29, 124, 95, 0.24);
 }
 
 .dashboard-main {

@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 const AFRICAN_DIAL_CODES = [
   { label: "CM +237", value: "+237" },
@@ -25,11 +25,8 @@ const AFRICAN_DIAL_CODES = [
   { label: "CD +243", value: "+243" },
 ];
 
-const notificationEmailPattern = "[A-Za-z0-9._-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}";
-
 type PhoneParts = { dialCode: string; localNumber: string };
 type OpeningHoursParts = { openingTime: string; closingTime: string };
-type FileState = { logoFile: File | null; coverFile: File | null };
 type UIState = { loading: boolean; saving: boolean; error: string | null; success: string | null };
 
 type Shop = {
@@ -116,7 +113,6 @@ export default function SettingsPage() {
   const [form, setForm] = useState(initialState);
   const [phone, setPhone] = useState<PhoneParts>({ dialCode: "+237", localNumber: "" });
   const [hours, setHours] = useState<OpeningHoursParts>({ openingTime: "", closingTime: "" });
-  const [files, setFiles] = useState<FileState>({ logoFile: null, coverFile: null });
   const [uiState, setUIState] = useState<UIState>({ loading: true, saving: false, error: null, success: null });
   const [searchQuery, setSearchQuery] = useState("");
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
@@ -202,73 +198,6 @@ export default function SettingsPage() {
     }
   }
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setUIState(prev => ({ ...prev, saving: true, error: null, success: null }));
-
-    try {
-      const localPhone = phone.localNumber.replace(/\D/g, "").trim();
-      if (localPhone.length < 6) {
-        throw new Error("Le numero WhatsApp local doit contenir au moins 6 chiffres.");
-      }
-
-      if ((hours.openingTime && !hours.closingTime) || (!hours.openingTime && hours.closingTime)) {
-        throw new Error("Renseigne a la fois l'heure d'ouverture et de fermeture.");
-      }
-
-      if (hours.openingTime && hours.closingTime && hours.openingTime >= hours.closingTime) {
-        throw new Error("L'heure de fermeture doit etre apres l'heure d'ouverture.");
-      }
-
-      const fullWhatsApp = `${phone.dialCode}${localPhone}`;
-      const openingHours = hours.openingTime && hours.closingTime ? `${hours.openingTime}-${hours.closingTime}` : "";
-
-      const formData = new FormData();
-      formData.set("slug", normalizedSlug);
-      formData.set("name", form.name);
-      formData.set("notificationEmail", form.notificationEmail);
-      formData.set("logoUrl", form.logoUrl);
-      formData.set("coverUrl", form.coverUrl);
-      formData.set("description", form.description);
-      formData.set("address", form.address);
-      formData.set("city", form.city);
-      formData.set("postalCode", form.postalCode);
-      formData.set("regionCountry", form.regionCountry);
-      formData.set("whatsappNumber", fullWhatsApp);
-      formData.set("category", form.category);
-      formData.set("openingHours", openingHours);
-      formData.set("isPublished", String(form.isPublished));
-      if (files.logoFile) {
-        formData.set("logoFile", files.logoFile);
-      }
-      if (files.coverFile) {
-        formData.set("coverFile", files.coverFile);
-      }
-
-      const response = await fetch("/api/shop", {
-        method: "PUT",
-        body: formData,
-      });
-      const raw = await response.text();
-      const json = parseJsonSafe<{ data?: Shop; error?: string }>(raw) ?? {};
-
-      if (!response.ok) {
-        throw new Error(json.error ?? `Impossible d'enregistrer la boutique (HTTP ${response.status})`);
-      }
-
-      setUIState(prev => ({ ...prev, success: "Profil boutique enregistre." }));
-      setFiles({ logoFile: null, coverFile: null });
-      await loadShop();
-    } catch (saveError) {
-      setUIState(prev => ({
-        ...prev,
-        error: saveError instanceof Error ? saveError.message : "Erreur inconnue"
-      }));
-    } finally {
-      setUIState(prev => ({ ...prev, saving: false }));
-    }
-  }
-
   if (uiState.loading) {
     return (
       <main className="min-h-screen bg-white px-4 py-6 sm:px-6 lg:px-8">
@@ -283,7 +212,7 @@ export default function SettingsPage() {
 
   return (
     <main className="min-h-screen bg-slate-50">
-      <header className="sticky top-0 z-40 border-b border-slate-200 bg-white px-4 py-4 sm:px-6 lg:px-8">
+      <header className="sticky top-0 z-40 h-14 border-b border-slate-200 bg-white px-4 sm:px-6 lg:px-8">
         <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4">
           <div className="flex-1 max-w-md">
             <div className="relative">
@@ -340,18 +269,22 @@ export default function SettingsPage() {
       </header>
 
       <section className="border-b border-slate-200 bg-white px-4 py-6 sm:px-6 lg:px-8">
-        <div className="mx-auto w-full max-w-6xl">
-          <div className="mb-4 text-left">
-            <h1 className="text-3xl font-extrabold tracking-tight text-slate-950 sm:text-4xl">Ma boutique</h1>
-            <p className="mt-2 text-sm text-slate-500 sm:text-base">Gérez votre vitrine en ligne et les informations de votre commerce</p>
+        <div className="mx-auto w-full" style={{ maxWidth: "calc(100% - 2rem)" }}>
+          <div className="mb-4 flex flex-wrap items-start justify-between gap-4 lg:mb-5">
+            <div>
+              <h1 className="text-3xl font-extrabold tracking-tight text-slate-950">Ma boutique</h1>
+              <p className="mt-1 text-sm text-slate-500 sm:mt-2">Gérez votre vitrine en ligne et les informations de votre commerce</p>
+            </div>
+            <a href={shopPreview} target="_blank" rel="noopener noreferrer" className="inline-flex h-10 items-center justify-center rounded-xl bg-emerald-600 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 lg:h-11">Voir ma boutique</a>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+          <div className="shop-kpi-grid grid gap-3 lg:gap-4">
+            <article className="shop-kpi-card rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-xs font-medium text-slate-600 sm:text-sm">Visites de la boutique</p>
-                  <p className="mt-2 text-2xl font-extrabold tracking-tight text-slate-950">5 842</p>
+                  <p className="text-xs font-medium text-slate-600">Visites de la boutique</p>
+                  <p className="mt-1 text-3xl font-extrabold tracking-tight text-slate-950">5 842</p>
+                  <p className="mt-1 text-xs text-slate-500">vs 7 derniers jours</p>
                 </div>
                 <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
                   <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -360,15 +293,14 @@ export default function SettingsPage() {
                   </svg>
                 </span>
               </div>
-              <p className="mt-2 text-xs font-semibold text-emerald-600">+18,7%</p>
-              <p className="mt-1 text-xs text-slate-500">vs 7 derniers jours</p>
             </article>
 
-            <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+            <article className="shop-kpi-card rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-xs font-medium text-slate-600 sm:text-sm">Taux de conversion</p>
-                  <p className="mt-2 text-2xl font-extrabold tracking-tight text-slate-950">3,6%</p>
+                  <p className="text-xs font-medium text-slate-600">Taux de conversion</p>
+                  <p className="mt-1 text-3xl font-extrabold tracking-tight text-slate-950">3,6%</p>
+                  <p className="mt-1 text-xs text-slate-500">vs 7 derniers jours</p>
                 </div>
                 <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
                   <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -376,15 +308,14 @@ export default function SettingsPage() {
                   </svg>
                 </span>
               </div>
-              <p className="mt-2 text-xs font-semibold text-emerald-600">+0,6 pt</p>
-              <p className="mt-1 text-xs text-slate-500">vs 7 derniers jours</p>
             </article>
 
-            <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+            <article className="shop-kpi-card rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-xs font-medium text-slate-600 sm:text-sm">Produits publiés</p>
-                  <p className="mt-2 text-2xl font-extrabold tracking-tight text-slate-950">318</p>
+                  <p className="text-xs font-medium text-slate-600">Produits publiés</p>
+                  <p className="mt-1 text-3xl font-extrabold tracking-tight text-slate-950">318</p>
+                  <p className="mt-1 text-xs text-slate-500">vs hier</p>
                 </div>
                 <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
                   <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -393,15 +324,14 @@ export default function SettingsPage() {
                   </svg>
                 </span>
               </div>
-              <p className="mt-2 text-xs font-semibold text-emerald-600">+6,3%</p>
-              <p className="mt-1 text-xs text-slate-500">vs hier</p>
             </article>
 
-            <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+            <article className="shop-kpi-card rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-xs font-medium text-slate-600 sm:text-sm">Partages WhatsApp</p>
-                  <p className="mt-2 text-2xl font-extrabold tracking-tight text-slate-950">126</p>
+                  <p className="text-xs font-medium text-slate-600">Partages WhatsApp</p>
+                  <p className="mt-1 text-3xl font-extrabold tracking-tight text-slate-950">126</p>
+                  <p className="mt-1 text-xs text-slate-500">vs 7 derniers jours</p>
                 </div>
                 <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
                   <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -410,451 +340,302 @@ export default function SettingsPage() {
                   </svg>
                 </span>
               </div>
-              <p className="mt-2 text-xs font-semibold text-emerald-600">+21,2%</p>
-              <p className="mt-1 text-xs text-slate-500">vs 7 derniers jours</p>
             </article>
           </div>
-
-          <article className="mt-6 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-            <div className="relative h-44 w-full overflow-hidden sm:h-52">
-              {form.coverUrl ? (
-                <img src={form.coverUrl} alt="Bannière boutique" className="h-full w-full object-cover" />
-              ) : (
-                <div className="h-full w-full bg-[radial-gradient(circle_at_top_left,_#bbf7d0,_#86efac_30%,_#34d399_60%,_#065f46)]" />
-              )}
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/25 to-transparent" />
-            </div>
-
-            <div className="grid gap-5 p-5 sm:p-6 lg:grid-cols-[1fr_220px] lg:items-start">
-              <div>
-                <div className="flex flex-wrap items-center gap-3">
-                  <div className="inline-flex h-14 w-14 items-center justify-center rounded-full border-4 border-white bg-emerald-600 text-base font-bold text-white shadow-sm">
-                    MA
-                  </div>
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h2 className="text-xl font-extrabold tracking-tight text-slate-950">Mon Aventure</h2>
-                      <span className="inline-flex items-center rounded-full border border-emerald-300 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">Publiée</span>
-                    </div>
-                    <p className="mt-1 text-sm font-medium text-slate-600">{form.category || "Beauté & Bien-être"}</p>
-                  </div>
-                </div>
-
-                <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700">
-                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 12l2 2 4-4" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 3l7 4v5c0 5-3.5 8-7 9-3.5-1-7-4-7-9V7l7-4z" />
-                  </svg>
-                  Boutique vérifiée
-                </div>
-
-                <div className="mt-4 flex flex-wrap items-center gap-2">
-                  <span className="text-sm font-semibold text-emerald-700">{publicDomain}</span>
-                  <button
-                    type="button"
-                    onClick={() => void navigator.clipboard.writeText(publicDomain)}
-                    className="inline-flex items-center justify-center rounded-full border border-emerald-200 bg-emerald-50 p-1.5 text-emerald-700 transition hover:bg-emerald-100"
-                    aria-label="Copier le lien public"
-                  >
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2" />
-                      <rect x="8" y="8" width="12" height="12" rx="2" ry="2" strokeWidth={1.8} />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-3 lg:pt-1">
-                <a href={shopPreview} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center rounded-2xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700">Voir la boutique</a>
-                <button type="button" className="inline-flex items-center justify-center rounded-2xl border border-emerald-200 bg-white px-4 py-2.5 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-50">Partager</button>
-                <button type="button" className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Modifier</button>
-              </div>
-            </div>
-          </article>
         </div>
       </section>
 
       <section className="px-4 py-6 sm:px-6 lg:px-8">
-        <div className="mx-auto w-full max-w-6xl">
-          <form className="grid gap-6 lg:grid-cols-[1fr_380px]" onSubmit={handleSubmit}>
-            <div className="space-y-6">
-              <article className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
-                <h2 className="mb-4 text-lg font-semibold text-slate-950 sm:text-xl">Informations générales</h2>
-                <div className="space-y-4">
-                  <label className="grid gap-1.5">
-                    <span className="text-sm font-semibold text-slate-700">Nom de la boutique</span>
-                    <input required value={form.name} onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))} className="rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100" />
-                  </label>
+        <div className="mx-auto w-full" style={{ maxWidth: "calc(100% - 2rem)" }}>
+          {uiState.error && <div className="mb-4 rounded-lg border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-700">{uiState.error}</div>}
+          {uiState.success && <div className="mb-4 rounded-lg border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">✓ {uiState.success}</div>}
 
-                  <label className="grid gap-1.5">
-                    <span className="text-sm font-semibold text-slate-700">Slug public (URL)</span>
-                    <input required value={form.slug} onChange={(event) => setForm((prev) => ({ ...prev, slug: event.target.value }))} placeholder="ma-boutique" className="rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100" />
-                    <p className="text-xs text-slate-500 mt-1">{shopPreview}</p>
-                  </label>
-
-                  <label className="grid gap-1.5">
-                    <span className="text-sm font-semibold text-slate-700">Description</span>
-                    <textarea value={form.description} onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))} rows={3} className="rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100" />
-                  </label>
+          <div className="shop-body-grid grid gap-4">
+            <div className="space-y-4">
+              <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <div className="relative h-20 w-full overflow-hidden">
+                  {form.coverUrl ? (
+                    <img src={form.coverUrl} alt="Bannière boutique" className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="h-full w-full bg-[radial-gradient(circle_at_top_left,#bbf7d0,#86efac_30%,#34d399_60%,#065f46)]" />
+                  )}
                 </div>
-              </article>
 
-              <article className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
-                <h2 className="mb-4 text-lg font-semibold text-slate-950 sm:text-xl">Adresse & Contact</h2>
-                <div className="space-y-4">
-                  <label className="grid gap-1.5">
-                    <span className="text-sm font-semibold text-slate-700">Adresse complète</span>
-                    <textarea value={form.address} onChange={(event) => setForm((prev) => ({ ...prev, address: event.target.value }))} rows={2} placeholder="Rue, numéro, appartement, bâtiment..." className="rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100" />
-                  </label>
-
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <label className="grid gap-1.5">
-                      <span className="text-sm font-semibold text-slate-700">Ville</span>
-                      <input value={form.city} onChange={(event) => setForm((prev) => ({ ...prev, city: event.target.value }))} placeholder="Ex: Douala" className="rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100" />
-                    </label>
-                    <label className="grid gap-1.5">
-                      <span className="text-sm font-semibold text-slate-700">Code postal</span>
-                      <input value={form.postalCode} onChange={(event) => setForm((prev) => ({ ...prev, postalCode: event.target.value }))} placeholder="Ex: 12500" className="rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100" />
-                    </label>
-                  </div>
-
-                  <label className="grid gap-1.5">
-                    <span className="text-sm font-semibold text-slate-700">Pays / Région</span>
-                    <input value={form.regionCountry} onChange={(event) => setForm((prev) => ({ ...prev, regionCountry: event.target.value }))} placeholder="Ex: Cameroun / Littoral" className="rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100" />
-                  </label>
-
-                  <label className="grid gap-1.5">
-                    <span className="text-sm font-semibold text-slate-700">Numéro WhatsApp</span>
-                    <div className="flex gap-2">
-                      <select value={phone.dialCode} onChange={(event) => setPhone(prev => ({ ...prev, dialCode: event.target.value }))} aria-label="Indicatif pays" className="flex-shrink-0 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100">
-                        {AFRICAN_DIAL_CODES.map((code) => (
-                          <option key={code.value} value={code.value}>{code.label}</option>
-                        ))}
-                      </select>
-                      <input required inputMode="numeric" pattern="[0-9]{6,14}" value={phone.localNumber} onChange={(event) => setPhone(prev => ({ ...prev, localNumber: event.target.value.replace(/\D/g, "") }))} placeholder="620778033" className="flex-1 rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100" />
-                    </div>
-                  </label>
-
-                  <label className="grid gap-1.5">
-                    <span className="text-sm font-semibold text-slate-700">Email de notification</span>
-                    <input type="email" pattern={notificationEmailPattern} inputMode="email" value={form.notificationEmail} onChange={(event) => setForm((prev) => ({ ...prev, notificationEmail: event.target.value }))} placeholder="notifications@ma-boutique.com" className="rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100" />
-                  </label>
-                </div>
-              </article>
-
-              <article id="horaires-edition" className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
-                <h2 className="mb-4 text-lg font-semibold text-slate-950 sm:text-xl">Horaires d'ouverture</h2>
-                <div className="space-y-4">
-                  <div className="flex items-end gap-2">
-                    <label className="grid flex-1 gap-1.5">
-                      <span className="text-sm font-semibold text-slate-700">Ouverture</span>
-                      <input type="time" value={hours.openingTime} onChange={(event) => setHours(prev => ({ ...prev, openingTime: event.target.value }))} aria-label="Heure d'ouverture" className="rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100" />
-                    </label>
-                    <span className="mb-2.5 text-slate-400">à</span>
-                    <label className="grid flex-1 gap-1.5">
-                      <span className="text-sm font-semibold text-slate-700">Fermeture</span>
-                      <input type="time" value={hours.closingTime} onChange={(event) => setHours(prev => ({ ...prev, closingTime: event.target.value }))} aria-label="Heure de fermeture" className="rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100" />
-                    </label>
-                  </div>
-
-                  <label className="grid gap-1.5">
-                    <span className="text-sm font-semibold text-slate-700">Catégorie</span>
-                    <input value={form.category} onChange={(event) => setForm((prev) => ({ ...prev, category: event.target.value }))} placeholder="Ex: Beauté & Bien-être" className="rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100" />
-                  </label>
-                </div>
-              </article>
-
-              <article className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
-                <h2 className="mb-4 text-lg font-semibold text-slate-950 sm:text-xl">Logo de la boutique</h2>
-                <div className="space-y-4">
-                  <label className="grid gap-1.5">
-                    <span className="text-sm font-semibold text-slate-700">URL du logo</span>
-                    <input type="url" value={form.logoUrl} onChange={(event) => setForm((prev) => ({ ...prev, logoUrl: event.target.value }))} className="rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100" />
-                  </label>
-                  <label className="grid gap-1.5">
-                    <span className="text-sm font-semibold text-slate-700">Télécharger le logo</span>
-                    <input type="file" accept="image/*" onChange={(event) => setFiles(prev => ({ ...prev, logoFile: event.target.files?.[0] ?? null }))} className="block w-full text-sm text-slate-600 file:cursor-pointer file:rounded-lg file:border file:border-slate-200 file:bg-slate-50 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-slate-700 hover:file:bg-slate-100" />
-                    {files.logoFile && <p className="text-xs text-emerald-700">✓ {files.logoFile.name}</p>}
-                  </label>
-                </div>
-              </article>
-
-              <article className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
-                <h2 className="mb-4 text-lg font-semibold text-slate-950 sm:text-xl">Bannière de couverture</h2>
-                <div className="space-y-4">
-                  <label className="grid gap-1.5">
-                    <span className="text-sm font-semibold text-slate-700">URL de la bannière</span>
-                    <input type="url" value={form.coverUrl} onChange={(event) => setForm((prev) => ({ ...prev, coverUrl: event.target.value }))} className="rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100" />
-                  </label>
-                  <label className="grid gap-1.5">
-                    <span className="text-sm font-semibold text-slate-700">Télécharger la bannière</span>
-                    <input type="file" accept="image/*" onChange={(event) => setFiles(prev => ({ ...prev, coverFile: event.target.files?.[0] ?? null }))} className="block w-full text-sm text-slate-600 file:cursor-pointer file:rounded-lg file:border file:border-slate-200 file:bg-slate-50 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-slate-700 hover:file:bg-slate-100" />
-                    {files.coverFile && <p className="text-xs text-emerald-700">✓ {files.coverFile.name}</p>}
-                  </label>
-                </div>
-              </article>
-
-              <article className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
-                <h2 className="mb-4 text-lg font-semibold text-slate-950 sm:text-xl">Statut de publication</h2>
-                <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 transition hover:bg-slate-100">
-                  <input type="checkbox" checked={form.isPublished} onChange={(event) => setForm((prev) => ({ ...prev, isPublished: event.target.checked }))} className="h-5 w-5 rounded border-slate-300 text-emerald-600 accent-emerald-600" />
+                <div className="grid gap-4 p-4 lg:grid-cols-[1fr_170px]">
                   <div>
-                    <p className="font-semibold text-slate-900">Votre boutique est en ligne</p>
-                    <p className="text-xs text-slate-600">Les clients peuvent accéder à votre boutique</p>
+                    <div className="flex items-start gap-3">
+                      <div className="inline-flex h-14 w-14 items-center justify-center rounded-full border-4 border-white bg-emerald-600 text-base font-bold text-white shadow-sm">MA</div>
+                      <div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h2 className="text-2xl font-bold tracking-tight text-slate-950">Mon Aventure</h2>
+                          <span className="inline-flex items-center rounded-full border border-emerald-300 bg-emerald-50 px-2 py-1 text-[11px] font-semibold text-emerald-700">Publiée</span>
+                        </div>
+                        <p className="mt-1 text-sm font-medium text-slate-600">{form.category || "Beauté & Bien-être"}</p>
+                        <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
+                          <span className="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-600" />
+                          Boutique vérifiée
+                        </div>
+                        <div className="mt-3 flex items-center gap-2">
+                          <span className="text-xs font-semibold text-emerald-700">{publicDomain}</span>
+                          <button type="button" onClick={() => void navigator.clipboard.writeText(publicDomain)} className="inline-flex items-center justify-center rounded-full border border-emerald-200 bg-emerald-50 p-1.5 text-emerald-700 transition hover:bg-emerald-100" aria-label="Copier le lien public">
+                            <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2" />
+                              <rect x="8" y="8" width="12" height="12" rx="2" ry="2" strokeWidth={1.8} />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </label>
+
+                  <div className="flex flex-col gap-2">
+                    <a href={shopPreview} target="_blank" rel="noopener noreferrer" className="inline-flex h-10 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 px-3 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100">Voir la boutique</a>
+                    <button type="button" className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50">Partager</button>
+                    <button type="button" className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50">Modifier</button>
+                  </div>
+                </div>
               </article>
 
-              <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-                <div className="mb-4 flex items-center justify-between gap-3">
-                  <h2 className="text-lg font-semibold text-slate-950 sm:text-xl">Performance récente</h2>
-                  <select defaultValue="7d" className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100" aria-label="Filtre période performance">
-                    <option value="7d">7 derniers jours</option>
-                  </select>
+              <div className="grid gap-4 lg:grid-cols-2 lg:auto-rows-max">
+                <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm lg:col-span-1">
+                  <div className="mb-3 flex items-center justify-between">
+                    <h3 className="text-sm font-semibold text-slate-900">Informations générales</h3>
+                    <button type="button" className="text-xs font-semibold text-emerald-700">Modifier</button>
+                  </div>
+                  <div className="space-y-1.5 text-xs">
+                    <p className="flex items-center justify-between gap-2"><span className="text-slate-500">Nom de la boutique</span><span className="font-medium text-slate-800">{form.name || "Mon Aventure"}</span></p>
+                    <p className="flex items-center justify-between gap-2"><span className="text-slate-500">Slug</span><span className="font-medium text-slate-800">{normalizedSlug || "mon-aventure"}</span></p>
+                    <p className="flex items-center justify-between gap-2"><span className="text-slate-500">Téléphone</span><span className="font-medium text-slate-800">{phone.dialCode} {phone.localNumber || "000000000"}</span></p>
+                    <p className="flex items-center justify-between gap-2"><span className="text-slate-500">Email</span><span className="truncate font-medium text-slate-800">{form.notificationEmail || "contact@monaventure.cm"}</span></p>
+                    <p className="flex items-center justify-between gap-2"><span className="text-slate-500">Ville</span><span className="font-medium text-slate-800">{form.city || "Douala"}</span></p>
+                    <p className="flex items-center justify-between gap-2"><span className="text-slate-500">Pays</span><span className="font-medium text-slate-800">{form.regionCountry || "Cameroun"}</span></p>
+                  </div>
+                </article>
+
+                <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm lg:col-span-1">
+                  <div className="mb-3 flex items-center justify-between">
+                    <h3 className="text-sm font-semibold text-slate-900">Horaires d&apos;ouverture</h3>
+                    <button type="button" className="text-xs font-semibold text-emerald-700">Modifier</button>
+                  </div>
+                  <div className="space-y-1.5 text-xs text-slate-700">
+                    {["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"].map((day) => (
+                      <p key={day} className="flex justify-between"><span>{day}</span><span>{hours.openingTime || "08:00"} - {hours.closingTime || "18:00"}</span></p>
+                    ))}
+                    <p className="flex justify-between"><span>Dimanche</span><span className="font-semibold text-emerald-700">Fermé</span></p>
+                  </div>
+                </article>
+              </div>
+
+              <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                <h3 className="mb-3 text-sm font-semibold text-slate-900">Moyens de paiement acceptés</h3>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  {[
+                    "Orange Money",
+                    "MTN Mobile Money",
+                    "Espèces",
+                    "Virement bancaire",
+                  ].map((payment) => (
+                    <span key={payment} className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-semibold text-slate-700">{payment}</span>
+                  ))}
                 </div>
-                <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-3 sm:p-4">
+              </article>
+
+              <div className="grid gap-4 lg:grid-cols-2 lg:auto-rows-max">
+                <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <h3 className="text-sm font-semibold text-slate-900">Performance récente</h3>
+                    <select defaultValue="7d" className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-600" aria-label="Filtre période performance">
+                      <option value="7d">7 derniers jours</option>
+                    </select>
+                  </div>
                   <svg viewBox="0 0 560 220" className="h-auto w-full" role="img" aria-label="Graphique visites et commandes sur 7 jours">
                     <line x1="48" y1="20" x2="48" y2="180" stroke="#cbd5e1" strokeWidth="1" />
                     <line x1="48" y1="180" x2="540" y2="180" stroke="#cbd5e1" strokeWidth="1" />
                     <path d="M48 152 L126 138 L204 142 L282 118 L360 94 L438 82 L516 66" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                     <path d="M48 166 L126 160 L204 156 L282 150 L360 144 L438 136 L516 130" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="6 6" />
-                    <text x="48" y="202" fontSize="11" fill="#64748b">Lun</text>
-                    <text x="126" y="202" fontSize="11" fill="#64748b">Mar</text>
-                    <text x="204" y="202" fontSize="11" fill="#64748b">Mer</text>
-                    <text x="282" y="202" fontSize="11" fill="#64748b">Jeu</text>
-                    <text x="360" y="202" fontSize="11" fill="#64748b">Ven</text>
-                    <text x="438" y="202" fontSize="11" fill="#64748b">Sam</text>
-                    <text x="516" y="202" fontSize="11" fill="#64748b">Dim</text>
+                    <text x="48" y="202" fontSize="11" fill="#64748b">12 mai</text>
+                    <text x="126" y="202" fontSize="11" fill="#64748b">13 mai</text>
+                    <text x="204" y="202" fontSize="11" fill="#64748b">14 mai</text>
+                    <text x="282" y="202" fontSize="11" fill="#64748b">15 mai</text>
+                    <text x="360" y="202" fontSize="11" fill="#64748b">16 mai</text>
+                    <text x="438" y="202" fontSize="11" fill="#64748b">17 mai</text>
+                    <text x="516" y="202" fontSize="11" fill="#64748b">18 mai</text>
                   </svg>
-                  <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-slate-600">
-                    <span className="inline-flex items-center gap-2"><span className="h-2 w-6 rounded-full bg-emerald-500" aria-hidden />Visites</span>
-                    <span className="inline-flex items-center gap-2"><span className="h-2 w-6 rounded-full border border-slate-400 bg-slate-300/50" aria-hidden />Commandes</span>
+                </article>
+
+                <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                  <h3 className="mb-3 text-sm font-semibold text-slate-900">Conseils pour améliorer votre boutique</h3>
+                  <div className="space-y-2">
+                    {[
+                      { title: "Ajoutez plus de produits", text: "Les boutiques avec plus de 20 produits reçoivent plus de visites." },
+                      { title: "Activez les promos", text: "Attirez plus de clients avec des offres spéciales." },
+                      { title: "Partagez sur WhatsApp", text: "Augmentez votre visibilité en un clic." },
+                      { title: "Maintenez vos infos à jour", text: "Des informations complètes inspirent confiance." },
+                    ].map((tip) => (
+                      <div key={tip.title} className="rounded-xl border border-slate-100 bg-slate-50 p-2.5">
+                        <p className="text-xs font-semibold text-slate-800">{tip.title}</p>
+                        <p className="mt-0.5 text-[11px] leading-4 text-slate-500">{tip.text}</p>
+                      </div>
+                    ))}
                   </div>
-                </div>
-              </article>
+                </article>
+              </div>
+            </div>
 
-              <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-                <h3 className="text-sm font-semibold text-slate-900 sm:text-base">Conseils pour améliorer votre boutique</h3>
-                <div className="mt-4 space-y-2">
-                  {[
-                    { title: "Ajoutez plus de produits", text: "les boutiques avec plus de 20 produits reçoivent plus de visites" },
-                    { title: "Activez les promos et réductions", text: "attirez plus de clients avec des offres spéciales" },
-                    { title: "Partagez votre boutique sur WhatsApp", text: "augmentez votre visibilité en un clic" },
-                    { title: "Maintenez vos informations à jour", text: "des informations complètes inspirent confiance" },
-                  ].map((tip) => (
-                    <button key={tip.title} type="button" className="flex w-full items-start gap-3 rounded-2xl border border-transparent px-3 py-3 text-left transition hover:border-slate-200 hover:bg-slate-50">
-                      <span className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
-                        <svg className="h-4.5 w-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 3l8 4.5-8 4.5-8-4.5L12 3z" />
-                        </svg>
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block text-sm font-semibold text-slate-900">{tip.title}</span>
-                        <span className="mt-0.5 block text-xs leading-5 text-slate-500">{tip.text}</span>
-                      </span>
-                      <span className="mt-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-slate-400 transition">
-                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 5l7 7-7 7" />
-                        </svg>
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </article>
-
-              <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-                <div className="mb-4 flex items-center justify-between gap-3">
-                  <h3 className="text-sm font-semibold text-slate-900 sm:text-base">Personnalisation</h3>
-                  <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-500">Actif</span>
-                </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Thème de couleur</p>
-                    <div className="mt-3 grid grid-cols-6 gap-2">
-                      {["vert", "bleu", "violet", "orange", "rouge", "gris foncé"].map((label) => (
-                        <button key={label} type="button" className="flex flex-col items-center gap-1" aria-label={`Choisir le thème ${label}`}>
-                          <span className={`h-8 w-8 rounded-full ${label === "vert" ? "bg-emerald-500" : label === "bleu" ? "bg-sky-500" : label === "violet" ? "bg-violet-500" : label === "orange" ? "bg-orange-500" : label === "rouge" ? "bg-rose-500" : "bg-slate-700"} ring-2 ring-white shadow-sm`} />
-                          <span className="text-[10px] font-medium text-slate-500">{label}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
-                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Logo de la boutique</p>
-                      <div className="mt-3 flex items-center gap-3">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-600 text-sm font-bold text-white shadow-sm">{form.name ? form.name.slice(0, 1).toUpperCase() : "M"}</div>
-                        <button type="button" className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50">Changer</button>
+            <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm lg:row-span-2" style={{ display: "flex", flexDirection: "column", justifyContent: "center" }}>
+              <h3 className="mb-4 text-sm font-semibold text-slate-900">Aperçu de la vitrine</h3>
+              <div className="flex flex-1 items-center justify-center">
+                <div className="mx-auto bg-slate-950" style={{ width: "240px", borderRadius: "2.5rem", borderWidth: "12px", borderStyle: "solid", borderColor: "#0f1724", boxShadow: "0 20px 60px rgba(15,23,42,0.20)" }}>
+                  <div className="relative overflow-hidden rounded-[2.1rem] bg-white">
+                    <div className="absolute left-1/2 top-2.5 z-10 h-1.5 w-24 -translate-x-1/2 rounded-full bg-slate-300" />
+                    
+                    <div className="relative h-40 overflow-hidden">
+                      {form.coverUrl ? <img src={form.coverUrl} alt="Aperçu couverture boutique" className="h-full w-full object-cover" /> : <div className="h-full w-full bg-[radial-gradient(circle_at_top,#bbf7d0,#86efac_35%,#34d399_65%,#065f46)]" />}
+                      <div className="absolute inset-0 bg-linear-to-t from-slate-950/40 via-slate-950/10 to-transparent" />
+                      <div className="absolute bottom-3 left-3 right-3">
+                        <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-white/70">Boutique publique</p>
+                        <p className="mt-1 text-xs font-bold text-white">{form.name || "Mon Aventure"}</p>
                       </div>
                     </div>
-                    <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
-                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Bannière de couverture</p>
-                      <div className="mt-3 overflow-hidden rounded-xl border border-slate-200 bg-white">
-                        {form.coverUrl ? <img src={form.coverUrl} alt="Miniature de la bannière" className="h-16 w-full object-cover" /> : <div className="h-16 w-full bg-gradient-to-r from-emerald-100 via-slate-100 to-emerald-50" />}
-                      </div>
-                      <button type="button" className="mt-3 inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50">Changer</button>
-                    </div>
-                  </div>
 
-                  <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Statut de publication</p>
-                    <div className="mt-3 flex items-center justify-between gap-3">
+                    <div className="space-y-2.5 px-3 py-3">
+                      <div className="flex items-center gap-2.5">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-600 text-xs font-bold text-white shadow-sm">MA</div>
+                        <div className="min-w-0">
+                          <p className="truncate text-xs font-bold text-slate-900">{form.name || "Mon Aventure"}</p>
+                          <p className="text-[10px] text-slate-500">{form.category || "Beauté & Bien-être"}</p>
+                        </div>
+                      </div>
+
+                      <div className="rounded-2xl bg-emerald-50 p-2.5">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-emerald-700">Livraison rapide</p>
+                            <p className="mt-0.5 text-[10px] font-semibold text-slate-700">Partout au Cameroun</p>
+                          </div>
+                          <svg className="h-5 w-5 shrink-0 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                          </svg>
+                        </div>
+                      </div>
+
                       <div>
-                        <p className="text-sm font-semibold text-slate-900">Votre boutique est en ligne</p>
-                        <p className="text-xs text-slate-500">Visible par vos clients sur le web</p>
-                      </div>
-                      <label className="relative inline-flex cursor-pointer items-center">
-                        <input type="checkbox" checked={form.isPublished} onChange={(event) => setForm((prev) => ({ ...prev, isPublished: event.target.checked }))} className="peer sr-only" />
-                        <span className="h-6 w-11 rounded-full bg-emerald-500 transition peer-not-checked:bg-slate-300" />
-                        <span className="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition peer-checked:translate-x-5" />
-                      </label>
-                    </div>
-                  </div>
-
-                  <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Dernière mise à jour</p>
-                    <p className="mt-2 text-sm font-semibold text-slate-900">1 mai 2026 à 14:32</p>
-                  </div>
-
-                  <button type="button" className="inline-flex w-full items-center justify-center rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700">Modifier l’apparence</button>
-                </div>
-              </article>
-
-              <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-                <div className="mb-4 flex items-center justify-between gap-3">
-                  <h3 className="text-sm font-semibold text-slate-900 sm:text-base">Partage & QR Code</h3>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Lien public</p>
-                    <div className="mt-2 flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2">
-                      <input type="text" value={publicDomain} readOnly className="min-w-0 flex-1 bg-transparent text-sm text-slate-700 outline-none" />
-                      <button type="button" onClick={() => void navigator.clipboard.writeText(publicDomain)} className="inline-flex items-center justify-center rounded-lg bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100">Copier le lien</button>
-                    </div>
-                  </div>
-
-                  <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">QR code</p>
-                    <div className="mt-3 flex justify-center">
-                      <div className="grid h-36 w-36 grid-cols-6 gap-1 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
-                        {Array.from({ length: 36 }).map((_, index) => (
-                          <span key={index} className={`rounded-sm ${index % 4 === 0 || index % 7 === 0 ? "bg-slate-900" : "bg-slate-200"}`} />
-                        ))}
-                      </div>
-                    </div>
-                    <button type="button" className="mt-3 inline-flex w-full items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100">Télécharger le QR code</button>
-                  </div>
-
-                  <p className="text-xs leading-5 text-slate-500">Partagez votre boutique avec vos clients sur WhatsApp, réseaux sociaux et plus encore.</p>
-                </div>
-              </article>
-
-              <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-                <h3 className="text-sm font-semibold text-slate-900 sm:text-base">Horaires d'ouverture</h3>
-                <div className="mt-4 space-y-2.5">
-                  {[["Lundi", "08:00 - 18:00"], ["Mardi", "08:00 - 18:00"], ["Mercredi", "08:00 - 18:00"], ["Jeudi", "08:00 - 18:00"], ["Vendredi", "08:00 - 19:00"], ["Samedi", "09:00 - 16:00"], ["Dimanche", "Fermé"]].map(([day, schedule]) => (
-                    <div key={day} className="flex items-center justify-between border-b border-slate-100 pb-2 last:border-b-0 last:pb-0">
-                      <span className="text-sm font-medium text-slate-700">{day}</span>
-                      <span className={`text-sm font-semibold ${schedule === "Fermé" ? "text-slate-500" : "text-slate-600"}`}>{schedule}</span>
-                    </div>
-                  ))}
-                </div>
-              </article>
-
-              <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-                <h3 className="text-sm font-semibold text-slate-900 sm:text-base">Aperçu de la vitrine</h3>
-                <div className="mt-4 flex justify-center">
-                  <div className="relative w-full max-w-[290px]">
-                    <div className="mx-auto w-[290px] rounded-[2.25rem] border-[10px] border-slate-950 bg-slate-950 shadow-[0_20px_60px_rgba(15,23,42,0.18)]">
-                      <div className="relative overflow-hidden rounded-[1.65rem] bg-white">
-                        <div className="absolute left-1/2 top-2 z-10 h-1.5 w-24 -translate-x-1/2 rounded-full bg-slate-200" />
-                        <div className="relative h-40 overflow-hidden">
-                          {form.coverUrl ? <img src={form.coverUrl} alt="Aperçu couverture boutique" className="h-full w-full object-cover" /> : <div className="h-full w-full bg-[radial-gradient(circle_at_top,_#bbf7d0,_#86efac_35%,_#34d399_65%,_#065f46)]" />}
-                          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/30 via-slate-950/10 to-transparent" />
-                          <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between gap-3">
-                            <div>
-                              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/80">Boutique publique</p>
-                              <p className="mt-1 text-lg font-extrabold leading-tight text-white">{form.name || "Mon Aventure"}</p>
+                        <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-slate-600">Catégories</p>
+                        <div className="mt-1.5 grid grid-cols-4 gap-1">
+                          {["Soins", "Beauté", "Santé", "Bien-être"].map((cat) => (
+                            <div key={cat} className="flex items-center justify-center rounded-lg bg-slate-50 py-1.5 text-[8px] font-semibold text-slate-600">
+                              {cat}
                             </div>
-                            <span className="rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-semibold text-emerald-700">Publiée</span>
-                          </div>
+                          ))}
                         </div>
-                        <div className="space-y-3 px-4 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-600 text-sm font-bold text-white shadow-sm">MA</div>
-                            <div className="min-w-0">
-                              <p className="truncate text-sm font-semibold text-slate-950">{form.name || "Mon Aventure"}</p>
-                              <p className="text-xs text-slate-500">{form.category || "Beauté & Bien-être"}</p>
-                            </div>
-                          </div>
-                          <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
-                            <div className="flex items-center justify-between gap-2">
-                              <div>
-                                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">Mini storefront</p>
-                                <p className="mt-1 text-xs font-semibold text-slate-700">{form.description || "Découvrez nos produits et nos meilleures sélections."}</p>
+                      </div>
+
+                      <div>
+                        <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-slate-600">Nos meilleurs produits</p>
+                        <div className="mt-1.5 grid grid-cols-2 gap-1">
+                          {[
+                            { name: "Serum Anti-âge", price: "18 500 FCFA" },
+                            { name: "Creme Hydratante", price: "8 000 FCFA" }
+                          ].map((prod) => (
+                            <div key={prod.name} className="overflow-hidden rounded-lg border border-slate-200 bg-white">
+                              <div className="h-12 w-full bg-linear-to-br from-orange-100 to-orange-50" />
+                              <div className="px-1.5 py-1">
+                                <p className="truncate text-[8px] font-semibold text-slate-700">{prod.name}</p>
+                                <p className="text-[7px] font-bold text-emerald-700">{prod.price}</p>
                               </div>
-                              <svg className="h-5 w-5 shrink-0 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M3 7h18M5 7l1 12h12l1-12M9 7V5a3 3 0 016 0v2" />
-                              </svg>
                             </div>
-                            <div className="mt-3 grid grid-cols-3 gap-2">
-                              {["Soins", "Promo", "Nouveautés"].map((label) => (
-                                <div key={label} className="rounded-xl bg-white px-2 py-2 text-center text-[10px] font-semibold text-slate-600 shadow-sm">{label}</div>
-                              ))}
-                            </div>
-                          </div>
-                          <div className="flex items-center justify-between rounded-2xl border border-slate-100 px-3 py-2.5">
-                            <div>
-                              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">Lien public</p>
-                              <p className="truncate text-xs font-semibold text-emerald-700">{shopPreview}</p>
-                            </div>
-                            <button type="button" onClick={() => void navigator.clipboard.writeText(shopPreview)} className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-emerald-200 bg-emerald-50 text-emerald-700 transition hover:bg-emerald-100" aria-label="Copier le lien de la boutique">
-                              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2" />
-                                <rect x="8" y="8" width="12" height="12" rx="2" ry="2" strokeWidth={1.8} />
-                              </svg>
-                            </button>
-                          </div>
+                          ))}
                         </div>
+                      </div>
+
+                      <div className="flex gap-1">
+                        <button className="flex-1 rounded-lg bg-emerald-600 py-1.5 text-[8px] font-bold text-white">Accueil</button>
+                        <button className="flex-1 rounded-lg border border-slate-200 bg-slate-50 py-1.5 text-[8px] font-bold text-slate-700">Catégories</button>
+                        <button className="flex-1 rounded-lg border border-slate-200 bg-slate-50 py-1.5 text-[8px] font-bold text-slate-700">Panier</button>
+                        <button className="flex-1 rounded-lg border border-slate-200 bg-slate-50 py-1.5 text-[8px] font-bold text-slate-700">Compte</button>
                       </div>
                     </div>
                   </div>
                 </div>
-              </article>
+              </div>
+            </article>
 
-              <article className="rounded-xl border border-slate-200 bg-white p-5">
-                <h3 className="mb-3 text-sm font-semibold text-slate-700">Partage & QR Code</h3>
+            <aside className="space-y-4">
+              <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                <h3 className="mb-3 text-sm font-semibold text-slate-900">Personnalisation</h3>
                 <div className="space-y-3">
                   <div>
-                    <p className="mb-1 text-xs text-slate-600">Lien public de votre boutique :</p>
-                    <div className="flex items-center gap-2 rounded-lg bg-slate-50 p-2">
-                      <input type="text" value={publicDomain} readOnly className="flex-1 truncate bg-slate-50 text-xs outline-none" />
-                      <button type="button" onClick={() => void navigator.clipboard.writeText(publicDomain)} className="rounded-lg bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100">Copier le lien</button>
-                    </div>
-                  </div>
-                  <div className="rounded-xl border border-slate-200 bg-white p-4">
-                    <div className="mx-auto grid h-32 w-32 grid-cols-6 gap-1 rounded-2xl border border-slate-200 bg-white p-3">
-                      {Array.from({ length: 36 }).map((_, index) => (
-                        <span key={index} className={`rounded-sm ${index % 4 === 0 || index % 7 === 0 ? "bg-slate-900" : "bg-slate-200"}`} />
+                    <p className="text-xs font-semibold text-slate-600">Thème de couleur</p>
+                    <div className="mt-2 flex items-center gap-2">
+                      {["bg-emerald-500", "bg-sky-500", "bg-violet-500", "bg-orange-500", "bg-rose-500", "bg-slate-700"].map((colorClass, index) => (
+                        <span key={index} className={`h-6 w-6 rounded-full border border-white shadow-sm ${colorClass}`} />
                       ))}
                     </div>
-                    <button type="button" className="mt-3 inline-flex w-full items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100">Télécharger le QR code</button>
                   </div>
-                  <p className="text-xs leading-5 text-slate-500">Partagez votre boutique avec vos clients sur WhatsApp, réseaux sociaux et plus encore.</p>
+
+                  <div>
+                    <p className="text-xs font-semibold text-slate-600">Logo de la boutique</p>
+                    <div className="mt-2 flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 p-2.5">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-600 text-xs font-bold text-white">{form.name ? form.name.slice(0, 1).toUpperCase() : "M"}</div>
+                      <button type="button" className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700">Changer</button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-xs font-semibold text-slate-600">Bannière de couverture</p>
+                    <div className="mt-2 overflow-hidden rounded-xl border border-slate-200">
+                      {form.coverUrl ? <img src={form.coverUrl} alt="Miniature de la bannière" className="h-10 w-full object-cover" /> : <div className="h-10 w-full bg-linear-to-r from-emerald-100 via-slate-100 to-emerald-50" />}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 p-2.5">
+                    <div>
+                      <p className="text-xs font-semibold text-slate-700">Statut de publication</p>
+                      <p className="text-[11px] text-emerald-700">Votre boutique est en ligne</p>
+                    </div>
+                    <label className="relative inline-flex cursor-pointer items-center">
+                      <input type="checkbox" checked={form.isPublished} onChange={(event) => setForm((prev) => ({ ...prev, isPublished: event.target.checked }))} className="peer sr-only" />
+                      <span className="h-6 w-11 rounded-full bg-emerald-500 transition peer-not-checked:bg-slate-300" />
+                      <span className="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition peer-checked:translate-x-5" />
+                    </label>
+                  </div>
+
+                  <div>
+                    <p className="text-xs font-semibold text-slate-600">Dernière mise à jour</p>
+                    <p className="mt-1 text-xs text-slate-500">1 mai 2026, 10:15</p>
+                  </div>
+
+                  <button type="button" className="inline-flex h-10 w-full items-center justify-center rounded-xl border border-slate-200 bg-slate-50 px-4 text-xs font-semibold text-slate-700 transition hover:bg-slate-100">Modifier l&apos;apparence</button>
                 </div>
               </article>
 
-              {uiState.error && <div className="rounded-lg border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-700">{uiState.error}</div>}
-              {uiState.success && <div className="rounded-lg border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">✓ {uiState.success}</div>}
+              <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                <h3 className="mb-3 text-sm font-semibold text-slate-900">Partage & QR Code</h3>
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-xs font-semibold text-slate-600">Lien public de la boutique</p>
+                    <div className="mt-2 flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 p-2">
+                      <input type="text" value={publicDomain} readOnly className="min-w-0 flex-1 bg-transparent text-xs text-slate-700 outline-none" />
+                      <button type="button" onClick={() => void navigator.clipboard.writeText(publicDomain)} className="rounded-lg bg-emerald-50 px-3 py-1.5 text-[11px] font-semibold text-emerald-700 transition hover:bg-emerald-100">Copier</button>
+                    </div>
+                  </div>
 
-              <button type="submit" disabled={uiState.saving} className="w-full rounded-lg bg-emerald-600 px-4 py-3 text-base font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-65">
-                {uiState.saving ? "Enregistrement..." : "Enregistrer les modifications"}
-              </button>
-            </div>
-          </form>
+                  <div className="grid grid-cols-[92px_1fr] gap-2">
+                    <div className="grid h-24 w-24 grid-cols-6 gap-1 rounded-xl border border-slate-200 bg-white p-2">
+                      {Array.from({ length: 36 }).map((_, index) => (
+                        <span key={index} className={`rounded-xs ${index % 4 === 0 || index % 7 === 0 ? "bg-slate-900" : "bg-slate-200"}`} />
+                      ))}
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <button type="button" onClick={() => void navigator.clipboard.writeText(publicDomain)} className="inline-flex h-9 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 px-3 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100">Copier le lien</button>
+                      <button type="button" className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50">Télécharger le QR code</button>
+                    </div>
+                  </div>
+                  <p className="text-[11px] leading-4 text-slate-500">Partagez votre boutique avec vos clients sur WhatsApp, réseaux sociaux et plus encore.</p>
+                </div>
+              </article>
+            </aside>
+          </div>
         </div>
       </section>
     </main>
