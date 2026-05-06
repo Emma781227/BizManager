@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ChangeEvent } from "react";
 
 const AFRICAN_DIAL_CODES = [
   { label: "CM +237", value: "+237" },
@@ -26,7 +26,23 @@ const AFRICAN_DIAL_CODES = [
 ];
 
 type PhoneParts = { dialCode: string; localNumber: string };
-type OpeningHoursParts = { openingTime: string; closingTime: string };
+
+type DayHours = {
+  isOpen: boolean;
+  openingTime: string;
+  closingTime: string;
+};
+
+type OpeningHoursData = {
+  monday: DayHours;
+  tuesday: DayHours;
+  wednesday: DayHours;
+  thursday: DayHours;
+  friday: DayHours;
+  saturday: DayHours;
+  sunday: DayHours;
+};
+
 type UIState = { loading: boolean; saving: boolean; error: string | null; success: string | null };
 
 type Shop = {
@@ -83,18 +99,53 @@ function splitPhoneNumber(phone: string | null | undefined) {
   return { dialCode: "+237", localNumber: sanitized.replace(/\D/g, "") };
 }
 
-function splitOpeningHours(value: string | null | undefined) {
-  const sanitized = (value ?? "").trim();
-  const match = sanitized.match(/^([01]\d|2[0-3]):([0-5]\d)-([01]\d|2[0-3]):([0-5]\d)$/);
+function splitOpeningHours(value: string | null | undefined): OpeningHoursData {
+  const defaultHours: DayHours = { isOpen: true, openingTime: "08:00", closingTime: "18:00" };
+  const defaultData: OpeningHoursData = {
+    monday: defaultHours,
+    tuesday: defaultHours,
+    wednesday: defaultHours,
+    thursday: defaultHours,
+    friday: defaultHours,
+    saturday: defaultHours,
+    sunday: { isOpen: false, openingTime: "", closingTime: "" },
+  };
 
-  if (!match) {
-    return { openingTime: "", closingTime: "" };
+  const sanitized = (value ?? "").trim();
+  if (!sanitized) return defaultData;
+
+  // Essayer de parser comme JSON (nouveau format)
+  try {
+    const parsed = JSON.parse(sanitized) as OpeningHoursData;
+    // Valider la structure
+    const days: (keyof OpeningHoursData)[] = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
+    const isValid = days.every((day) => {
+      const dayData = parsed[day];
+      return dayData && typeof dayData.isOpen === "boolean" && typeof dayData.openingTime === "string" && typeof dayData.closingTime === "string";
+    });
+    if (isValid) return parsed;
+  } catch {
+    // Pas du JSON, continuer
   }
 
-  return {
-    openingTime: `${match[1]}:${match[2]}`,
-    closingTime: `${match[3]}:${match[4]}`,
-  };
+  // Format ancien "HH:MM-HH:MM"
+  const match = sanitized.match(/^([01]\d|2[0-3]):([0-5]\d)-([01]\d|2[0-3]):([0-5]\d)$/);
+  if (match) {
+    const openingTime = `${match[1]}:${match[2]}`;
+    const closingTime = `${match[3]}:${match[4]}`;
+    const dayHours: DayHours = { isOpen: true, openingTime, closingTime };
+    return {
+      monday: dayHours,
+      tuesday: dayHours,
+      wednesday: dayHours,
+      thursday: dayHours,
+      friday: dayHours,
+      saturday: dayHours,
+      sunday: { isOpen: false, openingTime: "", closingTime: "" },
+    };
+  }
+
+  return defaultData;
 }
 
 function parseJsonSafe<T>(raw: string): T | null {
@@ -112,10 +163,39 @@ function parseJsonSafe<T>(raw: string): T | null {
 export default function SettingsPage() {
   const [form, setForm] = useState(initialState);
   const [phone, setPhone] = useState<PhoneParts>({ dialCode: "+237", localNumber: "" });
-  const [hours, setHours] = useState<OpeningHoursParts>({ openingTime: "", closingTime: "" });
+  const [hours, setHours] = useState<OpeningHoursData>({
+    monday: { isOpen: true, openingTime: "08:00", closingTime: "18:00" },
+    tuesday: { isOpen: true, openingTime: "08:00", closingTime: "18:00" },
+    wednesday: { isOpen: true, openingTime: "08:00", closingTime: "18:00" },
+    thursday: { isOpen: true, openingTime: "08:00", closingTime: "18:00" },
+    friday: { isOpen: true, openingTime: "08:00", closingTime: "18:00" },
+    saturday: { isOpen: true, openingTime: "08:00", closingTime: "18:00" },
+    sunday: { isOpen: false, openingTime: "", closingTime: "" },
+  });
   const [uiState, setUIState] = useState<UIState>({ loading: true, saving: false, error: null, success: null });
   const [searchQuery, setSearchQuery] = useState("");
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const [editGeneralOpen, setEditGeneralOpen] = useState(false);
+  const [editForm, setEditForm] = useState(initialState);
+  const [editPhone, setEditPhone] = useState<PhoneParts>({ dialCode: "+237", localNumber: "" });
+  const [editHoursOpen, setEditHoursOpen] = useState(false);
+  const [editHours, setEditHours] = useState<OpeningHoursData>({
+    monday: { isOpen: true, openingTime: "08:00", closingTime: "18:00" },
+    tuesday: { isOpen: true, openingTime: "08:00", closingTime: "18:00" },
+    wednesday: { isOpen: true, openingTime: "08:00", closingTime: "18:00" },
+    thursday: { isOpen: true, openingTime: "08:00", closingTime: "18:00" },
+    friday: { isOpen: true, openingTime: "08:00", closingTime: "18:00" },
+    saturday: { isOpen: true, openingTime: "08:00", closingTime: "18:00" },
+    sunday: { isOpen: false, openingTime: "", closingTime: "" },
+  });
+
+  // États pour le cropper d'images
+  const [cropModalOpen, setCropModalOpen] = useState(false);
+  const [cropMode, setCropMode] = useState<"logo" | "cover" | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string>("");
+  const [cropZoom, setCropZoom] = useState(1);
+  const [cropPosition, setCropPosition] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
     void loadShop();
@@ -163,7 +243,15 @@ export default function SettingsPage() {
       if (!shop) {
         setForm(initialState);
         setPhone({ dialCode: "+237", localNumber: "" });
-        setHours({ openingTime: "", closingTime: "" });
+        setHours({
+          monday: { isOpen: true, openingTime: "08:00", closingTime: "18:00" },
+          tuesday: { isOpen: true, openingTime: "08:00", closingTime: "18:00" },
+          wednesday: { isOpen: true, openingTime: "08:00", closingTime: "18:00" },
+          thursday: { isOpen: true, openingTime: "08:00", closingTime: "18:00" },
+          friday: { isOpen: true, openingTime: "08:00", closingTime: "18:00" },
+          saturday: { isOpen: true, openingTime: "08:00", closingTime: "18:00" },
+          sunday: { isOpen: false, openingTime: "", closingTime: "" },
+        });
       } else {
         const phoneParts = splitPhoneNumber(shop.whatsappNumber);
         const openingHoursParts = splitOpeningHours(shop.openingHours);
@@ -195,6 +283,293 @@ export default function SettingsPage() {
       }));
     } finally {
       setUIState(prev => ({ ...prev, loading: false }));
+    }
+  }
+
+  function openEditGeneralModal() {
+    setEditForm(form);
+    setEditPhone(phone);
+    setEditGeneralOpen(true);
+  }
+
+  async function saveEditedGeneral() {
+    setUIState(prev => ({ ...prev, saving: true, error: null }));
+
+    try {
+      const phoneNumber = `${editPhone.dialCode}${editPhone.localNumber}`;
+      const response = await fetch("/api/shop", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          slug: editForm.slug,
+          name: editForm.name,
+          notificationEmail: editForm.notificationEmail,
+          address: editForm.address,
+          city: editForm.city,
+          postalCode: editForm.postalCode,
+          regionCountry: editForm.regionCountry,
+          whatsappNumber: phoneNumber,
+          category: editForm.category,
+          description: editForm.description,
+        }),
+      });
+
+      if (response.ok) {
+        setForm(editForm);
+        setPhone(editPhone);
+        setEditGeneralOpen(false);
+        setUIState(prev => ({
+          ...prev,
+          success: "Informations générales mises à jour"
+        }));
+        setTimeout(() => {
+          setUIState(prev => ({ ...prev, success: null }));
+        }, 3000);
+      } else {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error ?? "Erreur lors de la sauvegarde");
+      }
+    } catch (error) {
+      setUIState(prev => ({
+        ...prev,
+        error: error instanceof Error ? error.message : "Erreur lors de la sauvegarde"
+      }));
+    } finally {
+      setUIState(prev => ({ ...prev, saving: false }));
+    }
+  }
+
+  function openEditHoursModal() {
+    setEditHours(hours);
+    setEditHoursOpen(true);
+  }
+
+  async function saveEditedHours() {
+    setUIState(prev => ({ ...prev, saving: true, error: null }));
+
+    try {
+      const openingHoursJson = JSON.stringify(editHours);
+      const response = await fetch("/api/shop", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          openingHours: openingHoursJson,
+        }),
+      });
+
+      if (response.ok) {
+        setHours(editHours);
+        setEditHoursOpen(false);
+        setUIState(prev => ({
+          ...prev,
+          success: "Horaires d'ouverture mis à jour"
+        }));
+        setTimeout(() => {
+          setUIState(prev => ({ ...prev, success: null }));
+        }, 3000);
+      } else {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error ?? "Erreur lors de la sauvegarde");
+      }
+    } catch (error) {
+      setUIState(prev => ({
+        ...prev,
+        error: error instanceof Error ? error.message : "Erreur lors de la sauvegarde"
+      }));
+    } finally {
+      setUIState(prev => ({ ...prev, saving: false }));
+    }
+  }
+
+  async function updateShopMedia(file: File, target: "logo" | "cover") {
+    setUIState(prev => ({ ...prev, saving: true, error: null }));
+
+    try {
+      const formData = new FormData();
+      const fallbackOpeningHours =
+        hours.monday.isOpen && hours.monday.openingTime && hours.monday.closingTime
+          ? `${hours.monday.openingTime}-${hours.monday.closingTime}`
+          : "";
+
+      formData.append("slug", form.slug);
+      formData.append("name", form.name);
+      formData.append("notificationEmail", form.notificationEmail);
+      formData.append("logoUrl", form.logoUrl);
+      formData.append("coverUrl", form.coverUrl);
+      formData.append("description", form.description);
+      formData.append("city", form.city);
+      formData.append("postalCode", form.postalCode);
+      formData.append("regionCountry", form.regionCountry);
+      formData.append("whatsappNumber", `${phone.dialCode}${phone.localNumber}`);
+      formData.append("category", form.category);
+      formData.append("address", form.address);
+      formData.append("openingHours", form.openingHours || fallbackOpeningHours);
+      formData.append("isPublished", String(form.isPublished));
+
+      if (target === "logo") {
+        formData.append("logoFile", file);
+      } else {
+        formData.append("coverFile", file);
+      }
+
+      const response = await fetch("/api/shop", {
+        method: "PUT",
+        body: formData,
+      });
+
+      const raw = await response.text();
+      const payload = parseJsonSafe<{ data?: Shop | null; error?: string }>(raw) ?? {};
+
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Erreur lors de l'envoi de l'image");
+      }
+
+      const updatedShop = payload.data;
+
+      if (updatedShop) {
+        setForm({
+          slug: updatedShop.slug,
+          name: updatedShop.name,
+          notificationEmail: updatedShop.notificationEmail ?? "",
+          logoUrl: updatedShop.logoUrl ?? "",
+          coverUrl: updatedShop.coverUrl ?? "",
+          description: updatedShop.description ?? "",
+          address: updatedShop.address ?? "",
+          city: updatedShop.city ?? "",
+          postalCode: updatedShop.postalCode ?? "",
+          regionCountry: updatedShop.regionCountry ?? "",
+          whatsappNumber: updatedShop.whatsappNumber,
+          category: updatedShop.category ?? "",
+          openingHours: updatedShop.openingHours ?? "",
+          isPublished: updatedShop.isPublished,
+        });
+        setPhone(splitPhoneNumber(updatedShop.whatsappNumber));
+        setHours(splitOpeningHours(updatedShop.openingHours));
+      }
+
+      setUIState(prev => ({
+        ...prev,
+        success: target === "logo" ? "Logo mis a jour" : "Banniere mise a jour",
+      }));
+
+      setTimeout(() => {
+        setUIState(prev => ({ ...prev, success: null }));
+      }, 3000);
+    } catch (error) {
+      setUIState(prev => ({
+        ...prev,
+        error: error instanceof Error ? error.message : "Erreur lors de l'envoi de l'image",
+      }));
+    } finally {
+      setUIState(prev => ({ ...prev, saving: false }));
+    }
+  }
+
+  async function handleImageChange(event: ChangeEvent<HTMLInputElement>, target: "logo" | "cover") {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+
+    if (!file) {
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      setUIState(prev => ({ ...prev, error: "Le fichier doit etre une image" }));
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setUIState(prev => ({ ...prev, error: "Image trop lourde (max 5MB)" }));
+      return;
+    }
+
+    // Ouvrir le cropper au lieu d'uploader directement
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setImagePreviewUrl(e.target?.result as string);
+      setSelectedFile(file);
+      setCropMode(target);
+      setCropZoom(1);
+      setCropPosition({ x: 0, y: 0 });
+      setCropModalOpen(true);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function closeCropModal() {
+    setCropModalOpen(false);
+    setSelectedFile(null);
+    setImagePreviewUrl("");
+    setCropMode(null);
+    setCropZoom(1);
+    setCropPosition({ x: 0, y: 0 });
+  }
+
+  async function confirmCrop() {
+    if (!selectedFile || !cropMode || !imagePreviewUrl) return;
+
+    setUIState(prev => ({ ...prev, saving: true, error: null }));
+
+    try {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      if (!ctx) throw new Error("Impossible d'initialiser le canvas");
+
+      const img = new Image();
+      img.onload = async () => {
+        // Déterminer les dimensions du crop
+        const containerWidth = cropMode === "logo" ? 300 : 600;
+        const containerHeight = cropMode === "logo" ? 300 : 150;
+
+        // Calculer les dimensions du crop sur l'image originale
+        const imageWidth = img.naturalWidth;
+        const imageHeight = img.naturalHeight;
+
+        // Appliquer le zoom et la position
+        const scale = imageWidth / (containerWidth * (1 / cropZoom));
+        const cropX = Math.max(0, -cropPosition.x * scale);
+        const cropY = Math.max(0, -cropPosition.y * scale);
+        const cropWidth = Math.min(imageWidth - cropX, containerWidth * scale);
+        const cropHeight = Math.min(imageHeight - cropY, containerHeight * scale);
+
+        // Définir la taille du canvas en fonction du target
+        if (cropMode === "logo") {
+          canvas.width = 300;
+          canvas.height = 300;
+        } else {
+          canvas.width = 600;
+          canvas.height = 150;
+        }
+
+        // Dessiner l'image croppée sur le canvas
+        ctx.drawImage(
+          img,
+          cropX,
+          cropY,
+          cropWidth,
+          cropHeight,
+          0,
+          0,
+          canvas.width,
+          canvas.height
+        );
+
+        // Convertir le canvas en blob
+        canvas.toBlob(async (blob) => {
+          if (!blob) throw new Error("Erreur lors de la création de l'image");
+
+          const croppedFile = new File([blob], selectedFile.name, { type: "image/jpeg" });
+          await updateShopMedia(croppedFile, cropMode);
+          closeCropModal();
+        }, "image/jpeg", 0.9);
+      };
+      img.src = imagePreviewUrl;
+    } catch (error) {
+      setUIState(prev => ({
+        ...prev,
+        error: error instanceof Error ? error.message : "Erreur lors du crop",
+        saving: false,
+      }));
     }
   }
 
@@ -353,12 +728,13 @@ export default function SettingsPage() {
           <div className="shop-body-grid grid gap-4">
             <div className="space-y-4">
               <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-                <div className="relative h-20 w-full overflow-hidden">
+                <div className="group relative h-28 w-full overflow-hidden sm:h-32 lg:h-36">
                   {form.coverUrl ? (
-                    <img src={form.coverUrl} alt="Bannière boutique" className="h-full w-full object-cover" />
+                    <img src={form.coverUrl} alt="Bannière boutique" className="h-full w-full object-cover object-center transition duration-500 group-hover:scale-[1.03]" />
                   ) : (
                     <div className="h-full w-full bg-[radial-gradient(circle_at_top_left,#bbf7d0,#86efac_30%,#34d399_60%,#065f46)]" />
                   )}
+                  <div className="pointer-events-none absolute inset-0 bg-linear-to-t from-slate-950/35 via-slate-950/10 to-transparent" />
                 </div>
 
                 <div className="grid gap-4 p-4 lg:grid-cols-[1fr_170px]">
@@ -400,7 +776,7 @@ export default function SettingsPage() {
                 <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm lg:col-span-1">
                   <div className="mb-3 flex items-center justify-between">
                     <h3 className="text-sm font-semibold text-slate-900">Informations générales</h3>
-                    <button type="button" className="text-xs font-semibold text-emerald-700">Modifier</button>
+                    <button type="button" onClick={openEditGeneralModal} className="text-xs font-semibold text-emerald-700 transition hover:text-emerald-800">Modifier</button>
                   </div>
                   <div className="space-y-1.5 text-xs">
                     <p className="flex items-center justify-between gap-2"><span className="text-slate-500">Nom de la boutique</span><span className="font-medium text-slate-800">{form.name || "Mon Aventure"}</span></p>
@@ -415,13 +791,21 @@ export default function SettingsPage() {
                 <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm lg:col-span-1">
                   <div className="mb-3 flex items-center justify-between">
                     <h3 className="text-sm font-semibold text-slate-900">Horaires d&apos;ouverture</h3>
-                    <button type="button" className="text-xs font-semibold text-emerald-700">Modifier</button>
+                    <button type="button" onClick={openEditHoursModal} className="text-xs font-semibold text-emerald-700 transition hover:text-emerald-800">Modifier</button>
                   </div>
                   <div className="space-y-1.5 text-xs text-slate-700">
-                    {["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"].map((day) => (
-                      <p key={day} className="flex justify-between"><span>{day}</span><span>{hours.openingTime || "08:00"} - {hours.closingTime || "18:00"}</span></p>
-                    ))}
-                    <p className="flex justify-between"><span>Dimanche</span><span className="font-semibold text-emerald-700">Fermé</span></p>
+                    {(["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"] as const).map((day) => {
+                      const dayLabel = { monday: "Lundi", tuesday: "Mardi", wednesday: "Mercredi", thursday: "Jeudi", friday: "Vendredi", saturday: "Samedi", sunday: "Dimanche" }[day];
+                      const dayData = hours[day];
+                      return (
+                    <p key={day} className="flex justify-between">
+                          <span>{dayLabel}</span>
+                          <span className={dayData.isOpen ? "" : "font-semibold text-emerald-700"}>
+                            {dayData.isOpen ? `${dayData.openingTime} - ${dayData.closingTime}` : "Fermé"}
+                          </span>
+                        </p>
+                      );
+                    })}
                   </div>
                 </article>
               </div>
@@ -576,15 +960,40 @@ export default function SettingsPage() {
                   <div>
                     <p className="text-xs font-semibold text-slate-600">Logo de la boutique</p>
                     <div className="mt-2 flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 p-2.5">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-600 text-xs font-bold text-white">{form.name ? form.name.slice(0, 1).toUpperCase() : "M"}</div>
-                      <button type="button" className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700">Changer</button>
+                      {form.logoUrl ? (
+                        <img src={form.logoUrl} alt="Logo boutique" className="h-10 w-10 rounded-full border border-slate-200 object-cover" />
+                      ) : (
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-600 text-xs font-bold text-white">{form.name ? form.name.slice(0, 1).toUpperCase() : "M"}</div>
+                      )}
+                      <label className="cursor-pointer rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50">
+                        {uiState.saving ? "Envoi..." : "Changer"}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="sr-only"
+                          disabled={uiState.saving}
+                          onChange={(event) => void handleImageChange(event, "logo")}
+                        />
+                      </label>
                     </div>
                   </div>
 
                   <div>
                     <p className="text-xs font-semibold text-slate-600">Bannière de couverture</p>
-                    <div className="mt-2 overflow-hidden rounded-xl border border-slate-200">
-                      {form.coverUrl ? <img src={form.coverUrl} alt="Miniature de la bannière" className="h-10 w-full object-cover" /> : <div className="h-10 w-full bg-linear-to-r from-emerald-100 via-slate-100 to-emerald-50" />}
+                    <div className="mt-2 space-y-2">
+                      <div className="overflow-hidden rounded-xl border border-slate-200 shadow-sm">
+                        {form.coverUrl ? <img src={form.coverUrl} alt="Miniature de la bannière" className="h-20 w-full object-cover object-center" /> : <div className="h-20 w-full bg-linear-to-r from-emerald-100 via-slate-100 to-emerald-50" />}
+                      </div>
+                      <label className="inline-flex cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50">
+                        {uiState.saving ? "Envoi..." : "Changer la banniere"}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="sr-only"
+                          disabled={uiState.saving}
+                          onChange={(event) => void handleImageChange(event, "cover")}
+                        />
+                      </label>
                     </div>
                   </div>
 
@@ -638,6 +1047,402 @@ export default function SettingsPage() {
           </div>
         </div>
       </section>
+
+      {editGeneralOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 py-6">
+          <div className="relative mx-auto max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-slate-200 bg-white p-6 shadow-lg">
+            <div className="mb-6 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-slate-950">Modifier les informations générales</h2>
+              <button
+                type="button"
+                onClick={() => setEditGeneralOpen(false)}
+                className="rounded-lg p-1 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
+              >
+                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-slate-700">Nom de la boutique</label>
+                <input
+                  type="text"
+                  value={editForm.name}
+                  onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                  className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                  placeholder="Nom de la boutique"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-700">Slug (URL)</label>
+                <input
+                  type="text"
+                  value={editForm.slug}
+                  onChange={(e) => setEditForm({ ...editForm, slug: e.target.value })}
+                  className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                  placeholder="mon-aventure"
+                />
+              </div>
+
+              <div className="grid grid-cols-[120px_1fr] gap-2">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700">Code pays</label>
+                  <select
+                    value={editPhone.dialCode}
+                    onChange={(e) => setEditPhone({ ...editPhone, dialCode: e.target.value })}
+                    className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                  >
+                    {AFRICAN_DIAL_CODES.map((code) => (
+                      <option key={code.value} value={code.value}>{code.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700">Numéro de téléphone</label>
+                  <input
+                    type="tel"
+                    value={editPhone.localNumber}
+                    onChange={(e) => setEditPhone({ ...editPhone, localNumber: e.target.value.replace(/\D/g, "") })}
+                    className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                    placeholder="000000000"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-700">Email de notification</label>
+                <input
+                  type="email"
+                  value={editForm.notificationEmail}
+                  onChange={(e) => setEditForm({ ...editForm, notificationEmail: e.target.value })}
+                  className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                  placeholder="contact@boutique.com"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700">Ville</label>
+                  <input
+                    type="text"
+                    value={editForm.city}
+                    onChange={(e) => setEditForm({ ...editForm, city: e.target.value })}
+                    className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                    placeholder="Douala"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700">Pays</label>
+                  <input
+                    type="text"
+                    value={editForm.regionCountry}
+                    onChange={(e) => setEditForm({ ...editForm, regionCountry: e.target.value })}
+                    className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                    placeholder="Cameroun"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-700">Adresse</label>
+                <input
+                  type="text"
+                  value={editForm.address}
+                  onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
+                  className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                  placeholder="123 Rue de la Paix"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-700">Code postal</label>
+                <input
+                  type="text"
+                  value={editForm.postalCode}
+                  onChange={(e) => setEditForm({ ...editForm, postalCode: e.target.value })}
+                  className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                  placeholder="00000"
+                />
+              </div>
+
+              <div className="flex gap-3 border-t border-slate-200 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setEditGeneralOpen(false)}
+                  className="flex-1 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="button"
+                  disabled={uiState.saving}
+                  onClick={saveEditedGeneral}
+                  className="flex-1 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  {uiState.saving ? "Sauvegarde..." : "Sauvegarder"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editHoursOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="relative mx-auto max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-slate-200 bg-white p-6 shadow-lg">
+            <div className="mb-6 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-slate-950">Modifier les horaires d&apos;ouverture</h2>
+              <button
+                type="button"
+                onClick={() => setEditHoursOpen(false)}
+                className="rounded-lg p-1 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
+              >
+                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <p className="text-sm font-semibold text-slate-800">Configurez les horaires d&apos;ouverture pour chaque jour</p>
+              </div>
+
+              <div className="space-y-3">
+
+                {(["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"] as const).map((day) => {
+                  const dayLabel = { monday: "Lundi", tuesday: "Mardi", wednesday: "Mercredi", thursday: "Jeudi", friday: "Vendredi", saturday: "Samedi", sunday: "Dimanche" }[day];
+                  const dayData = editHours[day];
+
+                  return (
+                    <div key={day} className="rounded-xl border border-slate-200 bg-white p-4">
+                      <div className="flex items-center gap-3">
+                        <label className="flex cursor-pointer items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={dayData.isOpen}
+                            onChange={(e) =>
+                              setEditHours({
+                                ...editHours,
+                                [day]: {
+                                  ...dayData,
+                                  isOpen: e.target.checked,
+                                  openingTime: e.target.checked ? dayData.openingTime || "08:00" : "",
+                                  closingTime: e.target.checked ? dayData.closingTime || "18:00" : "",
+                                },
+                              })
+                            }
+                            className="h-4 w-4 cursor-pointer rounded border-slate-300 text-emerald-600"
+                          />
+                          <span className="text-sm font-semibold text-slate-800">{dayLabel}</span>
+                        </label>
+                      </div>
+
+                      {dayData.isOpen && (
+                        <div className="mt-3 grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-xs font-semibold text-slate-600">Ouverture</label>
+                            <input
+                              type="time"
+                              value={dayData.openingTime}
+                              onChange={(e) =>
+                                setEditHours({
+                                  ...editHours,
+                                  [day]: { ...dayData, openingTime: e.target.value },
+                                })
+                              }
+                              className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-semibold text-slate-600">Fermeture</label>
+                            <input
+                              type="time"
+                              value={dayData.closingTime}
+                              onChange={(e) =>
+                                setEditHours({
+                                  ...editHours,
+                                  [day]: { ...dayData, closingTime: e.target.value },
+                                })
+                              }
+                              className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {!dayData.isOpen && (
+                        <p className="mt-2 text-xs font-semibold text-emerald-700">Fermé</p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
+                <h4 className="mb-3 text-xs font-semibold text-slate-700">Résumé</h4>
+                <div className="space-y-1 text-xs text-slate-600">
+                  {(["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"] as const).map((day) => {
+                    const dayLabel = { monday: "Lundi", tuesday: "Mardi", wednesday: "Mercredi", thursday: "Jeudi", friday: "Vendredi", saturday: "Samedi", sunday: "Dimanche" }[day];
+                    const dayData = editHours[day];
+                    return (
+                      <p key={day} className="flex justify-between">
+                        <span className="font-medium text-slate-700">{dayLabel}</span>
+                        <span>{dayData.isOpen ? `${dayData.openingTime} - ${dayData.closingTime}` : "Fermé"}</span>
+                      </p>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="flex gap-3 border-t border-slate-200 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setEditHoursOpen(false)}
+                  className="flex-1 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="button"
+                  disabled={uiState.saving}
+                  onClick={saveEditedHours}
+                  className="flex-1 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  {uiState.saving ? "Sauvegarde..." : "Sauvegarder"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {cropModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="relative mx-auto w-full max-w-2xl rounded-2xl border border-slate-200 bg-white p-6 shadow-lg">
+            <div className="mb-6 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-slate-950">
+                {cropMode === "logo" ? "Recadrer le logo" : "Recadrer la bannière"}
+              </h2>
+              <button
+                type="button"
+                onClick={closeCropModal}
+                className="rounded-lg p-1 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
+              >
+                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {/* Zone de prévisualisation du crop */}
+              <div className="flex flex-col items-center gap-4">
+                <div
+                  className="relative w-full max-w-[720px] overflow-hidden rounded-xl border-2 border-emerald-300 bg-slate-100"
+                  style={{
+                    aspectRatio: cropMode === "logo" ? "1 / 1" : "4 / 1",
+                  }}
+                >
+                  {imagePreviewUrl && (
+                    <img
+                      src={imagePreviewUrl}
+                      alt="Aperçu du crop"
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        transform: `translate(${cropPosition.x}px, ${cropPosition.y}px) scale(${cropZoom})`,
+                        cursor: "grab",
+                        transition: "transform 0.1s ease-out",
+                      }}
+                      draggable
+                      onDragStart={(e) => {
+                        const startX = e.clientX;
+                        const startY = e.clientY;
+                        const startPosX = cropPosition.x;
+                        const startPosY = cropPosition.y;
+
+                        const handleMouseMove = (moveEvent: MouseEvent) => {
+                          const deltaX = moveEvent.clientX - startX;
+                          const deltaY = moveEvent.clientY - startY;
+                          setCropPosition({
+                            x: startPosX + deltaX,
+                            y: startPosY + deltaY,
+                          });
+                        };
+
+                        const handleMouseUp = () => {
+                          document.removeEventListener("mousemove", handleMouseMove);
+                          document.removeEventListener("mouseup", handleMouseUp);
+                        };
+
+                        document.addEventListener("mousemove", handleMouseMove);
+                        document.addEventListener("mouseup", handleMouseUp);
+                      }}
+                    />
+                  )}
+                </div>
+
+                {/* Contrôles */}
+                <div className="w-full space-y-3">
+                  <div>
+                    <p className="mb-2 text-xs font-semibold text-slate-600">Zoom: {cropZoom.toFixed(1)}x</p>
+                    <input
+                      type="range"
+                      min="0.5"
+                      max="3"
+                      step="0.1"
+                      value={cropZoom}
+                      onChange={(e) => setCropZoom(parseFloat(e.target.value))}
+                      className="w-full"
+                    />
+                  </div>
+
+                  <div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCropZoom(1);
+                        setCropPosition({ x: 0, y: 0 });
+                      }}
+                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                    >
+                      Réinitialiser
+                    </button>
+                  </div>
+
+                  <p className="text-xs text-slate-500">
+                    Conseil: glissez l&apos;image pour la repositionner, puis ajustez le zoom pour un cadrage propre.
+                  </p>
+                </div>
+              </div>
+
+              {/* Boutons d'action */}
+              <div className="flex gap-3 border-t border-slate-200 pt-4">
+                <button
+                  type="button"
+                  onClick={closeCropModal}
+                  className="flex-1 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="button"
+                  disabled={uiState.saving}
+                  onClick={confirmCrop}
+                  className="flex-1 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  {uiState.saving ? "Traitement..." : "Confirmer et uploader"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
