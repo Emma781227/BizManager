@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
+import { useActiveShop } from "@/hooks/useActiveShop";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type KpiData = {
@@ -144,7 +145,7 @@ export default function DashboardPage() {
   const [products,   setProducts]   = useState<Product[]>([]);
   const [loading,    setLoading]    = useState(true);
   const [period,     setPeriod]     = useState("30d");
-  const [activeId,   setActiveId]   = useState<string>("main"); // "main" = real shop
+  const [activeId,   setActiveId]   = useActiveShop("main");
 
   useEffect(() => { void loadAll(); }, [period]); // eslint-disable-line react-hooks/exhaustive-deps
 

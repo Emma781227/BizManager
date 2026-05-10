@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
+import { useActiveShop } from "@/hooks/useActiveShop";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Shop = { id: string; name: string; slug: string; isPublished: boolean; city: string | null; };
@@ -1126,7 +1127,7 @@ function DeleteConfirmModal({ product, shopId, onClose, onDeleted }: DeleteConfi
 
 // ─── Main component ────────────────────────────────────────────────────────────
 export default function ProductsPage() {
-  const [activeShopId, setActiveShopId] = useState("s1");
+  const [activeShopId, setActiveShopId] = useActiveShop("s1");
   const [search, setSearch]             = useState("");
   const [catFilter, setCatFilter]       = useState("all");
   const [stockFilter, setStockFilter]   = useState("all");
