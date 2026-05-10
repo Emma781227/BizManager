@@ -1,0 +1,63 @@
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { getSessionFromRequest } from "@/lib/auth";
+
+const PLAN_ORDER = ["starter", "business", "premium"];
+
+export async function GET(request: NextRequest) {
+  const session = await getSessionFromRequest(request);
+  if (!session) return NextResponse.json({ error: "Non authentifie" }, { status: 401 });
+
+  const shopId = request.nextUrl.searchParams.get("shopId")?.trim();
+
+  const [sub, shopCount, allPlans] = await Promise.all([
+    prisma.subscription.findUnique({
+      where: { userId: session.userId },
+      include: { plan: true },
+    }),
+    prisma.shop.count({ where: { userId: session.userId } }),
+    prisma.plan.findMany({ where: { isActive: true }, orderBy: { priceMonthly: "asc" } }),
+  ]);
+
+  // Plan actif (fallback sur starter si pas de subscription)
+  const starterPlan = allPlans.find(p => p.name === "starter") ?? allPlans[0];
+  const currentPlan = sub?.plan ?? starterPlan;
+
+  if (!currentPlan) {
+    return NextResponse.json({ error: "Plans introuvables" }, { status: 500 });
+  }
+
+  // Produits dans la boutique active (si shopId fourni)
+  let productCount = 0;
+  if (shopId) {
+    const shop = await prisma.shop.findFirst({ where: { id: shopId, userId: session.userId } });
+    if (shop) {
+      productCount = await prisma.product.count({ where: { shopId: shop.id } });
+    }
+  }
+
+  // Plan suivant
+  const currentIndex = PLAN_ORDER.indexOf(currentPlan.name);
+  const nextPlanName = currentIndex < PLAN_ORDER.length - 1 ? PLAN_ORDER[currentIndex + 1] : null;
+  const nextPlan = nextPlanName ? allPlans.find(p => p.name === nextPlanName) ?? null : null;
+
+  return NextResponse.json({
+    plan: {
+      name:         currentPlan.name,
+      displayName:  currentPlan.displayName,
+      maxShops:     currentPlan.maxShops,
+      maxProducts:  currentPlan.maxProducts,
+      priceMonthly: Number(currentPlan.priceMonthly),
+    },
+    usage: {
+      shops:    shopCount,
+      products: productCount,
+    },
+    nextPlan: nextPlan ? {
+      name:         nextPlan.name,
+      displayName:  nextPlan.displayName,
+      priceMonthly: Number(nextPlan.priceMonthly),
+    } : null,
+  });
+}

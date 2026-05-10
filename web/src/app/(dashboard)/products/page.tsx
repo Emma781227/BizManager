@@ -11,6 +11,12 @@ type MockProduct = {
   sync: "ok"|"pending"|"error"; updatedAt: string;
 };
 
+type QuotaInfo = {
+  plan: { name: string; displayName: string; maxProducts: number; priceMonthly: number };
+  usage: { shops: number; products: number };
+  nextPlan: { name: string; displayName: string; priceMonthly: number } | null;
+};
+
 // ─── Static data ──────────────────────────────────────────────────────────────
 const MOCK_SHOPS = [
   { id: "s1", name: "Mon Aventure",  products: 78,  orders: 156, ca: "8 420", isActive: true,  isPublished: true,  city: "Dakar"   },
@@ -221,8 +227,11 @@ export default function ProductsPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [sortBy, setSortBy]             = useState("name");
   const [realShop, setRealShop]         = useState<Shop | null>(null);
+  const [quota, setQuota]               = useState<QuotaInfo | null>(null);
+  const [showUpgrade, setShowUpgrade]   = useState(false);
 
   const activeShop = MOCK_SHOPS.find(s => s.id === activeShopId) ?? MOCK_SHOPS[0];
+  const atProductLimit = quota !== null && quota.plan.maxProducts !== -1 && quota.usage.products >= quota.plan.maxProducts;
 
   useEffect(() => {
     fetch("/api/shop").then(r => r.json()).then(d => {
@@ -230,6 +239,13 @@ export default function ProductsPage() {
       if (sh?.id) setRealShop(sh);
     }).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    fetch(`/api/subscription?shopId=${activeShopId}`)
+      .then(r => r.json())
+      .then(d => { if (d.plan) setQuota(d); })
+      .catch(() => {});
+  }, [activeShopId]);
 
   const filtered = useMemo(() => {
     let p = [...MOCK_PRODUCTS];
@@ -266,10 +282,16 @@ export default function ProductsPage() {
           </div>
 
           <div style={{ display:"flex", alignItems:"center", gap:10, flexWrap:"wrap" }}>
-            <span className="badge badge-biz" style={{ padding:"5px 12px", fontSize:12 }}>Plan Business</span>
+            <span className="badge badge-biz" style={{ padding:"5px 12px", fontSize:12 }}>
+              Plan {quota?.plan.displayName ?? "—"}
+            </span>
             <div>
               <div style={{ fontSize:12, color:"#1F2A24", fontWeight:500 }}>2 / 3 boutiques utilisées</div>
-              <div style={{ fontSize:11, color:"#98A2B3" }}>78 / 500 produits utilisés</div>
+              <div style={{ fontSize:11, color: atProductLimit ? "#EF4444" : "#98A2B3", fontWeight: atProductLimit ? 600 : 400 }}>
+                {quota
+                  ? `${quota.usage.products} / ${quota.plan.maxProducts === -1 ? "∞" : quota.plan.maxProducts} produits`
+                  : "— / — produits"}
+              </div>
             </div>
           </div>
 
@@ -365,7 +387,13 @@ export default function ProductsPage() {
                 <button className="btn-secondary btn-sm">⬆ Importer</button>
                 <button className="btn-secondary btn-sm">⬇ Exporter</button>
                 <button className="btn-secondary btn-sm">🔄 Synchroniser</button>
-                <button className="btn-primary  btn-sm">+ Ajouter un produit</button>
+                <button
+                  className="btn-primary btn-sm"
+                  style={atProductLimit ? { opacity: 0.45, cursor: "not-allowed" } : undefined}
+                  onClick={() => { if (atProductLimit) setShowUpgrade(true); }}
+                >
+                  + Ajouter un produit
+                </button>
               </div>
             </div>
 
@@ -640,6 +668,96 @@ export default function ProductsPage() {
         </div>
 
       </div>
+
+      {showUpgrade && (
+        <div
+          style={{ position:"fixed", inset:0, background:"rgba(15,20,18,0.55)", zIndex:1000,
+                   display:"flex", alignItems:"center", justifyContent:"center", padding:"16px" }}
+          onClick={() => setShowUpgrade(false)}
+        >
+          <div
+            style={{ background:"#fff", borderRadius:20, padding:"32px 28px", maxWidth:420, width:"100%",
+                     boxShadow:"0 20px 60px rgba(10,20,15,0.18)" }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div style={{ textAlign:"center", marginBottom:20 }}>
+              <div style={{ fontSize:40, marginBottom:8 }}>🔒</div>
+              <h2 style={{ fontSize:20, fontWeight:800, color:"#1F2A24", margin:0 }}>Quota atteint</h2>
+              <p style={{ fontSize:14, color:"#667085", marginTop:6, marginBottom:0 }}>
+                Vous avez atteint la limite de produits de votre plan.
+              </p>
+            </div>
+
+            {/* Usage actuel */}
+            {quota && (
+              <div style={{ background:"#F8FAF9", border:"1px solid #E8ECEA", borderRadius:12,
+                            padding:"14px 16px", marginBottom:20 }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
+                  <span style={{ fontSize:13, color:"#667085" }}>Plan actuel</span>
+                  <span style={{ fontSize:13, fontWeight:700, color:"#1F2A24" }}>{quota.plan.displayName}</span>
+                </div>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
+                  <span style={{ fontSize:13, color:"#667085" }}>Produits utilisés</span>
+                  <span style={{ fontSize:13, fontWeight:700, color:"#EF4444" }}>
+                    {quota.usage.products} / {quota.plan.maxProducts}
+                  </span>
+                </div>
+                <div style={{ height:6, borderRadius:4, background:"#E8ECEA", overflow:"hidden" }}>
+                  <div style={{ height:"100%", borderRadius:4, background:"#EF4444",
+                                width:`${Math.min(100, (quota.usage.products / quota.plan.maxProducts) * 100)}%` }} />
+                </div>
+              </div>
+            )}
+
+            {/* Plan suivant */}
+            {quota?.nextPlan ? (
+              <div style={{ border:"2px solid #0A8F45", borderRadius:14, padding:"16px", marginBottom:20 }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                  <div>
+                    <div style={{ fontSize:13, color:"#667085" }}>Passez au plan</div>
+                    <div style={{ fontSize:18, fontWeight:800, color:"#1F2A24" }}>{quota.nextPlan.displayName}</div>
+                  </div>
+                  <div style={{ textAlign:"right" }}>
+                    <div style={{ fontSize:20, fontWeight:800, color:"#0A8F45" }}>
+                      {quota.nextPlan.priceMonthly === 0 ? "Gratuit" : `${quota.nextPlan.priceMonthly.toLocaleString("fr-FR")} FCFA`}
+                    </div>
+                    {quota.nextPlan.priceMonthly > 0 && (
+                      <div style={{ fontSize:11, color:"#98A2B3" }}>/mois</div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div style={{ background:"#EAF7EF", borderRadius:14, padding:"14px 16px", marginBottom:20,
+                            fontSize:13, color:"#0A8F45", fontWeight:600, textAlign:"center" }}>
+                Vous êtes déjà sur le plan le plus élevé.
+              </div>
+            )}
+
+            {/* Actions */}
+            <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+              {quota?.nextPlan && (
+                <a
+                  href="/settings"
+                  style={{ display:"block", textAlign:"center", background:"#0A8F45", color:"#fff",
+                           borderRadius:12, padding:"12px 0", fontSize:14, fontWeight:700,
+                           textDecoration:"none" }}
+                >
+                  Passer au plan {quota.nextPlan.displayName} →
+                </a>
+              )}
+              <button
+                onClick={() => setShowUpgrade(false)}
+                style={{ background:"none", border:"1px solid #E8ECEA", borderRadius:12, padding:"11px 0",
+                         fontSize:14, color:"#667085", cursor:"pointer", fontWeight:500 }}
+              >
+                Fermer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

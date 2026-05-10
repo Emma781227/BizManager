@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSessionFromRequest } from "@/lib/auth";
 import { shopSchema } from "@/lib/validators";
-import { resolveShop } from "@/lib/shop";
+import { resolveShop, checkShopQuota } from "@/lib/shop";
 
 // GET /api/shop → première boutique (rétrocompatibilité) ou toutes via ?all=1
 export async function GET(request: NextRequest) {
@@ -133,6 +133,8 @@ export async function PUT(request: NextRequest) {
       if (primary) {
         shop = await prisma.shop.update({ where: { id: primary.id }, data: updateData });
       } else {
+        const quotaError = await checkShopQuota(session.userId);
+        if (quotaError) return NextResponse.json({ error: quotaError }, { status: 403 });
         shop = await prisma.shop.create({ data: { userId: session.userId, ...updateData, whatsappNumber: data.whatsappNumber.trim() } });
       }
     }
