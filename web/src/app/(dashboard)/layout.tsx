@@ -11,7 +11,6 @@ const links = [
   { href: "/settings", label: "Boutique", short: "BT" },
   { href: "/payments", label: "Paiements", short: "PA" },
   { href: "/whatsapp", label: "WhatsApp", short: "WA" },
-  { href: "/admin", label: "Paramètres", short: "PM" },
 ];
 
 export default async function DashboardLayout({

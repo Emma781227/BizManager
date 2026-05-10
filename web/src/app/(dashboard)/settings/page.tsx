@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type ChangeEvent } from "react";
+import QRCode from "qrcode";
 
 const AFRICAN_DIAL_CODES = [
   { label: "CM +237", value: "+237" },
@@ -196,6 +197,45 @@ export default function SettingsPage() {
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string>("");
   const [cropZoom, setCropZoom] = useState(1);
   const [cropPosition, setCropPosition] = useState({ x: 0, y: 0 });
+  const [qrCodeDataUrl, setQrCodeDataUrl] = useState("");
+
+  async function copyToClipboard(text: string) {
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        return;
+      }
+
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.setAttribute("readonly", "true");
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+    } catch {
+      throw new Error("Impossible de copier le lien");
+    }
+  }
+
+  async function downloadQrCode() {
+    if (!qrCodeDataUrl) {
+      throw new Error("QR code non disponible");
+    }
+
+    const response = await fetch(qrCodeDataUrl);
+    const blob = await response.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = objectUrl;
+    link.download = `${normalizedSlug || "boutique"}-qr.png`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(objectUrl);
+  }
 
   useEffect(() => {
     void loadShop();
@@ -224,6 +264,27 @@ export default function SettingsPage() {
     }
 
     return `${normalizedSlug}.bizmanager.shop`;
+  }, [normalizedSlug]);
+
+  useEffect(() => {
+    const publicUrl = normalizedSlug && typeof window !== "undefined"
+      ? `${window.location.origin}/shop/${normalizedSlug}`
+      : "";
+
+    if (!publicUrl) {
+      setQrCodeDataUrl("");
+      return;
+    }
+
+    void QRCode.toDataURL(publicUrl, {
+      width: 280,
+      margin: 1,
+      errorCorrectionLevel: "M",
+      color: {
+        dark: "#111827",
+        light: "#ffffff",
+      },
+    }).then(setQrCodeDataUrl).catch(() => setQrCodeDataUrl(""));
   }, [normalizedSlug]);
 
   async function loadShop() {
@@ -1025,19 +1086,53 @@ export default function SettingsPage() {
                     <p className="text-xs font-semibold text-slate-600">Lien public de la boutique</p>
                     <div className="mt-2 flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 p-2">
                       <input type="text" value={publicDomain} readOnly className="min-w-0 flex-1 bg-transparent text-xs text-slate-700 outline-none" />
-                      <button type="button" onClick={() => void navigator.clipboard.writeText(publicDomain)} className="rounded-lg bg-emerald-50 px-3 py-1.5 text-[11px] font-semibold text-emerald-700 transition hover:bg-emerald-100">Copier</button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          void copyToClipboard(publicDomain)
+                            .then(() => setUIState((prev) => ({ ...prev, success: "Lien copié" })))
+                            .catch((copyError) => setUIState((prev) => ({ ...prev, error: copyError instanceof Error ? copyError.message : "Impossible de copier le lien" })));
+                        }}
+                        className="rounded-lg bg-emerald-50 px-3 py-1.5 text-[11px] font-semibold text-emerald-700 transition hover:bg-emerald-100"
+                      >
+                        Copier
+                      </button>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-[92px_1fr] gap-2">
-                    <div className="grid h-24 w-24 grid-cols-6 gap-1 rounded-xl border border-slate-200 bg-white p-2">
-                      {Array.from({ length: 36 }).map((_, index) => (
-                        <span key={index} className={`rounded-xs ${index % 4 === 0 || index % 7 === 0 ? "bg-slate-900" : "bg-slate-200"}`} />
-                      ))}
+                    <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-white p-1">
+                      {qrCodeDataUrl ? (
+                        <img src={qrCodeDataUrl} alt="QR code de la boutique" className="h-full w-full object-contain" />
+                      ) : (
+                        <div className="grid h-full w-full grid-cols-6 gap-1 p-1">
+                          {Array.from({ length: 36 }).map((_, index) => (
+                            <span key={index} className={`rounded-xs ${index % 4 === 0 || index % 7 === 0 ? "bg-slate-900" : "bg-slate-200"}`} />
+                          ))}
+                        </div>
+                      )}
                     </div>
                     <div className="flex flex-col gap-2">
-                      <button type="button" onClick={() => void navigator.clipboard.writeText(publicDomain)} className="inline-flex h-9 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 px-3 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100">Copier le lien</button>
-                      <button type="button" className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50">Télécharger le QR code</button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          void copyToClipboard(`${window.location.origin}/shop/${normalizedSlug || "mon-aventure"}`)
+                            .then(() => setUIState((prev) => ({ ...prev, success: "Lien public copié" })))
+                            .catch((copyError) => setUIState((prev) => ({ ...prev, error: copyError instanceof Error ? copyError.message : "Impossible de copier le lien" })));
+                        }}
+                        className="inline-flex h-9 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 px-3 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100"
+                      >
+                        Copier le lien
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          void downloadQrCode().catch((downloadError) => setUIState((prev) => ({ ...prev, error: downloadError instanceof Error ? downloadError.message : "Impossible de télécharger le QR code" })));
+                        }}
+                        className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                      >
+                        Télécharger le QR code
+                      </button>
                     </div>
                   </div>
                   <p className="text-[11px] leading-4 text-slate-500">Partagez votre boutique avec vos clients sur WhatsApp, réseaux sociaux et plus encore.</p>

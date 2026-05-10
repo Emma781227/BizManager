@@ -1,650 +1,743 @@
-"use client";
+import React from "react";
 
-import Link from "next/link";
-import Image from "next/image";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+const LP_CSS = `
+* { box-sizing: border-box; }
+body { margin: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
 
-/* ── Scroll-triggered animation wrapper ── */
-function Reveal({
-  children,
-  className = "",
-  animation = "animate-fade-up",
-  delay = "",
-}: {
-  children: ReactNode;
-  className?: string;
-  animation?: string;
-  delay?: string;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
+.lp-container { max-width: 1320px; margin: 0 auto; padding: 0 24px; }
 
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    el.style.opacity = "0";
+.lp-header { background: #fff; border-bottom: 1px solid #E8ECEA; position: sticky; top: 0; z-index: 100; }
+.lp-header-inner { max-width: 1320px; margin: 0 auto; padding: 0 24px; height: 72px; display: flex; align-items: center; justify-content: space-between; }
+.lp-nav { display: flex; gap: 32px; }
+.lp-nav a { font-size: 14px; font-weight: 500; color: #667085; text-decoration: none; transition: color 0.15s; }
+.lp-nav a:hover { color: #0A8F45; }
+.lp-header-btns { display: flex; gap: 10px; }
 
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          el.style.opacity = "";
-          el.classList.add(animation);
-          if (delay) el.classList.add(delay);
-          observer.unobserve(el);
-        }
-      },
-      { threshold: 0.15 }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [animation, delay]);
+.lp-hero { display: grid; grid-template-columns: 500px 1fr; gap: 48px; align-items: center; padding: 72px 0 80px; }
 
-  return (
-    <div ref={ref} className={className}>
-      {children}
-    </div>
-  );
+.lp-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; }
+
+.lp-features-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+
+.lp-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+
+.lp-previews { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+.lp-testimonials { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+
+.lp-pricing { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+
+.lp-footer-grid { display: grid; grid-template-columns: 280px 1fr 1fr 1fr; gap: 40px; }
+
+@media (max-width: 1024px) {
+  .lp-hero { grid-template-columns: 1fr; gap: 40px; }
+  .lp-features-grid { grid-template-columns: repeat(2, 1fr); }
+  .lp-previews { grid-template-columns: 1fr; }
+  .lp-footer-grid { grid-template-columns: 1fr 1fr; gap: 28px; }
 }
-
-const testimonials = [
-  {
-    quote:
-      "Fini les carnets et les oublis ! Tout est automatique. Je vois mes stocks en temps reel et je ne perds plus de ventes.",
-    name: "Joseph Kamga",
-    initials: "JK",
-    role: "Commercant alimentaire",
-    location: "Douala, Cameroun",
-  },
-  {
-    quote:
-      "Mes clients adorent commander sur WhatsApp. En 2 semaines, j'ai double mes ventes sans changer mes habitudes.",
-    name: "Aminata Diallo",
-    initials: "AD",
-    role: "Vendeuse de cosmetiques",
-    location: "Dakar, Senegal",
-  },
-  {
-    quote:
-      "Avant BizManager, je perdais du temps a noter les commandes a la main. Maintenant tout est centralise sur mon telephone.",
-    name: "Patrick Mbarga",
-    initials: "PM",
-    role: "Epicier grossiste",
-    location: "Yaounde, Cameroun",
-  },
-];
-
-function TestimonialCarousel() {
-  const [current, setCurrent] = useState(0);
-
-  useEffect(() => {
-    const id = setInterval(() => {
-      setCurrent((prev) => (prev + 1) % testimonials.length);
-    }, 5000);
-    return () => clearInterval(id);
-  }, [current]);
-
-  const goTo = (index: number) => {
-    setCurrent(index);
-  };
-
-  return (
-    <section id="testimonials" className="py-24 relative overflow-hidden">
-      <div className="absolute top-20 right-0 w-80 h-80 rounded-full bg-[#daf2e9]/40 blur-[64px] pointer-events-none" />
-
-      <div className="max-w-4xl mx-auto px-6">
-        <Reveal className="text-center mb-16" animation="animate-fade-up">
-          <h2 className="text-4xl md:text-5xl font-bold tracking-tight">
-            Ils nous font confiance
-          </h2>
-          <p className="text-xl text-[#6a707a] mt-4">
-            Decouvrez comment BizManager transforme leur commerce
-          </p>
-        </Reveal>
-
-        <div className="relative overflow-hidden">
-          <div
-            className="flex transition-transform duration-500 ease-in-out"
-            style={{ transform: `translateX(-${current * 100}%)` }}
-          >
-            {testimonials.map((item) => (
-              <div key={item.name} className="w-full shrink-0 px-1">
-                <div className="bg-white/80 border border-[#e8e6e3] rounded-2xl p-8 hover-glow transition-shadow duration-500">
-                  <div className="flex gap-1 mb-6">
-                    {[...Array(5)].map((_, i) => (
-                      <Image key={i} src="/landing/icon-star.svg" alt="" width={18} height={18} />
-                    ))}
-                  </div>
-
-                  <p className="text-base leading-relaxed mb-8 min-h-[52px]">
-                    &quot;{item.quote}&quot;
-                  </p>
-
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-[#1d7c5f] rounded-full flex items-center justify-center text-white font-bold">
-                      {item.initials}
-                    </div>
-                    <div>
-                      <p className="font-bold">{item.name}</p>
-                      <p className="text-sm text-[#6a707a]">
-                        {item.role} &bull; {item.location}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Dots */}
-        <div className="flex justify-center gap-2 mt-8">
-          {testimonials.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => goTo(i)}
-              aria-label={`Temoignage ${i + 1}`}
-              className={`h-2 rounded-full transition-all duration-300 ${
-                i === current
-                  ? "w-6 bg-[#1d7c5f]"
-                  : "w-2 bg-[#e8e6e3] hover:bg-[#c5cac7]"
-              }`}
-            />
-          ))}
-        </div>
-      </div>
-    </section>
-  );
+@media (max-width: 768px) {
+  .lp-nav { display: none; }
+  .lp-stats { grid-template-columns: 1fr; }
+  .lp-steps { grid-template-columns: 1fr; }
+  .lp-testimonials { grid-template-columns: 1fr; }
+  .lp-pricing { grid-template-columns: 1fr; }
+  .lp-footer-grid { grid-template-columns: 1fr; }
+  .lp-features-grid { grid-template-columns: 1fr 1fr; }
 }
+@media (max-width: 480px) {
+  .lp-features-grid { grid-template-columns: 1fr; }
+  .lp-header-btns .lp-btn-secondary { display: none; }
+}
+`;
 
-export default function Home() {
+const btnGreen = {
+  background: "#0A8F45",
+  color: "#fff",
+  border: "none",
+  borderRadius: 12,
+  padding: "12px 24px",
+  fontSize: 15,
+  fontWeight: 600,
+  cursor: "pointer",
+  textDecoration: "none",
+  display: "inline-block",
+  lineHeight: 1.3,
+} as React.CSSProperties;
+
+const btnOutline = {
+  background: "#fff",
+  color: "#1F2A24",
+  border: "1.5px solid #E8ECEA",
+  borderRadius: 12,
+  padding: "12px 22px",
+  fontSize: 15,
+  fontWeight: 500,
+  cursor: "pointer",
+  textDecoration: "none",
+  display: "inline-block",
+  lineHeight: 1.3,
+} as React.CSSProperties;
+
+const card = {
+  background: "#fff",
+  border: "1.5px solid #E8ECEA",
+  borderRadius: 18,
+  boxShadow: "0 2px 12px rgba(16,24,40,0.06)",
+} as React.CSSProperties;
+
+export default function HomePage() {
   return (
-    <main className="bg-[#faf9f7] text-[#20232b] font-[var(--font-app-sans)]">
-      {/* ── Green top bar ── */}
-      <div className="h-1 bg-[#1d7c5f]" />
+    <>
+      <style>{LP_CSS}</style>
+      <div style={{ background: "#F8FAF9", minHeight: "100vh" }}>
 
-      {/* ── Navbar ── */}
-      <header className="sticky top-0 z-50 bg-white/80 border-b border-[#e8e6e3]/80 backdrop-blur-xl shadow-sm">
-        <nav className="flex items-center justify-between max-w-6xl mx-auto px-6 h-20">
-          <Link href="/" className="flex items-center gap-3 hover-scale">
-            <span className="w-10 h-10 bg-[#1d7c5f] rounded-2xl flex items-center justify-center text-white font-bold text-lg">
-              BM
-            </span>
-            <span className="text-xl font-bold tracking-tight">BizManager</span>
-          </Link>
-          <div className="hidden md:flex items-center gap-6">
-            <Link href="#features" className="text-base font-medium hover:text-[#1d7c5f] transition-colors duration-200">
-              Fonctionnalites
-            </Link>
-            <Link href="#how" className="text-base font-medium hover:text-[#1d7c5f] transition-colors duration-200">
-              Comment ca marche
-            </Link>
-            <Link href="#testimonials" className="text-[#6a707a] text-base font-medium hover:text-[#1d7c5f] transition-colors duration-200">
-              Temoignages
-            </Link>
-            <Link
-              href="/login"
-              className="bg-[#1d7c5f] text-white px-6 py-2.5 rounded-xl font-medium text-base hover:bg-[#14634c] hover-scale active-press transition-all duration-200"
-            >
-              Commencer gratuitement
-            </Link>
-          </div>
-          <Link
-            href="/login"
-            className="md:hidden bg-[#1d7c5f] text-white px-5 py-2 rounded-xl font-medium text-sm active-press"
-          >
-            Commencer
-          </Link>
-        </nav>
-      </header>
-
-      {/* ── Hero ── */}
-      <section className="relative overflow-hidden pt-16 pb-24 lg:pt-20 lg:pb-32">
-        {/* Background blurs */}
-        <div className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full bg-[#1d7c5f]/5 blur-[64px] pointer-events-none animate-fade-in" />
-        <div className="absolute top-[220px] left-0 w-[500px] h-[500px] rounded-full bg-[#daf2e9]/40 blur-[64px] pointer-events-none animate-fade-in stagger-3" />
-
-        <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center relative">
-          {/* Left */}
-          <div>
-            <div className="inline-flex items-center gap-2 bg-[#daf2e9] rounded-full px-4 py-2 mb-6 animate-fade-up">
-              <Image src="/landing/icon-platform.svg" alt="" width={18} height={18} />
-              <span className="text-sm font-medium text-[#1d7c5f]">
-                Plateforme SaaS pour commercants
-              </span>
-            </div>
-
-            <h1 className="text-4xl sm:text-5xl lg:text-[60px] font-bold leading-[1.15] tracking-tight mb-6 animate-fade-up stagger-1">
-              Vendez en ligne depuis votre telephone
-            </h1>
-
-            <p className="text-xl text-[#6a707a] leading-relaxed mb-8 max-w-lg animate-fade-up stagger-2">
-              Creez votre boutique en ligne, gerez vos produits et recevez vos
-              commandes via WhatsApp. Simple, rapide, mobile.
-            </p>
-
-            <div className="flex flex-wrap gap-4 mb-8 animate-fade-up stagger-3">
-              <Link
-                href="/login"
-                className="bg-[#1d7c5f] text-white px-8 py-4 rounded-2xl font-medium text-base flex items-center gap-2 hover:bg-[#14634c] shadow-lg shadow-[#1d7c5f]/20 hover-scale active-press transition-all duration-200"
-              >
-                Creer ma boutique
-                <Image src="/landing/icon-arrow.svg" alt="" width={20} height={20} />
-              </Link>
-              <Link
-                href="/shop/bizmanager-douala"
-                className="bg-white border border-[#dde0e4] px-8 py-4 rounded-2xl font-medium text-base hover:bg-[#f6f7f7] hover-scale active-press transition-all duration-200"
-              >
-                Voir la demo
-              </Link>
+        {/* ── 1. Header ── */}
+        <header className="lp-header">
+          <div className="lp-header-inner">
+            <a href="/" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: "#0A8F45", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, fontSize: 16 }}>BM</div>
+              <span style={{ fontSize: 17, fontWeight: 700, color: "#1F2A24" }}>BizManager</span>
+            </a>
+            <nav className="lp-nav">
+              <a href="#features">Fonctionnalités</a>
+              <a href="#how">Comment ça marche</a>
+              <a href="#pricing">Tarifs</a>
+              <a href="#faq">FAQ</a>
+            </nav>
+            <div className="lp-header-btns">
+              <a href="/login" className="lp-btn-secondary" style={btnOutline}>Se connecter</a>
+              <a href="/register" style={{ ...btnGreen, padding: "10px 20px", fontSize: 14 }}>Commencer</a>
             </div>
           </div>
+        </header>
 
-          {/* Right — Mock Dashboard */}
-          <div className="relative hidden lg:block animate-slide-right stagger-2">
-            {/* Notification badge */}
-            <div className="absolute -top-4 right-8 z-20 bg-[#1d7c5f] text-white rounded-xl px-4 py-2 shadow-lg animate-bounce-gentle">
-              <div className="absolute -top-1 -right-1 w-3 h-3 bg-[#25d366] rounded-full animate-pulse-dot" />
-              <p className="text-xs opacity-80">Nouvelle commande</p>
-              <p className="text-base font-bold">+2,500 FCFA</p>
-            </div>
-
-            <div className="bg-white border border-[#dde0e4] rounded-3xl p-8 shadow-2xl animate-float hover-glow transition-shadow duration-500">
-              {/* Top bar */}
-              <div className="flex items-center justify-between border-b border-[#dde0e4] pb-4 mb-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-[#1d7c5f] rounded-2xl flex items-center justify-center">
-                    <Image src="/landing/icon-store.svg" alt="" width={20} height={20} />
-                  </div>
-                  <div>
-                    <p className="font-medium">Ma Boutique</p>
-                    <p className="text-sm text-[#6a707a]">En ligne</p>
-                  </div>
+        {/* ── 2. Hero ── */}
+        <section style={{ paddingTop: 0, paddingBottom: 0 }}>
+          <div className="lp-container">
+            <div className="lp-hero">
+              {/* Left column — text */}
+              <div>
+                <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#EAF7EF", border: "1px solid #B6E8CC", borderRadius: 999, padding: "6px 14px", fontSize: 13, fontWeight: 600, color: "#0A8F45", marginBottom: 24 }}>
+                  Gestion de boutique · WhatsApp · Paiements
                 </div>
-                <div className="w-3 h-3 rounded-full bg-[#25d366] animate-pulse-dot" />
-              </div>
-
-              {/* Tabs */}
-              <div className="bg-[#f6f7f7] rounded-xl p-1 flex gap-2 mb-6">
-                <div className="flex-1 bg-white rounded-xl py-2 text-center text-sm font-medium text-[#1d7c5f] shadow-sm">
-                  Vue d&apos;ensemble
-                </div>
-                <div className="flex-1 py-2 text-center text-sm font-medium text-[#6a707a]">
-                  Commandes
-                </div>
-                <div className="flex-1 py-2 text-center text-sm font-medium text-[#6a707a]">
-                  Produits
-                </div>
-              </div>
-
-              {/* Stats */}
-              <div className="grid grid-cols-3 gap-4">
-                <div className="bg-[#f6f7f7] rounded-2xl p-4 hover-lift">
-                  <p className="text-sm text-[#6a707a]">Ventes</p>
-                  <p className="text-2xl font-bold mt-1">247</p>
-                  <div className="flex items-center gap-1 mt-2">
-                    <Image src="/landing/icon-trend.svg" alt="" width={12} height={12} />
-                    <span className="text-xs text-[#1d7c5f]">+12%</span>
-                  </div>
-                </div>
-                <div className="bg-[#f6f7f7] rounded-2xl p-4 hover-lift">
-                  <p className="text-sm text-[#6a707a]">Produits</p>
-                  <p className="text-2xl font-bold mt-1">64</p>
-                  <p className="text-xs text-[#6a707a] mt-2">actifs</p>
-                </div>
-                <div className="bg-[#f6f7f7] rounded-2xl p-4 hover-lift">
-                  <p className="text-sm text-[#6a707a]">Clients</p>
-                  <p className="text-2xl font-bold mt-1">189</p>
-                  <div className="flex items-center gap-1 mt-2">
-                    <Image src="/landing/icon-trend.svg" alt="" width={12} height={12} />
-                    <span className="text-xs text-[#1d7c5f]">+8%</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Stats Bar ── */}
-      <section className="border-y border-[#e8e6e3] bg-gradient-to-r from-white via-[#fcfefd] to-white py-12">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center mb-8">
-            {[
-              { value: "2 400+", label: "Commercants actifs" },
-              { value: "18 500+", label: "Commandes traitees" },
-              { value: "98%", label: "Satisfaction client" },
-              { value: "6 pays", label: "En Afrique" },
-            ].map((s, i) => (
-              <Reveal key={s.label} animation="animate-count" delay={`stagger-${i + 1}`}>
-                <p className="text-4xl font-bold text-[#1d7c5f]">{s.value}</p>
-                <p className="text-base text-[#6a707a] mt-2">{s.label}</p>
-              </Reveal>
-            ))}
-          </div>
-          <Reveal animation="animate-fade-up" delay="stagger-5">
-            <div className="flex justify-center">
-              <div className="inline-flex items-center gap-2 bg-[#daf2e9] rounded-full px-4 py-2">
-                <span className="w-2 h-2 rounded-full bg-[#1d7c5f] animate-pulse-dot" />
-                <span className="text-sm font-medium text-[#1d7c5f]">
-                  12 commercants se sont inscrits aujourd&apos;hui
-                </span>
-              </div>
-            </div>
-          </Reveal>
-        </div>
-      </section>
-
-      {/* ── Features ── */}
-      <section id="features" className="relative py-24 overflow-hidden">
-        <div className="absolute top-20 left-10 w-72 h-72 rounded-full bg-[#daf2e9]/30 blur-[64px] pointer-events-none" />
-        <div className="absolute bottom-20 right-0 w-96 h-96 rounded-full bg-[#1d7c5f]/5 blur-[64px] pointer-events-none" />
-
-        <div className="max-w-6xl mx-auto px-6 relative">
-          <Reveal className="text-center mb-16" animation="animate-fade-up">
-            <h2 className="text-4xl md:text-5xl font-bold tracking-tight">
-              Tout ce dont vous avez besoin
-            </h2>
-            <p className="text-xl text-[#6a707a] mt-4 max-w-2xl mx-auto">
-              Des outils simples et puissants pour developper votre commerce
-            </p>
-          </Reveal>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[
-              {
-                icon: "/landing/icon-boost.svg",
-                title: "Boostez vos ventes",
-                desc: "Atteignez plus de clients avec votre boutique en ligne accessible 24/7",
-              },
-              {
-                icon: "/landing/icon-stock.svg",
-                title: "Stock automatise",
-                desc: "Gerez votre inventaire en temps reel et evitez les ruptures de stock",
-              },
-              {
-                icon: "/landing/icon-clients.svg",
-                title: "Gestion clients",
-                desc: "Suivez vos clients, leur historique d'achats et fidelisez-les facilement",
-              },
-              {
-                icon: "/landing/icon-dashboard.svg",
-                title: "Tableau de bord",
-                desc: "Visualisez vos performances et prenez de meilleures decisions",
-              },
-            ].map((f, i) => (
-              <Reveal key={f.title} animation="animate-fade-up" delay={`stagger-${i + 1}`}>
-                <div className="bg-white/80 border border-[#e8e6e3] rounded-2xl p-8 hover-lift hover-glow cursor-default h-full">
-                  <div className="w-14 h-14 bg-[#daf2e9] rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                    <Image src={f.icon} alt="" width={28} height={28} />
-                  </div>
-                  <h3 className="text-xl font-bold mb-3">{f.title}</h3>
-                  <p className="text-base text-[#6a707a] leading-relaxed">{f.desc}</p>
-                </div>
-              </Reveal>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── How It Works ── */}
-      <section id="how" className="relative py-24 overflow-hidden bg-gradient-to-b from-white via-[#fcfefd] to-white">
-        <div className="max-w-6xl mx-auto px-6">
-          <Reveal className="text-center mb-16" animation="animate-fade-up">
-            <h2 className="text-4xl md:text-5xl font-bold tracking-tight">
-              Comment ca marche ?
-            </h2>
-            <p className="text-xl text-[#6a707a] mt-4 max-w-2xl mx-auto">
-              Lancez votre boutique en ligne en 3 etapes simples
-            </p>
-          </Reveal>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-10 relative">
-            {/* Connector line (desktop) */}
-            <div className="hidden md:block absolute top-24 left-[20%] right-[20%] h-px bg-[#dde0e4]" />
-
-            {[
-              {
-                num: "01",
-                icon: "/landing/icon-step1.svg",
-                title: "Creez votre boutique",
-                desc: "Inscrivez-vous et personnalisez votre espace en quelques minutes depuis votre telephone",
-              },
-              {
-                num: "02",
-                icon: "/landing/icon-step2.svg",
-                title: "Ajoutez vos produits",
-                desc: "Importez vos articles avec photos, prix et descriptions. Simple comme bonjour",
-              },
-              {
-                num: "03",
-                icon: "/landing/icon-step3.svg",
-                title: "Recevez vos commandes",
-                desc: "Les clients commandent directement via WhatsApp. Vous gerez tout depuis l'app",
-              },
-            ].map((s, i) => (
-              <Reveal key={s.num} animation="animate-fade-up" delay={`stagger-${(i + 1) * 2}`}>
-                <p className="text-7xl font-bold text-[#1d7c5f]/10 leading-none mb-4">
-                  {s.num}
+                <h1 style={{ fontSize: 58, fontWeight: 800, lineHeight: 1.1, color: "#1F2A24", margin: 0 }}>
+                  Gérez votre boutique simplement.
+                </h1>
+                <p style={{ fontSize: 19, color: "#667085", marginTop: 20, lineHeight: 1.6, marginBottom: 0 }}>
+                  BizManager aide les commerçants à gérer produits, commandes, clients et paiements — tout depuis un seul endroit.
                 </p>
-                <div className="w-16 h-16 bg-[#1d7c5f] rounded-2xl flex items-center justify-center mb-6 relative z-10 hover-scale">
-                  <Image src={s.icon} alt="" width={32} height={32} />
+                <div style={{ marginTop: 32, display: "flex", gap: 14, flexWrap: "wrap" }}>
+                  <a href="/register" style={{ ...btnGreen, padding: "14px 28px", fontSize: 16 }}>
+                    Créer ma boutique →
+                  </a>
+                  <a href="#how" style={{ ...btnOutline, padding: "14px 28px", fontSize: 16 }}>
+                    Voir comment ça marche
+                  </a>
                 </div>
-                <h3 className="text-2xl font-bold mb-3">{s.title}</h3>
-                <p className="text-base text-[#6a707a] leading-relaxed">{s.desc}</p>
-              </Reveal>
-            ))}
+                <p style={{ marginTop: 20, fontSize: 13, color: "#98A2B3", marginBottom: 0 }}>
+                  ✓ Gratuit pour démarrer  ·  ✓ Sans carte bancaire  ·  ✓ En français
+                </p>
+              </div>
+
+              {/* Right column — Laptop + Phone mockup */}
+              <div style={{ position: "relative", width: "100%", maxWidth: 780, marginLeft: "auto" }}>
+                {/* Laptop SVG */}
+                <svg viewBox="0 0 780 460" style={{ width: "100%", height: "auto" }} xmlns="http://www.w3.org/2000/svg">
+                  {/* Laptop body */}
+                  <rect x="0" y="0" width="780" height="440" rx="16" fill="#1F2A24" />
+                  {/* Screen area */}
+                  <rect x="12" y="10" width="756" height="400" rx="8" fill="#F8FAF9" />
+                  {/* Keyboard bar */}
+                  <rect x="0" y="440" width="780" height="20" rx="4" fill="#2D3B35" />
+                  {/* Hinge */}
+                  <rect x="340" y="440" width="100" height="4" fill="#3D4B45" />
+
+                  {/* ── Sidebar ── */}
+                  <rect x="24" y="20" width="140" height="380" rx="6" fill="#1F2A24" />
+                  {/* Logo icon in sidebar */}
+                  <rect x="34" y="30" width="30" height="30" rx="8" fill="#0A8F45" />
+                  <text x="49" y="51" textAnchor="middle" fill="#fff" fontSize="11" fontWeight="800">BM</text>
+                  {/* Nav item 1 — active */}
+                  <rect x="30" y="74" width="120" height="28" rx="6" fill="#0A8F45" fillOpacity="0.25" />
+                  <rect x="38" y="81" width="12" height="12" rx="3" fill="#0A8F45" />
+                  <rect x="56" y="84" width="64" height="7" rx="3" fill="#0A8F45" />
+                  {/* Nav item 2 */}
+                  <rect x="38" y="115" width="12" height="12" rx="3" fill="#3D4B45" />
+                  <rect x="56" y="118" width="56" height="7" rx="3" fill="#3D4B45" />
+                  {/* Nav item 3 */}
+                  <rect x="38" y="141" width="12" height="12" rx="3" fill="#3D4B45" />
+                  <rect x="56" y="144" width="48" height="7" rx="3" fill="#3D4B45" />
+                  {/* Nav item 4 */}
+                  <rect x="38" y="167" width="12" height="12" rx="3" fill="#3D4B45" />
+                  <rect x="56" y="170" width="60" height="7" rx="3" fill="#3D4B45" />
+                  {/* Nav item 5 */}
+                  <rect x="38" y="193" width="12" height="12" rx="3" fill="#3D4B45" />
+                  <rect x="56" y="196" width="52" height="7" rx="3" fill="#3D4B45" />
+                  {/* Divider */}
+                  <rect x="34" y="222" width="112" height="1" fill="#2D3B35" />
+                  {/* Nav item 6 */}
+                  <rect x="38" y="232" width="12" height="12" rx="3" fill="#3D4B45" />
+                  <rect x="56" y="235" width="44" height="7" rx="3" fill="#3D4B45" />
+                  {/* User avatar at bottom */}
+                  <circle cx="44" cy="374" r="14" fill="#0A8F45" fillOpacity="0.4" />
+                  <rect x="64" y="368" width="50" height="6" rx="3" fill="#3D4B45" />
+                  <rect x="64" y="378" width="36" height="5" rx="2.5" fill="#2D3B35" />
+
+                  {/* ── Main area ── */}
+                  {/* Top bar */}
+                  <rect x="176" y="20" width="580" height="38" rx="6" fill="#fff" stroke="#E8ECEA" strokeWidth="1" />
+                  <rect x="188" y="31" width="80" height="8" rx="4" fill="#E8ECEA" />
+                  <rect x="286" y="31" width="60" height="8" rx="4" fill="#E8ECEA" />
+                  <circle cx="720" cy="35" r="12" fill="#EAF7EF" />
+                  <rect x="714" y="31" width="12" height="8" rx="3" fill="#0A8F45" fillOpacity="0.5" />
+                  <circle cx="745" cy="35" r="8" fill="#F0F0F0" />
+
+                  {/* KPI Cards row */}
+                  {/* Card 1 */}
+                  <rect x="176" y="68" width="183" height="64" rx="8" fill="#fff" stroke="#E8ECEA" strokeWidth="1" />
+                  <circle cx="198" cy="86" r="8" fill="#EAF7EF" />
+                  <rect x="210" y="82" width="60" height="7" rx="3" fill="#E8ECEA" />
+                  <rect x="186" y="103" width="80" height="12" rx="4" fill="#1F2A24" fillOpacity="0.15" />
+                  <rect x="274" y="105" width="40" height="8" rx="3" fill="#0A8F45" fillOpacity="0.4" />
+
+                  {/* Card 2 */}
+                  <rect x="367" y="68" width="183" height="64" rx="8" fill="#fff" stroke="#E8ECEA" strokeWidth="1" />
+                  <circle cx="389" cy="86" r="8" fill="#FFF4E0" />
+                  <rect x="401" y="82" width="60" height="7" rx="3" fill="#E8ECEA" />
+                  <rect x="377" y="103" width="80" height="12" rx="4" fill="#1F2A24" fillOpacity="0.15" />
+                  <rect x="465" y="105" width="40" height="8" rx="3" fill="#D18F17" fillOpacity="0.5" />
+
+                  {/* Card 3 */}
+                  <rect x="558" y="68" width="198" height="64" rx="8" fill="#fff" stroke="#E8ECEA" strokeWidth="1" />
+                  <circle cx="580" cy="86" r="8" fill="#E8F0FE" />
+                  <rect x="592" y="82" width="60" height="7" rx="3" fill="#E8ECEA" />
+                  <rect x="568" y="103" width="80" height="12" rx="4" fill="#1F2A24" fillOpacity="0.15" />
+                  <rect x="656" y="105" width="40" height="8" rx="3" fill="#4A90D9" fillOpacity="0.5" />
+
+                  {/* Chart area */}
+                  <rect x="176" y="142" width="380" height="130" rx="8" fill="#fff" stroke="#E8ECEA" strokeWidth="1" />
+                  {/* Chart title stub */}
+                  <rect x="188" y="154" width="90" height="8" rx="4" fill="#E8ECEA" />
+                  <rect x="286" y="154" width="50" height="8" rx="4" fill="#EAF7EF" />
+                  {/* Grid lines */}
+                  <line x1="188" y1="240" x2="544" y2="240" stroke="#F0F2F1" strokeWidth="1" />
+                  <line x1="188" y1="220" x2="544" y2="220" stroke="#F0F2F1" strokeWidth="1" />
+                  <line x1="188" y1="200" x2="544" y2="200" stroke="#F0F2F1" strokeWidth="1" />
+                  <line x1="188" y1="180" x2="544" y2="180" stroke="#F0F2F1" strokeWidth="1" />
+                  {/* Bars */}
+                  <rect x="210" y="210" width="36" height="30" rx="4" fill="#DDF6E7" />
+                  <rect x="268" y="195" width="36" height="45" rx="4" fill="#DDF6E7" />
+                  <rect x="326" y="175" width="36" height="65" rx="4" fill="#0A8F45" />
+                  <rect x="384" y="205" width="36" height="35" rx="4" fill="#DDF6E7" />
+                  <rect x="442" y="188" width="36" height="52" rx="4" fill="#DDF6E7" />
+                  {/* X axis labels */}
+                  <rect x="210" y="245" width="30" height="5" rx="2" fill="#E8ECEA" />
+                  <rect x="268" y="245" width="30" height="5" rx="2" fill="#E8ECEA" />
+                  <rect x="326" y="245" width="30" height="5" rx="2" fill="#E8ECEA" />
+                  <rect x="384" y="245" width="30" height="5" rx="2" fill="#E8ECEA" />
+                  <rect x="442" y="245" width="30" height="5" rx="2" fill="#E8ECEA" />
+
+                  {/* Side mini chart */}
+                  <rect x="566" y="142" width="190" height="130" rx="8" fill="#fff" stroke="#E8ECEA" strokeWidth="1" />
+                  <rect x="578" y="154" width="70" height="8" rx="4" fill="#E8ECEA" />
+                  {/* Donut-like chart placeholder */}
+                  <circle cx="653" cy="210" r="36" fill="none" stroke="#EAF7EF" strokeWidth="14" />
+                  <circle cx="653" cy="210" r="36" fill="none" stroke="#0A8F45" strokeWidth="14" strokeDasharray="113 113" strokeDashoffset="28" transform="rotate(-90 653 210)" />
+                  <rect x="638" y="205" width="30" height="10" rx="4" fill="#1F2A24" fillOpacity="0.15" />
+
+                  {/* Table */}
+                  <rect x="176" y="282" width="580" height="104" rx="8" fill="#fff" stroke="#E8ECEA" strokeWidth="1" />
+                  {/* Header row */}
+                  <rect x="176" y="282" width="580" height="26" rx="8" fill="#F8FAF9" />
+                  <rect x="176" y="296" width="580" height="12" fill="#F8FAF9" />
+                  <rect x="188" y="289" width="60" height="6" rx="3" fill="#E8ECEA" />
+                  <rect x="300" y="289" width="50" height="6" rx="3" fill="#E8ECEA" />
+                  <rect x="420" y="289" width="50" height="6" rx="3" fill="#E8ECEA" />
+                  <rect x="540" y="289" width="50" height="6" rx="3" fill="#E8ECEA" />
+                  {/* Row 1 */}
+                  <rect x="176" y="308" width="580" height="26" fill="#fff" />
+                  <rect x="188" y="318" width="70" height="6" rx="3" fill="#1F2A24" fillOpacity="0.2" />
+                  <rect x="300" y="318" width="40" height="6" rx="3" fill="#E8ECEA" />
+                  <rect x="420" y="316" width="36" height="10" rx="5" fill="#EAF7EF" />
+                  <rect x="422" y="319" width="32" height="5" rx="2" fill="#0A8F45" fillOpacity="0.6" />
+                  <rect x="540" y="318" width="50" height="6" rx="3" fill="#E8ECEA" />
+                  {/* Row 2 */}
+                  <rect x="176" y="334" width="580" height="26" fill="#FAFCFB" />
+                  <rect x="188" y="344" width="56" height="6" rx="3" fill="#1F2A24" fillOpacity="0.2" />
+                  <rect x="300" y="344" width="44" height="6" rx="3" fill="#E8ECEA" />
+                  <rect x="420" y="342" width="36" height="10" rx="5" fill="#FFF4E0" />
+                  <rect x="422" y="345" width="32" height="5" rx="2" fill="#D18F17" fillOpacity="0.6" />
+                  <rect x="540" y="344" width="50" height="6" rx="3" fill="#E8ECEA" />
+                  {/* Row 3 */}
+                  <rect x="176" y="360" width="580" height="26" fill="#fff" />
+                  <rect x="188" y="370" width="64" height="6" rx="3" fill="#1F2A24" fillOpacity="0.2" />
+                  <rect x="300" y="370" width="36" height="6" rx="3" fill="#E8ECEA" />
+                  <rect x="420" y="368" width="36" height="10" rx="5" fill="#EAF7EF" />
+                  <rect x="422" y="371" width="32" height="5" rx="2" fill="#0A8F45" fillOpacity="0.6" />
+                  <rect x="540" y="370" width="50" height="6" rx="3" fill="#E8ECEA" />
+                </svg>
+
+                {/* Phone mockup overlapping */}
+                <div style={{ position: "absolute", right: -20, bottom: 0 }}>
+                  <svg viewBox="0 0 160 300" width={150} height={280} xmlns="http://www.w3.org/2000/svg">
+                    {/* Phone body */}
+                    <rect x="0" y="0" width="160" height="300" rx="24" fill="#1F2A24" />
+                    {/* Screen */}
+                    <rect x="8" y="20" width="144" height="262" rx="18" fill="#F8FAF9" />
+                    {/* Notch */}
+                    <rect x="55" y="20" width="50" height="16" rx="8" fill="#1F2A24" />
+                    {/* Header bar */}
+                    <rect x="8" y="40" width="144" height="34" rx="0" fill="#0A8F45" />
+                    <rect x="8" y="58" width="144" height="16" fill="#0A8F45" />
+                    <rect x="18" y="48" width="50" height="7" rx="3" fill="#fff" fillOpacity="0.7" />
+                    <circle cx="138" cy="52" r="8" fill="#08763A" />
+                    {/* Product card 1 */}
+                    <rect x="12" y="82" width="136" height="76" rx="10" fill="#fff" stroke="#E8ECEA" strokeWidth="1" />
+                    <rect x="12" y="82" width="136" height="36" rx="10" fill="#EAF7EF" />
+                    <rect x="12" y="100" width="136" height="18" fill="#EAF7EF" />
+                    {/* Product image placeholder icon */}
+                    <rect x="56" y="88" width="48" height="24" rx="4" fill="#0A8F45" fillOpacity="0.2" />
+                    <circle cx="80" cy="98" r="6" fill="#0A8F45" fillOpacity="0.3" />
+                    {/* Product name */}
+                    <rect x="22" y="126" width="70" height="7" rx="3" fill="#1F2A24" fillOpacity="0.25" />
+                    {/* Price */}
+                    <rect x="22" y="139" width="50" height="7" rx="3" fill="#0A8F45" fillOpacity="0.5" />
+                    {/* Cart button */}
+                    <rect x="108" y="133" width="32" height="16" rx="8" fill="#0A8F45" />
+                    <text x="124" y="144" textAnchor="middle" fill="#fff" fontSize="8" fontWeight="700">+</text>
+                    {/* Product card 2 */}
+                    <rect x="12" y="168" width="136" height="76" rx="10" fill="#fff" stroke="#E8ECEA" strokeWidth="1" />
+                    <rect x="12" y="168" width="136" height="36" rx="10" fill="#FFF4E0" />
+                    <rect x="12" y="186" width="136" height="18" fill="#FFF4E0" />
+                    <rect x="56" y="174" width="48" height="24" rx="4" fill="#D18F17" fillOpacity="0.2" />
+                    <circle cx="80" cy="184" r="6" fill="#D18F17" fillOpacity="0.3" />
+                    <rect x="22" y="212" width="60" height="7" rx="3" fill="#1F2A24" fillOpacity="0.25" />
+                    <rect x="22" y="225" width="44" height="7" rx="3" fill="#0A8F45" fillOpacity="0.5" />
+                    <rect x="108" y="219" width="32" height="16" rx="8" fill="#0A8F45" />
+                    <text x="124" y="230" textAnchor="middle" fill="#fff" fontSize="8" fontWeight="700">+</text>
+                    {/* Add to cart button bottom */}
+                    <rect x="12" y="256" width="136" height="22" rx="8" fill="#0A8F45" />
+                    <rect x="42" y="263" width="76" height="7" rx="3" fill="#fff" fillOpacity="0.8" />
+                  </svg>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* ── WhatsApp Section ── */}
-      <section className="relative py-24 overflow-hidden bg-gradient-to-br from-[#14634c] via-[#1d7c5f] to-[#14634c]">
-        <div className="absolute top-10 right-0 w-96 h-96 rounded-full bg-white/5 blur-[64px] pointer-events-none" />
-        <div className="absolute bottom-0 left-10 w-80 h-80 rounded-full bg-[#25d366]/10 blur-[64px] pointer-events-none" />
-
-        <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center relative">
-          {/* Left */}
-          <Reveal animation="animate-slide-left">
-            <div className="inline-flex items-center gap-2 bg-white/10 rounded-full px-4 py-2 mb-6">
-              <Image src="/landing/icon-whatsapp-tag.svg" alt="" width={18} height={18} />
-              <span className="text-sm font-medium text-white">
-                Integration WhatsApp
-              </span>
+        {/* ── 3. Stats ── */}
+        <section id="stats" style={{ marginTop: 0, background: "#fff", borderTop: "1.5px solid #E8ECEA", borderBottom: "1.5px solid #E8ECEA" }}>
+          <div className="lp-container">
+            <div className="lp-stats" style={{ padding: "28px 0" }}>
+              <div style={{ borderRight: "1.5px solid #E8ECEA", padding: "0 40px", textAlign: "center" }}>
+                <div style={{ fontSize: 36, fontWeight: 800, color: "#0A8F45" }}>5 000+</div>
+                <div style={{ fontSize: 14, color: "#667085", marginTop: 4 }}>Boutiques créées</div>
+              </div>
+              <div style={{ borderRight: "1.5px solid #E8ECEA", padding: "0 40px", textAlign: "center" }}>
+                <div style={{ fontSize: 36, fontWeight: 800, color: "#0A8F45" }}>120 000+</div>
+                <div style={{ fontSize: 14, color: "#667085", marginTop: 4 }}>Commandes gérées</div>
+              </div>
+              <div style={{ padding: "0 40px", textAlign: "center" }}>
+                <div style={{ fontSize: 36, fontWeight: 800, color: "#0A8F45" }}>30 000+</div>
+                <div style={{ fontSize: 14, color: "#667085", marginTop: 4 }}>Clients satisfaits</div>
+              </div>
             </div>
+          </div>
+        </section>
 
-            <h2 className="text-4xl lg:text-5xl font-bold text-white leading-tight mb-6">
-              Vos clients commandent sur WhatsApp
-            </h2>
-
-            <p className="text-xl text-white/80 leading-relaxed mb-10 max-w-lg">
-              L&apos;application preferee de vos clients devient votre canal de vente.
-              Recevez et gerez toutes vos commandes en un seul endroit.
-            </p>
-
-            <div className="space-y-4">
-              {[
-                "Notifications instantanees pour chaque commande",
-                "Repondez directement depuis l'application",
-                "Historique complet de toutes les conversations",
-                "Aucune installation requise pour vos clients",
-              ].map((t, i) => (
-                <Reveal key={t} animation="animate-fade-up" delay={`stagger-${i + 1}`}>
-                  <div className="flex items-center gap-3">
-                    <span className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-                      <Image src="/landing/icon-check-wa.svg" alt="" width={16} height={16} />
-                    </span>
-                    <span className="text-base text-white/90">{t}</span>
-                  </div>
-                </Reveal>
-              ))}
+        {/* ── 4. Features ── */}
+        <section id="features" style={{ marginTop: 60, paddingBottom: 0 }}>
+          <div className="lp-container">
+            <div style={{ textAlign: "center", marginBottom: 40 }}>
+              <h2 style={{ fontSize: 38, fontWeight: 800, color: "#1F2A24", margin: 0 }}>Tout ce qu&apos;il vous faut</h2>
+              <p style={{ fontSize: 17, color: "#667085", marginTop: 10, marginBottom: 0 }}>Une plateforme complète pour les commerçants modernes.</p>
             </div>
-          </Reveal>
+            <div className="lp-features-grid">
+              <div style={{ ...card, padding: 28 }}>
+                <div style={{ width: 56, height: 56, borderRadius: "50%", background: "#EAF7EF", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, marginBottom: 16 }}>🏪</div>
+                <h3 style={{ fontSize: 17, fontWeight: 700, color: "#1F2A24", margin: "0 0 8px 0" }}>Gestion de boutique</h3>
+                <p style={{ fontSize: 14, color: "#667085", lineHeight: 1.6, margin: 0 }}>Créez votre boutique en ligne, gérez votre catalogue et partagez facilement avec vos clients.</p>
+              </div>
+              <div style={{ ...card, padding: 28 }}>
+                <div style={{ width: 56, height: 56, borderRadius: "50%", background: "#EAF7EF", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, marginBottom: 16 }}>📦</div>
+                <h3 style={{ fontSize: 17, fontWeight: 700, color: "#1F2A24", margin: "0 0 8px 0" }}>Commandes</h3>
+                <p style={{ fontSize: 14, color: "#667085", lineHeight: 1.6, margin: 0 }}>Suivez chaque commande de A à Z : création, confirmation, préparation, livraison.</p>
+              </div>
+              <div style={{ ...card, padding: 28 }}>
+                <div style={{ width: 56, height: 56, borderRadius: "50%", background: "#EAF7EF", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, marginBottom: 16 }}>💳</div>
+                <h3 style={{ fontSize: 17, fontWeight: 700, color: "#1F2A24", margin: "0 0 8px 0" }}>Paiements</h3>
+                <p style={{ fontSize: 14, color: "#667085", lineHeight: 1.6, margin: 0 }}>Enregistrez les paiements, suivez les impayés et gérez plusieurs modes de règlement.</p>
+              </div>
+              <div style={{ ...card, padding: 28 }}>
+                <div style={{ width: 56, height: 56, borderRadius: "50%", background: "#EAF7EF", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, marginBottom: 16 }}>📱</div>
+                <h3 style={{ fontSize: 17, fontWeight: 700, color: "#1F2A24", margin: "0 0 8px 0" }}>WhatsApp Business</h3>
+                <p style={{ fontSize: 14, color: "#667085", lineHeight: 1.6, margin: 0 }}>Partagez votre boutique et communiquez avec vos clients directement via WhatsApp.</p>
+              </div>
+            </div>
+          </div>
+        </section>
 
-          {/* Right — Chat Mock */}
-          <Reveal animation="animate-slide-right" delay="stagger-2">
-            <div className="bg-white rounded-3xl p-6 shadow-2xl hover-glow transition-shadow duration-500">
-              {/* Chat header */}
-              <div className="flex items-center gap-3 border-b border-[#dde0e4] pb-4 mb-4">
-                <div className="w-12 h-12 bg-[#25d366] rounded-full flex items-center justify-center">
-                  <Image src="/landing/icon-wa-phone.svg" alt="" width={24} height={24} />
-                </div>
-                <div>
-                  <p className="font-medium">Ma Boutique</p>
-                  <p className="text-sm text-[#6a707a]">WhatsApp Business</p>
+        {/* ── 5. How it works ── */}
+        <section id="how" style={{ marginTop: 60 }}>
+          <div className="lp-container">
+            <div style={{ textAlign: "center", marginBottom: 40 }}>
+              <h2 style={{ fontSize: 38, fontWeight: 800, color: "#1F2A24", margin: 0 }}>Comment ça marche ?</h2>
+              <p style={{ fontSize: 17, color: "#667085", marginTop: 10, marginBottom: 0 }}>En moins de 5 minutes, votre boutique est prête.</p>
+            </div>
+            <div className="lp-steps">
+              <div style={{ ...card, padding: 28 }}>
+                <div style={{ width: 44, height: 44, borderRadius: "50%", background: "#0A8F45", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 18, marginBottom: 20 }}>1</div>
+                <h3 style={{ fontSize: 18, fontWeight: 700, color: "#1F2A24", margin: "0 0 10px 0" }}>Créez votre compte</h3>
+                <p style={{ fontSize: 14, color: "#667085", lineHeight: 1.6, margin: 0 }}>Inscrivez-vous gratuitement et configurez votre boutique en quelques clics.</p>
+              </div>
+              <div style={{ ...card, padding: 28 }}>
+                <div style={{ width: 44, height: 44, borderRadius: "50%", background: "#0A8F45", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 18, marginBottom: 20 }}>2</div>
+                <h3 style={{ fontSize: 18, fontWeight: 700, color: "#1F2A24", margin: "0 0 10px 0" }}>Ajoutez vos produits</h3>
+                <p style={{ fontSize: 14, color: "#667085", lineHeight: 1.6, margin: 0 }}>Importez votre catalogue, fixez vos prix et activez votre boutique publique.</p>
+              </div>
+              <div style={{ ...card, padding: 28 }}>
+                <div style={{ width: 44, height: 44, borderRadius: "50%", background: "#0A8F45", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 18, marginBottom: 20 }}>3</div>
+                <h3 style={{ fontSize: 18, fontWeight: 700, color: "#1F2A24", margin: "0 0 10px 0" }}>Recevez vos commandes</h3>
+                <p style={{ fontSize: 14, color: "#667085", lineHeight: 1.6, margin: 0 }}>Vos clients commandent, vous recevez les notifications et gérez tout depuis le dashboard.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ── 6. Product Previews ── */}
+        <section id="product" style={{ marginTop: 60 }}>
+          <div className="lp-container">
+            <div style={{ textAlign: "center", marginBottom: 40 }}>
+              <h2 style={{ fontSize: 38, fontWeight: 800, color: "#1F2A24", margin: 0 }}>Découvrez le produit</h2>
+              <p style={{ fontSize: 17, color: "#667085", marginTop: 10, marginBottom: 0 }}>Un dashboard marchand complet et une boutique publique moderne.</p>
+            </div>
+            <div className="lp-previews">
+              {/* Dashboard preview */}
+              <div style={{ ...card, padding: 24, overflow: "hidden" }}>
+                <div style={{ display: "inline-block", background: "#EAF7EF", color: "#0A8F45", fontSize: 12, fontWeight: 600, borderRadius: 999, padding: "4px 12px", marginBottom: 14 }}>Dashboard</div>
+                <h3 style={{ fontSize: 22, fontWeight: 700, color: "#1F2A24", margin: "0 0 8px 0" }}>Votre tableau de bord</h3>
+                <p style={{ fontSize: 14, color: "#667085", marginBottom: 20, lineHeight: 1.6, marginTop: 0 }}>Suivez vos ventes, gérez vos commandes et analysez vos performances en temps réel.</p>
+                <div style={{ background: "#F8FAF9", borderRadius: 12, height: 220, overflow: "hidden", border: "1px solid #E8ECEA" }}>
+                  <svg viewBox="0 0 460 220" style={{ width: "100%", height: "100%" }} xmlns="http://www.w3.org/2000/svg">
+                    {/* Mini sidebar */}
+                    <rect x="0" y="0" width="70" height="220" fill="#1F2A24" />
+                    <rect x="8" y="10" width="24" height="24" rx="6" fill="#0A8F45" />
+                    <rect x="10" y="48" width="50" height="18" rx="4" fill="#0A8F45" fillOpacity="0.3" />
+                    <rect x="16" y="54" width="38" height="6" rx="3" fill="#0A8F45" />
+                    <rect x="16" y="78" width="38" height="6" rx="3" fill="#2D3B35" />
+                    <rect x="16" y="96" width="38" height="6" rx="3" fill="#2D3B35" />
+                    <rect x="16" y="114" width="38" height="6" rx="3" fill="#2D3B35" />
+                    <rect x="16" y="132" width="38" height="6" rx="3" fill="#2D3B35" />
+                    {/* Main area */}
+                    <rect x="70" y="0" width="390" height="32" fill="#fff" stroke="#E8ECEA" strokeWidth="1" />
+                    <rect x="80" y="12" width="60" height="8" rx="4" fill="#E8ECEA" />
+                    <circle cx="440" cy="16" r="10" fill="#EAF7EF" />
+                    {/* KPI row */}
+                    <rect x="78" y="40" width="110" height="44" rx="6" fill="#fff" stroke="#E8ECEA" strokeWidth="1" />
+                    <circle cx="92" cy="54" r="6" fill="#EAF7EF" />
+                    <rect x="102" y="50" width="50" height="6" rx="3" fill="#E8ECEA" />
+                    <rect x="84" y="67" width="60" height="8" rx="4" fill="#1F2A24" fillOpacity="0.2" />
+                    <rect x="202" y="40" width="110" height="44" rx="6" fill="#fff" stroke="#E8ECEA" strokeWidth="1" />
+                    <circle cx="216" cy="54" r="6" fill="#FFF4E0" />
+                    <rect x="226" y="50" width="50" height="6" rx="3" fill="#E8ECEA" />
+                    <rect x="208" y="67" width="60" height="8" rx="4" fill="#1F2A24" fillOpacity="0.2" />
+                    <rect x="326" y="40" width="126" height="44" rx="6" fill="#fff" stroke="#E8ECEA" strokeWidth="1" />
+                    <circle cx="340" cy="54" r="6" fill="#E8F0FE" />
+                    <rect x="350" y="50" width="50" height="6" rx="3" fill="#E8ECEA" />
+                    <rect x="332" y="67" width="60" height="8" rx="4" fill="#1F2A24" fillOpacity="0.2" />
+                    {/* Chart */}
+                    <rect x="78" y="92" width="220" height="114" rx="6" fill="#fff" stroke="#E8ECEA" strokeWidth="1" />
+                    <rect x="88" y="102" width="60" height="6" rx="3" fill="#E8ECEA" />
+                    <line x1="88" y1="178" x2="286" y2="178" stroke="#F0F2F1" strokeWidth="1" />
+                    <line x1="88" y1="162" x2="286" y2="162" stroke="#F0F2F1" strokeWidth="1" />
+                    <line x1="88" y1="146" x2="286" y2="146" stroke="#F0F2F1" strokeWidth="1" />
+                    <rect x="98" y="160" width="20" height="18" rx="3" fill="#DDF6E7" />
+                    <rect x="128" y="150" width="20" height="28" rx="3" fill="#DDF6E7" />
+                    <rect x="158" y="140" width="20" height="38" rx="3" fill="#0A8F45" />
+                    <rect x="188" y="155" width="20" height="23" rx="3" fill="#DDF6E7" />
+                    <rect x="218" y="148" width="20" height="30" rx="3" fill="#DDF6E7" />
+                    {/* Table */}
+                    <rect x="306" y="92" width="146" height="114" rx="6" fill="#fff" stroke="#E8ECEA" strokeWidth="1" />
+                    <rect x="306" y="92" width="146" height="20" rx="6" fill="#F8FAF9" />
+                    <rect x="306" y="100" width="146" height="12" fill="#F8FAF9" />
+                    <rect x="316" y="98" width="40" height="5" rx="2" fill="#E8ECEA" />
+                    <rect x="316" y="120" width="50" height="5" rx="2" fill="#1F2A24" fillOpacity="0.2" />
+                    <rect x="380" y="120" width="30" height="5" rx="2" fill="#E8ECEA" />
+                    <rect x="316" y="134" width="44" height="5" rx="2" fill="#1F2A24" fillOpacity="0.2" />
+                    <rect x="380" y="134" width="30" height="5" rx="2" fill="#E8ECEA" />
+                    <rect x="316" y="148" width="48" height="5" rx="2" fill="#1F2A24" fillOpacity="0.2" />
+                    <rect x="380" y="148" width="30" height="5" rx="2" fill="#E8ECEA" />
+                    <rect x="316" y="162" width="40" height="5" rx="2" fill="#1F2A24" fillOpacity="0.2" />
+                    <rect x="380" y="162" width="30" height="5" rx="2" fill="#E8ECEA" />
+                    <rect x="316" y="176" width="52" height="5" rx="2" fill="#1F2A24" fillOpacity="0.2" />
+                    <rect x="380" y="176" width="30" height="5" rx="2" fill="#E8ECEA" />
+                  </svg>
                 </div>
               </div>
 
-              {/* Messages */}
-              <div className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-full bg-[#f6f7f7] shrink-0" />
-                  <div className="bg-[#f6f7f7] rounded-2xl rounded-tl-none px-4 py-3 max-w-[75%]">
-                    <p className="text-sm">Bonjour, je voudrais commander 2 sacs de riz</p>
-                    <p className="text-xs text-[#6a707a] mt-1">10:30</p>
-                  </div>
-                </div>
+              {/* Storefront preview */}
+              <div style={{ ...card, padding: 24, overflow: "hidden" }}>
+                <div style={{ display: "inline-block", background: "#EAF7EF", color: "#0A8F45", fontSize: 12, fontWeight: 600, borderRadius: 999, padding: "4px 12px", marginBottom: 14 }}>Storefront</div>
+                <h3 style={{ fontSize: 22, fontWeight: 700, color: "#1F2A24", margin: "0 0 8px 0" }}>Votre boutique publique</h3>
+                <p style={{ fontSize: 14, color: "#667085", marginBottom: 20, lineHeight: 1.6, marginTop: 0 }}>Partagez un lien direct à vos clients. Ils voient vos produits, passent commande, c&apos;est tout.</p>
+                <div style={{ display: "flex", justifyContent: "center", alignItems: "flex-start", height: 220 }}>
+                  <div style={{ height: 220, width: 120, background: "#F8FAF9", borderRadius: 20, border: "2px solid #E8ECEA", overflow: "hidden" }}>
+                    <svg viewBox="0 0 120 220" style={{ width: "100%", height: "100%" }} xmlns="http://www.w3.org/2000/svg">
+                      {/* Phone header */}
+                      <rect x="0" y="0" width="120" height="28" fill="#0A8F45" />
+                      <rect x="8" y="10" width="44" height="8" rx="4" fill="#fff" fillOpacity="0.7" />
+                      <circle cx="106" cy="14" r="8" fill="#08763A" />
+                      {/* Product grid */}
+                      <rect x="6" y="36" width="50" height="60" rx="8" fill="#fff" stroke="#E8ECEA" strokeWidth="1" />
+                      <rect x="6" y="36" width="50" height="32" rx="8" fill="#EAF7EF" />
+                      <rect x="6" y="52" width="50" height="16" fill="#EAF7EF" />
+                      <circle cx="31" cy="50" r="8" fill="#0A8F45" fillOpacity="0.25" />
+                      <rect x="12" y="76" width="30" height="5" rx="2" fill="#1F2A24" fillOpacity="0.3" />
+                      <rect x="12" y="85" width="22" height="5" rx="2" fill="#0A8F45" fillOpacity="0.5" />
 
-                <div className="flex justify-end">
-                  <div className="bg-[#1d7c5f] rounded-2xl rounded-tr-none px-4 py-3 max-w-[80%]">
-                    <p className="text-sm text-white">
-                      Parfait ! C&apos;est 5000 FCFA le sac. Total: 10,000 FCFA. Je confirme votre commande ?
-                    </p>
-                    <p className="text-xs text-white/70 text-right mt-1">10:31 ✓✓</p>
-                  </div>
-                </div>
+                      <rect x="64" y="36" width="50" height="60" rx="8" fill="#fff" stroke="#E8ECEA" strokeWidth="1" />
+                      <rect x="64" y="36" width="50" height="32" rx="8" fill="#FFF4E0" />
+                      <rect x="64" y="52" width="50" height="16" fill="#FFF4E0" />
+                      <circle cx="89" cy="50" r="8" fill="#D18F17" fillOpacity="0.25" />
+                      <rect x="70" y="76" width="30" height="5" rx="2" fill="#1F2A24" fillOpacity="0.3" />
+                      <rect x="70" y="85" width="22" height="5" rx="2" fill="#0A8F45" fillOpacity="0.5" />
 
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-full bg-[#f6f7f7] shrink-0" />
-                  <div className="bg-[#f6f7f7] rounded-2xl rounded-tl-none px-4 py-3">
-                    <p className="text-sm">Oui, c&apos;est bon !</p>
-                    <p className="text-xs text-[#6a707a] mt-1">10:32</p>
-                  </div>
-                </div>
+                      <rect x="6" y="104" width="50" height="60" rx="8" fill="#fff" stroke="#E8ECEA" strokeWidth="1" />
+                      <rect x="6" y="104" width="50" height="32" rx="8" fill="#E8F0FE" />
+                      <rect x="6" y="120" width="50" height="16" fill="#E8F0FE" />
+                      <circle cx="31" cy="118" r="8" fill="#4A90D9" fillOpacity="0.25" />
+                      <rect x="12" y="144" width="30" height="5" rx="2" fill="#1F2A24" fillOpacity="0.3" />
+                      <rect x="12" y="153" width="22" height="5" rx="2" fill="#0A8F45" fillOpacity="0.5" />
 
-                <div className="flex justify-end">
-                  <div className="bg-[#1d7c5f] rounded-2xl rounded-tr-none px-4 py-3 max-w-[75%]">
-                    <p className="text-sm text-white">
-                      ✅ Commande confirmee ! Livraison demain matin
-                    </p>
-                    <p className="text-xs text-white/70 text-right mt-1">10:33 ✓✓</p>
+                      <rect x="64" y="104" width="50" height="60" rx="8" fill="#fff" stroke="#E8ECEA" strokeWidth="1" />
+                      <rect x="64" y="104" width="50" height="32" rx="8" fill="#FCE8E8" />
+                      <rect x="64" y="120" width="50" height="16" fill="#FCE8E8" />
+                      <circle cx="89" cy="118" r="8" fill="#A63B35" fillOpacity="0.2" />
+                      <rect x="70" y="144" width="30" height="5" rx="2" fill="#1F2A24" fillOpacity="0.3" />
+                      <rect x="70" y="153" width="22" height="5" rx="2" fill="#0A8F45" fillOpacity="0.5" />
+
+                      {/* CTA button */}
+                      <rect x="6" y="174" width="108" height="28" rx="8" fill="#0A8F45" />
+                      <rect x="28" y="185" width="64" height="7" rx="3" fill="#fff" fillOpacity="0.85" />
+                      {/* Bottom bar */}
+                      <rect x="0" y="206" width="120" height="14" fill="#F0F2F1" />
+                      <rect x="42" y="209" width="36" height="5" rx="2" fill="#E8ECEA" />
+                    </svg>
                   </div>
                 </div>
               </div>
             </div>
-          </Reveal>
-        </div>
-      </section>
+          </div>
+        </section>
 
-      {/* ── Testimonials Carousel ── */}
-      <TestimonialCarousel />
-
-      {/* ── Final CTA ── */}
-      <section className="relative py-24 overflow-hidden bg-gradient-to-br from-[#faf9f7] via-[#f5f9f7] to-[#faf9f7]">
-        <div className="absolute top-0 left-1/3 w-96 h-96 rounded-full bg-[#daf2e9]/40 blur-[64px] pointer-events-none" />
-        <div className="absolute bottom-0 right-1/3 w-80 h-80 rounded-full bg-[#1d7c5f]/10 blur-[64px] pointer-events-none" />
-
-        <div className="max-w-3xl mx-auto px-6 text-center relative">
-          <Reveal animation="animate-fade-up">
-            <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-4">
-              Pret a developper votre commerce ?
-            </h2>
-            <p className="text-xl text-[#6a707a] mb-10">
-              Rejoignez des milliers de commercants qui utilisent BizManager pour
-              vendre plus et mieux.
-            </p>
-
-            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-6">
-              <Link
-                href="/login"
-                className="bg-[#1d7c5f] text-white px-8 py-4 rounded-2xl font-medium text-base flex items-center justify-center gap-2 hover:bg-[#14634c] shadow-lg shadow-[#1d7c5f]/20 hover-scale active-press transition-all duration-200"
-              >
-                Commencer gratuitement
-                <Image src="/landing/icon-arrow.svg" alt="" width={20} height={20} />
-              </Link>
-              <Link
-                href="/shop/bizmanager-douala"
-                className="bg-white border border-[#dde0e4] px-8 py-4 rounded-2xl font-medium text-base flex items-center justify-center gap-2 hover:bg-[#f6f7f7] hover-scale active-press transition-all duration-200"
-              >
-                <Image src="/landing/icon-download.svg" alt="" width={20} height={20} />
-                Telecharger l&apos;app
-              </Link>
+        {/* ── 7. Testimonials ── */}
+        <section id="testimonials" style={{ marginTop: 60 }}>
+          <div className="lp-container">
+            <div style={{ textAlign: "center", marginBottom: 40 }}>
+              <h2 style={{ fontSize: 38, fontWeight: 800, color: "#1F2A24", margin: 0 }}>Ils nous font confiance</h2>
+              <p style={{ fontSize: 15, color: "#F08A24", marginTop: 8, marginBottom: 0 }}>★★★★★  4.9/5 sur 300+ avis</p>
             </div>
-
-            <p className="text-sm text-[#6a707a]">
-              Aucune carte de credit requise &bull; Gratuit pendant 30 jours
-            </p>
-          </Reveal>
-        </div>
-      </section>
-
-      {/* ── Footer ── */}
-      <footer className="border-t border-[#e8e6e3] bg-gradient-to-b from-white to-[#f9fdfc] py-16">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="grid grid-cols-1 md:grid-cols-[1.5fr_1fr_1fr_1fr] gap-10 mb-12">
-            <div>
-              <div className="flex items-center gap-3 mb-4">
-                <span className="w-10 h-10 bg-[#1d7c5f] rounded-2xl flex items-center justify-center text-white font-bold text-lg">
-                  BM
-                </span>
-                <span className="text-xl font-bold">BizManager</span>
-              </div>
-              <p className="text-base text-[#6a707a] leading-relaxed max-w-sm mb-6">
-                La plateforme SaaS qui aide les petits commercants d&apos;Afrique
-                francophone a vendre en ligne depuis leur telephone.
-              </p>
-              <div className="flex gap-4">
-                {[...Array(4)].map((_, i) => (
-                  <div key={i} className="w-10 h-10 bg-[#f6f7f7] rounded-xl flex items-center justify-center hover-scale cursor-pointer">
-                    <div className="w-5 h-5 bg-[#20232b]/60 rounded-sm" />
+            <div className="lp-testimonials">
+              <div style={{ ...card, padding: 24 }}>
+                <div style={{ color: "#F08A24", fontSize: 13, marginBottom: 14 }}>★★★★★</div>
+                <p style={{ fontSize: 14, color: "#1F2A24", lineHeight: 1.7, fontStyle: "italic", margin: "0 0 20px 0" }}>
+                  &quot;BizManager m&apos;a permis de gérer mes 50 commandes quotidiennes sans stress. Indispensable !&quot;
+                </p>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{ width: 44, height: 44, borderRadius: "50%", background: "#DDF6E7", color: "#0A8F45", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 14, flexShrink: 0 }}>AD</div>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: "#1F2A24" }}>Awa Diallo</div>
+                    <div style={{ fontSize: 12, color: "#98A2B3", marginTop: 2 }}>Boutique de vêtements · Dakar</div>
                   </div>
+                </div>
+              </div>
+              <div style={{ ...card, padding: 24 }}>
+                <div style={{ color: "#F08A24", fontSize: 13, marginBottom: 14 }}>★★★★★</div>
+                <p style={{ fontSize: 14, color: "#1F2A24", lineHeight: 1.7, fontStyle: "italic", margin: "0 0 20px 0" }}>
+                  &quot;Je partage mon lien WhatsApp et mes clients commandent directement. C&apos;est magique.&quot;
+                </p>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{ width: 44, height: 44, borderRadius: "50%", background: "#DDF6E7", color: "#0A8F45", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 14, flexShrink: 0 }}>KT</div>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: "#1F2A24" }}>Kofi Tano</div>
+                    <div style={{ fontSize: 12, color: "#98A2B3", marginTop: 2 }}>Électronique · Abidjan</div>
+                  </div>
+                </div>
+              </div>
+              <div style={{ ...card, padding: 24 }}>
+                <div style={{ color: "#F08A24", fontSize: 13, marginBottom: 14 }}>★★★★★</div>
+                <p style={{ fontSize: 14, color: "#1F2A24", lineHeight: 1.7, fontStyle: "italic", margin: "0 0 20px 0" }}>
+                  &quot;Les rapports de ventes m&apos;aident à prendre les bonnes décisions chaque semaine.&quot;
+                </p>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{ width: 44, height: 44, borderRadius: "50%", background: "#DDF6E7", color: "#0A8F45", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 14, flexShrink: 0 }}>FM</div>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: "#1F2A24" }}>Fatou Mbaye</div>
+                    <div style={{ fontSize: 12, color: "#98A2B3", marginTop: 2 }}>Cosmétiques · Yaoundé</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ── 8. Pricing ── */}
+        <section id="pricing" style={{ marginTop: 60 }}>
+          <div className="lp-container">
+            <div style={{ textAlign: "center", marginBottom: 40 }}>
+              <h2 style={{ fontSize: 38, fontWeight: 800, color: "#1F2A24", margin: 0 }}>Choisissez votre plan</h2>
+              <p style={{ fontSize: 17, color: "#667085", marginTop: 10, marginBottom: 0 }}>Démarrez gratuitement, évoluez quand vous en avez besoin.</p>
+            </div>
+            <div className="lp-pricing">
+              {/* Starter */}
+              <div style={{ ...card, padding: 28 }}>
+                <div style={{ fontSize: 16, fontWeight: 700, color: "#667085", marginBottom: 16 }}>Starter</div>
+                <div style={{ display: "flex", alignItems: "flex-end", gap: 4, marginBottom: 6 }}>
+                  <span style={{ fontSize: 42, fontWeight: 800, color: "#1F2A24", lineHeight: 1 }}>0 FCFA</span>
+                  <span style={{ fontSize: 14, color: "#667085", marginBottom: 4 }}>/mois</span>
+                </div>
+                <p style={{ fontSize: 14, color: "#667085", marginTop: 0, marginBottom: 0 }}>Pour commencer à zéro</p>
+                <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 8 }}>
+                  {[
+                    { text: "1 boutique", ok: true },
+                    { text: "20 produits", ok: true },
+                    { text: "Commandes illimitées", ok: true },
+                    { text: "Partage WhatsApp", ok: true },
+                    { text: "Analytics avancés", ok: false },
+                    { text: "Support prioritaire", ok: false },
+                  ].map((item) => (
+                    <div key={item.text} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ color: item.ok ? "#0A8F45" : "#D0D5DD", fontSize: 14, fontWeight: 700, flexShrink: 0 }}>{item.ok ? "✓" : "✗"}</span>
+                      <span style={{ fontSize: 14, color: "#667085" }}>{item.text}</span>
+                    </div>
+                  ))}
+                </div>
+                <a href="/register" style={{ ...btnOutline, width: "100%", textAlign: "center", marginTop: 24, display: "block" }}>
+                  Commencer gratuitement
+                </a>
+              </div>
+
+              {/* Business — Featured */}
+              <div style={{ background: "#fff", border: "2px solid #0A8F45", borderRadius: 20, padding: 28, position: "relative", boxShadow: "0 8px 32px rgba(10,143,69,0.14)" }}>
+                <div style={{ position: "absolute", top: -14, left: "50%", transform: "translateX(-50%)", background: "#0A8F45", color: "#fff", fontSize: 12, fontWeight: 600, borderRadius: 999, padding: "4px 16px", whiteSpace: "nowrap" }}>
+                  Le plus populaire
+                </div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: "#0A8F45", marginBottom: 16 }}>Business</div>
+                <div style={{ display: "flex", alignItems: "flex-end", gap: 4, marginBottom: 6 }}>
+                  <span style={{ fontSize: 42, fontWeight: 800, color: "#1F2A24", lineHeight: 1 }}>9 900 FCFA</span>
+                  <span style={{ fontSize: 14, color: "#667085", marginBottom: 4 }}>/mois</span>
+                </div>
+                <p style={{ fontSize: 14, color: "#667085", marginTop: 0, marginBottom: 0 }}>Pour les boutiques en croissance</p>
+                <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 8 }}>
+                  {[
+                    "3 boutiques",
+                    "Produits illimités",
+                    "Commandes illimitées",
+                    "Analytics complets",
+                    "Gestion clients",
+                    "Support prioritaire",
+                  ].map((text) => (
+                    <div key={text} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ color: "#0A8F45", fontSize: 14, fontWeight: 700, flexShrink: 0 }}>✓</span>
+                      <span style={{ fontSize: 14, color: "#667085" }}>{text}</span>
+                    </div>
+                  ))}
+                </div>
+                <a href="/register" style={{ ...btnGreen, width: "100%", textAlign: "center", marginTop: 24, display: "block" }}>
+                  Choisir Business
+                </a>
+              </div>
+
+              {/* Premium */}
+              <div style={{ ...card, padding: 28 }}>
+                <div style={{ fontSize: 16, fontWeight: 700, color: "#667085", marginBottom: 16 }}>Premium</div>
+                <div style={{ display: "flex", alignItems: "flex-end", gap: 4, marginBottom: 6 }}>
+                  <span style={{ fontSize: 42, fontWeight: 800, color: "#1F2A24", lineHeight: 1 }}>19 900 FCFA</span>
+                  <span style={{ fontSize: 14, color: "#667085", marginBottom: 4 }}>/mois</span>
+                </div>
+                <p style={{ fontSize: 14, color: "#667085", marginTop: 0, marginBottom: 0 }}>Pour les pros multi-boutiques</p>
+                <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 8 }}>
+                  {[
+                    "Boutiques illimitées",
+                    "Tout Business inclus",
+                    "API access",
+                    "Rapports personnalisés",
+                    "Manager dédié",
+                    "Onboarding guidé",
+                  ].map((text) => (
+                    <div key={text} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ color: "#0A8F45", fontSize: 14, fontWeight: 700, flexShrink: 0 }}>✓</span>
+                      <span style={{ fontSize: 14, color: "#667085" }}>{text}</span>
+                    </div>
+                  ))}
+                </div>
+                <a href="/register" style={{ ...btnOutline, width: "100%", textAlign: "center", marginTop: 24, display: "block" }}>
+                  Choisir Premium
+                </a>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ── 9. CTA Final ── */}
+        <section style={{ marginTop: 48 }}>
+          <div className="lp-container">
+            <div style={{ background: "linear-gradient(135deg, #0A8F45 0%, #08763A 100%)", borderRadius: 20, padding: "48px 56px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 24 }}>
+              <div>
+                <h2 style={{ fontSize: 30, fontWeight: 800, color: "#fff", margin: 0 }}>Prêt à lancer votre boutique ?</h2>
+                <p style={{ fontSize: 16, color: "rgba(255,255,255,0.8)", marginTop: 8, marginBottom: 0 }}>Rejoignez 5 000+ commerçants qui gèrent leur activité avec BizManager.</p>
+              </div>
+              <a href="/register" style={{ background: "#fff", color: "#0A8F45", borderRadius: 12, padding: "14px 32px", fontSize: 16, fontWeight: 700, textDecoration: "none", display: "inline-block", whiteSpace: "nowrap" }}>
+                Commencer gratuitement →
+              </a>
+            </div>
+          </div>
+        </section>
+
+        {/* ── 10. Footer ── */}
+        <footer style={{ marginTop: 32, paddingTop: 40, paddingBottom: 40, borderTop: "1.5px solid #E8ECEA" }}>
+          <div className="lp-container">
+            <div className="lp-footer-grid">
+              {/* Brand */}
+              <div>
+                <a href="/" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none", marginBottom: 12 }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 10, background: "#0A8F45", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, fontSize: 16 }}>BM</div>
+                  <span style={{ fontSize: 17, fontWeight: 700, color: "#1F2A24" }}>BizManager</span>
+                </a>
+                <p style={{ fontSize: 13, color: "#667085", marginTop: 12, lineHeight: 1.6, maxWidth: 220, marginBottom: 0 }}>
+                  La plateforme de gestion tout-en-un pour les commerçants africains.
+                </p>
+                <p style={{ fontSize: 12, color: "#98A2B3", marginTop: 16, marginBottom: 0 }}>© 2025 BizManager</p>
+              </div>
+
+              {/* Produit */}
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#1F2A24", marginBottom: 14, textTransform: "uppercase", letterSpacing: "0.06em" }}>Produit</div>
+                {["Fonctionnalités", "Tarifs", "Mises à jour", "Feuille de route"].map((link) => (
+                  <a key={link} href="#" style={{ fontSize: 14, color: "#667085", textDecoration: "none", display: "block", marginBottom: 10, lineHeight: 1.6 }}>{link}</a>
+                ))}
+              </div>
+
+              {/* Ressources */}
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#1F2A24", marginBottom: 14, textTransform: "uppercase", letterSpacing: "0.06em" }}>Ressources</div>
+                {["Documentation", "FAQ", "Blog", "Tutoriels"].map((link) => (
+                  <a key={link} href="#" style={{ fontSize: 14, color: "#667085", textDecoration: "none", display: "block", marginBottom: 10, lineHeight: 1.6 }}>{link}</a>
+                ))}
+              </div>
+
+              {/* Contact */}
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#1F2A24", marginBottom: 14, textTransform: "uppercase", letterSpacing: "0.06em" }}>Contact</div>
+                {["Support", "Partenaires", "CGU", "Confidentialité"].map((link) => (
+                  <a key={link} href="#" style={{ fontSize: 14, color: "#667085", textDecoration: "none", display: "block", marginBottom: 10, lineHeight: 1.6 }}>{link}</a>
                 ))}
               </div>
             </div>
-
-            <div>
-              <h4 className="font-bold mb-4">Produit</h4>
-              <ul className="space-y-3">
-                <li><Link href="#features" className="text-[#6a707a] hover:text-[#1d7c5f] transition-colors duration-200">Fonctionnalites</Link></li>
-                <li><a href="#" className="text-[#6a707a] hover:text-[#1d7c5f] transition-colors duration-200">Tarifs</a></li>
-                <li><Link href="/shop/bizmanager-douala" className="text-[#6a707a] hover:text-[#1d7c5f] transition-colors duration-200">Demo</Link></li>
-                <li><a href="#" className="text-[#6a707a] hover:text-[#1d7c5f] transition-colors duration-200">Telecharger l&apos;app</a></li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="font-bold mb-4">Ressources</h4>
-              <ul className="space-y-3">
-                <li><a href="#" className="text-[#6a707a] hover:text-[#1d7c5f] transition-colors duration-200">Blog</a></li>
-                <li><a href="#" className="text-[#6a707a] hover:text-[#1d7c5f] transition-colors duration-200">Guides</a></li>
-                <li><a href="#" className="text-[#6a707a] hover:text-[#1d7c5f] transition-colors duration-200">Support</a></li>
-                <li><a href="#" className="text-[#6a707a] hover:text-[#1d7c5f] transition-colors duration-200">API</a></li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="font-bold mb-4">Legal</h4>
-              <ul className="space-y-3">
-                <li><a href="#" className="text-[#6a707a] hover:text-[#1d7c5f] transition-colors duration-200">Confidentialite</a></li>
-                <li><a href="#" className="text-[#6a707a] hover:text-[#1d7c5f] transition-colors duration-200">Conditions</a></li>
-                <li><a href="#" className="text-[#6a707a] hover:text-[#1d7c5f] transition-colors duration-200">Cookies</a></li>
-                <li><a href="#" className="text-[#6a707a] hover:text-[#1d7c5f] transition-colors duration-200">Licences</a></li>
-              </ul>
-            </div>
           </div>
+        </footer>
 
-          <div className="border-t border-[#e8e6e3] pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-sm text-[#6a707a]">
-              &copy; {new Date().getFullYear()} BizManager. Tous droits reserves.
-            </p>
-            <div className="flex gap-6 text-sm text-[#6a707a]">
-              <span>Cameroun</span>
-              <span className="text-[#e8e6e3]">&bull;</span>
-              <span>Senegal</span>
-              <span className="text-[#e8e6e3]">&bull;</span>
-              <span>Cote d&apos;Ivoire</span>
-            </div>
-          </div>
-        </div>
-      </footer>
-    </main>
+      </div>
+    </>
   );
 }

@@ -858,7 +858,10 @@ export default function ProductsPage() {
                 <input
                   type="file"
                   accept="image/*,video/*"
-                  onChange={(event) => setFiles((prev) => ({ ...prev, imageFile: event.currentTarget.files?.[0] ?? null }))}
+                  onChange={(event) => {
+                    const file = event.currentTarget.files?.[0] ?? null;
+                    setFiles((prev) => ({ ...prev, imageFile: file }));
+                  }}
                   className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100"
                 />
                 {files.imageFile ? (
@@ -874,7 +877,7 @@ export default function ProductsPage() {
                   accept="image/*,video/*"
                   multiple
                   onChange={(event) => {
-                    const nextFiles = Array.from(event.currentTarget.files ?? []).slice(0, 3);
+                    const nextFiles = Array.from(event.target.files ?? []).slice(0, 3);
                     setFiles((prev) => ({ ...prev, imageVariantFiles: nextFiles }));
                   }}
                   className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100"
