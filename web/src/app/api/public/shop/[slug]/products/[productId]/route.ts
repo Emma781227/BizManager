@@ -11,7 +11,7 @@ export async function GET(_: Request, context: RouteParams) {
   const shop = await prisma.shop.findUnique({
     where: { slug: slug.toLowerCase() },
     select: {
-      userId: true,
+      id: true,
       isPublished: true,
       name: true,
       whatsappNumber: true,
@@ -25,7 +25,7 @@ export async function GET(_: Request, context: RouteParams) {
   const product = await prisma.product.findFirst({
     where: {
       id: productId,
-      userId: shop.userId,
+      shopId: shop.id,
       isActive: true,
     },
     select: {

@@ -47,21 +47,22 @@ export async function GET(request: NextRequest) {
     take: 200,
   });
 
-  const [productsPerUser, ordersPerUser] = await Promise.all([
+  const shopIds = shops.map((shop) => shop.id);
+  const [productsPerShop, ordersPerShop] = await Promise.all([
     prisma.product.groupBy({
-      by: ["userId"],
-      where: { userId: { in: shops.map((shop) => shop.userId) } },
+      by: ["shopId"],
+      where: { shopId: { in: shopIds } },
       _count: { _all: true },
     }),
     prisma.order.groupBy({
-      by: ["userId"],
-      where: { userId: { in: shops.map((shop) => shop.userId) } },
+      by: ["shopId"],
+      where: { shopId: { in: shopIds } },
       _count: { _all: true },
     }),
   ]);
 
-  const productsMap = new Map(productsPerUser.map((row) => [row.userId, row._count._all]));
-  const ordersMap = new Map(ordersPerUser.map((row) => [row.userId, row._count._all]));
+  const productsMap = new Map(productsPerShop.map((row) => [row.shopId, row._count._all]));
+  const ordersMap = new Map(ordersPerShop.map((row) => [row.shopId, row._count._all]));
 
   return NextResponse.json({
     data: shops.map((shop) => ({
@@ -73,8 +74,8 @@ export async function GET(request: NextRequest) {
       whatsappNumber: shop.whatsappNumber,
       createdAt: shop.createdAt,
       owner: shop.user,
-      productsCount: productsMap.get(shop.userId) ?? 0,
-      ordersCount: ordersMap.get(shop.userId) ?? 0,
+      productsCount: productsMap.get(shop.id) ?? 0,
+      ordersCount: ordersMap.get(shop.id) ?? 0,
     })),
     total: shops.length,
   });

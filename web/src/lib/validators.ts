@@ -14,6 +14,7 @@ export const registerRequestCodeSchema = registerSchema;
 
 export const registerVerifySchema = registerSchema.extend({
   code: z.string().regex(/^\d{6}$/, "Code invalide"),
+  plan: z.enum(["starter", "business", "premium"]).optional(),
 });
 
 export const loginSchema = z.object({

@@ -32,7 +32,7 @@ export async function GET(request: Request, context: RouteParams) {
   const shop = await prisma.shop.findUnique({
     where: { slug: slug.toLowerCase() },
     select: {
-      userId: true,
+      id: true,
       isPublished: true,
     },
   });
@@ -54,7 +54,7 @@ export async function GET(request: Request, context: RouteParams) {
 
   const products = await prisma.product.findMany({
     where: {
-      userId: shop.userId,
+      shopId: shop.id,
       isActive: true,
       ...(stockFilter !== undefined
         ? {
@@ -112,7 +112,7 @@ export async function GET(request: Request, context: RouteParams) {
 
   const categoryRows = await prisma.product.findMany({
     where: {
-      userId: shop.userId,
+      shopId: shop.id,
       isActive: true,
     },
     select: {

@@ -27,7 +27,7 @@ export async function POST(request: Request, context: RouteParams) {
   const shop = await prisma.shop.findUnique({
     where: { slug: slug.toLowerCase() },
     select: {
-      userId: true,
+      id: true,
       isPublished: true,
       name: true,
       whatsappNumber: true,
@@ -64,7 +64,7 @@ export async function POST(request: Request, context: RouteParams) {
       const product = await tx.product.findFirst({
         where: {
           id: result.data.productId,
-          userId: shop.userId,
+          shopId: shop.id,
           isActive: true,
         },
         select: {
@@ -107,7 +107,7 @@ export async function POST(request: Request, context: RouteParams) {
 
       const existingCustomer = await tx.customer.findFirst({
         where: {
-          userId: shop.userId,
+          shopId: shop.id,
           phone: customerPhone,
         },
         select: { id: true },
@@ -125,7 +125,7 @@ export async function POST(request: Request, context: RouteParams) {
           })
         : await tx.customer.create({
             data: {
-              userId: shop.userId,
+              shopId: shop.id,
               fullName: customerName,
               phone: customerPhone,
               address,
@@ -136,7 +136,7 @@ export async function POST(request: Request, context: RouteParams) {
 
       const order = await tx.order.create({
         data: {
-          userId: shop.userId,
+          shopId: shop.id,
           customerId: customer.id,
           status: "new",
           paymentStatus: "unpaid",

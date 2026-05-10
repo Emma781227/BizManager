@@ -612,7 +612,7 @@ export default function HomePage() {
                     </div>
                   ))}
                 </div>
-                <a href="/register" style={{ ...btnOutline, width: "100%", textAlign: "center", marginTop: 24, display: "block" }}>
+                <a href="/register?plan=starter" style={{ ...btnOutline, width: "100%", textAlign: "center", marginTop: 24, display: "block" }}>
                   Commencer gratuitement
                 </a>
               </div>
@@ -643,7 +643,7 @@ export default function HomePage() {
                     </div>
                   ))}
                 </div>
-                <a href="/register" style={{ ...btnGreen, width: "100%", textAlign: "center", marginTop: 24, display: "block" }}>
+                <a href="/register?plan=business" style={{ ...btnGreen, width: "100%", textAlign: "center", marginTop: 24, display: "block" }}>
                   Choisir Business
                 </a>
               </div>
@@ -671,7 +671,7 @@ export default function HomePage() {
                     </div>
                   ))}
                 </div>
-                <a href="/register" style={{ ...btnOutline, width: "100%", textAlign: "center", marginTop: 24, display: "block" }}>
+                <a href="/register?plan=premium" style={{ ...btnOutline, width: "100%", textAlign: "center", marginTop: 24, display: "block" }}>
                   Choisir Premium
                 </a>
               </div>

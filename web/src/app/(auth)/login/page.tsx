@@ -1,12 +1,13 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 type Mode = "login" | "register";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [mode, setMode] = useState<Mode>("login");
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -30,6 +31,18 @@ export default function LoginPage() {
   const [forgotLoading, setForgotLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [gsiReady, setGsiReady] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<"starter" | "business" | "premium" | null>(null);
+
+  useEffect(() => {
+    if (searchParams.get("mode") === "register") {
+      setMode("register");
+    }
+    const p = searchParams.get("plan");
+    if (p === "starter" || p === "business" || p === "premium") {
+      setSelectedPlan(p);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     const src = "https://accounts.google.com/gsi/client";
@@ -184,7 +197,7 @@ export default function LoginPage() {
         ? { email, password, rememberMe }
         : registerStep === "details"
           ? { fullName, email, password }
-          : { fullName, email, password, code: verificationCode };
+          : { fullName, email, password, code: verificationCode, ...(selectedPlan ? { plan: selectedPlan } : {}) };
 
     try {
       const response = await fetch(endpoint, {
@@ -572,9 +585,23 @@ export default function LoginPage() {
               </div>
 
               {mode === "register" && registerStep === "details" ? (
-                <p className="rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs text-emerald-800">
-                  Remplissez le formulaire puis demandez le code de verification.
-                </p>
+                <div className="space-y-2">
+                  {selectedPlan ? (
+                    <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2">
+                      <span className="text-emerald-600 text-sm font-bold">✓</span>
+                      <span className="text-xs text-emerald-800 font-medium">
+                        Plan sélectionné :{" "}
+                        <span className="font-bold capitalize">{selectedPlan}</span>
+                        {selectedPlan === "business" && " — 9 900 FCFA/mois"}
+                        {selectedPlan === "premium" && " — 19 900 FCFA/mois"}
+                        {selectedPlan === "starter" && " — Gratuit"}
+                      </span>
+                    </div>
+                  ) : null}
+                  <p className="rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs text-emerald-800">
+                    Remplissez le formulaire puis demandez le code de vérification.
+                  </p>
+                </div>
               ) : null}
 
               <form noValidate onSubmit={onSubmit} className="space-y-3">

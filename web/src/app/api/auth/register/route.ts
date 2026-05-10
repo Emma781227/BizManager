@@ -45,12 +45,20 @@ export async function POST(request: Request) {
     );
   }
 
+  const planName = result.data.plan ?? "starter";
+  const plan = await prisma.plan.findUnique({ where: { name: planName } });
+
   const user = await prisma.user.create({
     data: {
       fullName: pending.fullName,
       email,
       passwordHash: pending.passwordHash,
       role: "merchant",
+      ...(plan ? {
+        subscription: {
+          create: { planId: plan.id, status: "active" },
+        },
+      } : {}),
     },
     select: { id: true, email: true, fullName: true, role: true },
   });

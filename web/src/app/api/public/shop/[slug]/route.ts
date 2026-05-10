@@ -11,6 +11,7 @@ export async function GET(_: Request, context: RouteParams) {
   const shop = await prisma.shop.findUnique({
     where: { slug: slug.toLowerCase() },
     select: {
+      id: true,
       slug: true,
       name: true,
       logoUrl: true,
@@ -22,7 +23,6 @@ export async function GET(_: Request, context: RouteParams) {
       address: true,
       openingHours: true,
       isPublished: true,
-      userId: true,
     },
   });
 
@@ -31,7 +31,7 @@ export async function GET(_: Request, context: RouteParams) {
   }
 
   const productsCount = await prisma.product.count({
-    where: { userId: shop.userId, isActive: true },
+    where: { shopId: shop.id, isActive: true },
   });
 
   return NextResponse.json({

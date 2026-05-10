@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
   const order = await prisma.order.findFirst({
     where: {
       id: orderId,
-      userId: session.userId,
+      shop: { userId: session.userId },
     },
     include: {
       customer: {

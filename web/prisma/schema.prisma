@@ -7,6 +7,33 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  merchant
+  admin
+}
+
+enum SubscriptionStatus {
+  trialing
+  active
+  cancelled
+  expired
+}
+
+enum ShopStatus {
+  active
+  inactive
+  suspended
+  closed
+}
+
+enum SyncStatus {
+  ok
+  pending
+  error
+}
+
 enum OrderStatus {
   pending
   new
@@ -15,6 +42,12 @@ enum OrderStatus {
   ready
   delivered
   cancelled
+}
+
+enum OrderChannel {
+  whatsapp
+  online
+  manual
 }
 
 enum PaymentStatus {
@@ -31,24 +64,27 @@ enum PaymentMethod {
   cod
 }
 
-enum UserRole {
-  merchant
-  admin
+enum WhatsappLogType {
+  relance
+  confirmation
+  custom
+  template
 }
 
+// ─── Auth & Identity ──────────────────────────────────────────────────────────
+
 model User {
-  id           String     @id @default(cuid())
-  email        String     @unique
+  id           String        @id @default(cuid())
+  email        String        @unique
   passwordHash String
   fullName     String
   phone        String?
-  role         UserRole   @default(merchant)
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-  products     Product[]
-  customers    Customer[]
-  orders       Order[]
-  shop         Shop?
+  role         UserRole      @default(merchant)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  shops        Shop[]
+  subscription Subscription?
 
   @@index([createdAt])
 }
@@ -77,100 +113,173 @@ model PendingPasswordReset {
   @@index([expiresAt])
 }
 
-model Shop {
-  id             String   @id @default(cuid())
-  userId         String   @unique
-  slug           String   @unique
-  name           String
-  notificationEmail String?
-  logoUrl        String?
-  coverUrl       String?
-  description    String?
-  city           String?
-  postalCode     String?
-  regionCountry  String?
-  whatsappNumber String
-  category       String?
-  address        String?
-  openingHours   String?
-  isPublished    Boolean  @default(true)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+// ─── Plans & Subscriptions ────────────────────────────────────────────────────
 
+model Plan {
+  id           String         @id @default(cuid())
+  name         String         @unique   // "starter" | "business" | "premium"
+  displayName  String                   // "Starter" | "Business" | "Premium"
+  maxShops     Int                      // 1 / 3 / 10
+  maxProducts  Int                      // 50 / 500 / -1 (unlimited)
+  priceMonthly Decimal        @db.Decimal(10, 2)
+  features     String[]       @default([])
+  isActive     Boolean        @default(true)
+  createdAt    DateTime       @default(now())
+
+  subscriptions Subscription[]
+}
+
+model Subscription {
+  id        String             @id @default(cuid())
+  userId    String             @unique
+  planId    String
+  status    SubscriptionStatus @default(active)
+  startedAt DateTime           @default(now())
+  expiresAt DateTime?
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan Plan @relation(fields: [planId], references: [id])
+
+  @@index([planId])
+}
+
+// ─── Shops ────────────────────────────────────────────────────────────────────
+
+model Shop {
+  id                String     @id @default(cuid())
+  userId            String                       // NOT @unique — 1 user → N shops
+  slug              String     @unique
+  name              String
+  status            ShopStatus @default(active)
+  notificationEmail String?
+  logoUrl           String?
+  coverUrl          String?
+  description       String?
+  city              String?
+  postalCode        String?
+  regionCountry     String?
+  whatsappNumber    String
+  category          String?
+  address           String?
+  openingHours      String?
+  isPublished       Boolean    @default(true)
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  products      Product[]
+  customers     Customer[]
+  orders        Order[]
+  whatsappLogs  WhatsappLog[]
+
+  @@index([userId])
   @@index([name])
 }
 
-model Product {
-  id          String    @id @default(cuid())
-  userId      String
-  name        String
-  category    String?
-  categories  String[]  @default([])
-  description String?
-  sku         String?
-  unitPrice   Decimal   @db.Decimal(12, 2)
-  stock       Int       @default(0)
-  imageUrl    String?
-  imageVariants String[] @default([])
-  isActive    Boolean   @default(true)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  orderItems  OrderItem[]
+// ─── Products ─────────────────────────────────────────────────────────────────
 
-  @@index([userId, createdAt])
-  @@index([userId, name])
+model Product {
+  id            String     @id @default(cuid())
+  shopId        String
+  name          String
+  category      String?
+  categories    String[]   @default([])
+  description   String?
+  sku           String?
+  unitPrice     Decimal    @db.Decimal(12, 2)
+  stock         Int        @default(0)
+  syncStatus    SyncStatus @default(ok)
+  imageUrl      String?
+  imageVariants String[]   @default([])
+  isActive      Boolean    @default(true)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  shop       Shop        @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  orderItems OrderItem[]
+
+  @@index([shopId, createdAt])
+  @@index([shopId, name])
 }
+
+// ─── Customers ────────────────────────────────────────────────────────────────
 
 model Customer {
-  id          String    @id @default(cuid())
-  userId      String
-  fullName    String
-  phone       String
-  email       String?
-  address     String?
-  notes       String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  orders      Order[]
+  id        String   @id @default(cuid())
+  shopId    String
+  fullName  String
+  phone     String
+  email     String?
+  address   String?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  @@index([userId, createdAt])
-  @@index([userId, phone])
+  shop   Shop    @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  orders Order[]
+
+  @@index([shopId, createdAt])
+  @@index([shopId, phone])
 }
+
+// ─── Orders ───────────────────────────────────────────────────────────────────
 
 model Order {
   id            String        @id @default(cuid())
-  userId        String
+  shopId        String
   customerId    String
+  channel       OrderChannel  @default(manual)
   status        OrderStatus   @default(new)
   paymentStatus PaymentStatus @default(unpaid)
   paymentMethod PaymentMethod?
   totalAmount   Decimal       @db.Decimal(12, 2)
   paidAmount    Decimal       @default(0) @db.Decimal(12, 2)
+  notes         String?
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
-  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  customer      Customer      @relation(fields: [customerId], references: [id], onDelete: Restrict)
-  items         OrderItem[]
 
-  @@index([userId, createdAt])
-  @@index([userId, status])
+  shop         Shop          @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  customer     Customer      @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  items        OrderItem[]
+  whatsappLogs WhatsappLog[]
+
+  @@index([shopId, createdAt])
+  @@index([shopId, status])
+  @@index([shopId, channel])
   @@index([customerId])
 }
 
 model OrderItem {
-  id          String   @id @default(cuid())
-  orderId     String
-  productId   String
-  quantity    Int
-  unitPrice   Decimal  @db.Decimal(12, 2)
-  lineTotal   Decimal  @db.Decimal(12, 2)
-  createdAt   DateTime @default(now())
-  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product     Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+  id        String   @id @default(cuid())
+  orderId   String
+  productId String
+  quantity  Int
+  unitPrice Decimal  @db.Decimal(12, 2)
+  lineTotal Decimal  @db.Decimal(12, 2)
+  createdAt DateTime @default(now())
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Restrict)
 
   @@index([orderId])
   @@index([productId])
+}
+
+// ─── WhatsApp ─────────────────────────────────────────────────────────────────
+
+model WhatsappLog {
+  id      String          @id @default(cuid())
+  shopId  String
+  orderId String?
+  type    WhatsappLogType
+  message String
+  sentAt  DateTime        @default(now())
+
+  shop  Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  order Order? @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@index([shopId])
+  @@index([orderId])
 }

@@ -23,8 +23,9 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
     return NextResponse.json({ error: "Payload invalide" }, { status: 400 });
   }
 
+  // Vérifier ownership via la boutique
   const existing = await prisma.order.findFirst({
-    where: { id: orderId, userId: session.userId },
+    where: { id: orderId, shop: { userId: session.userId } },
     select: { id: true },
   });
 
