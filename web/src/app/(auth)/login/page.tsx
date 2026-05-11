@@ -1,13 +1,12 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 type Mode = "login" | "register";
 
 export default function LoginPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [mode, setMode] = useState<Mode>("login");
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -34,10 +33,12 @@ export default function LoginPage() {
   const [selectedPlan, setSelectedPlan] = useState<"starter" | "business" | "premium" | null>(null);
 
   useEffect(() => {
-    if (searchParams.get("mode") === "register") {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("mode") === "register") {
       setMode("register");
     }
-    const p = searchParams.get("plan");
+    const p = params.get("plan");
     if (p === "starter" || p === "business" || p === "premium") {
       setSelectedPlan(p);
     }
