@@ -1,15 +1,24 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import { useActiveShop } from "@/hooks/useActiveShop";
+import CreateShopModal from "../shops/CreateShopModal";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type Shop = { id: string; name: string; slug: string; isPublished: boolean; city: string | null; };
-type ApiProduct = { id: string; name: string; price: number | string; stock: number; category?: string; createdAt?: string; isPublished?: boolean; };
+type Shop = {
+  id: string; name: string; slug: string; isPublished: boolean; city: string | null;
+  _count?: { products: number; orders: number; customers: number };
+};
+type ApiProduct = {
+  id: string; name: string; sku?: string | null; category?: string | null;
+  categories?: string[]; unitPrice: string | number; stock: number;
+  isActive?: boolean; syncStatus?: string; createdAt?: string; updatedAt?: string;
+};
 
 type MockProduct = {
   id: string; name: string; sku: string; category: string;
   price: number; stock: number; status: "active"|"draft"|"low"|"out";
   sync: "ok"|"pending"|"error"; updatedAt: string;
+  imageUrl?: string | null;
 };
 
 type QuotaInfo = {
@@ -18,22 +27,28 @@ type QuotaInfo = {
   nextPlan: { name: string; displayName: string; priceMonthly: number } | null;
 };
 
-// ─── Static data ──────────────────────────────────────────────────────────────
-const MOCK_SHOPS = [
-  { id: "s1", name: "Mon Aventure",  products: 78,  orders: 156, ca: "8 420", isActive: true,  isPublished: true,  city: "Dakar"   },
-  { id: "s2", name: "Urban Style",   products: 42,  orders: 89,  ca: "4 210", isActive: false, isPublished: true,  city: "Abidjan" },
-  { id: "s3", name: "Beauty House",  products: 28,  orders: 34,  ca: "1 980", isActive: false, isPublished: false, city: "Douala"  },
-];
-
-const MOCK_PRODUCTS: MockProduct[] = [
-  { id:"p1", name:"Sac à dos Explorer",   sku:"SAC-001", category:"Accessoires", price:18900, stock:24, status:"active",  sync:"ok",      updatedAt:"2026-05-08" },
-  { id:"p2", name:"Baskets Urban White",  sku:"BSK-012", category:"Chaussures",  price:32500, stock:6,  status:"low",     sync:"ok",      updatedAt:"2026-05-07" },
-  { id:"p3", name:"Montre Classic Noir",  sku:"MON-034", category:"Accessoires", price:45000, stock:0,  status:"out",     sync:"error",   updatedAt:"2026-05-06" },
-  { id:"p4", name:"Lunettes Premium",     sku:"LUN-008", category:"Accessoires", price:12800, stock:18, status:"active",  sync:"ok",      updatedAt:"2026-05-05" },
-  { id:"p5", name:"Robe Élégance",        sku:"ROB-021", category:"Vêtements",   price:28000, stock:11, status:"active",  sync:"pending", updatedAt:"2026-05-04" },
-  { id:"p6", name:"Crème Éclat",          sku:"CRM-005", category:"Beauté",      price:8500,  stock:3,  status:"low",     sync:"ok",      updatedAt:"2026-05-03" },
-  { id:"p7", name:"Parfum Signature",     sku:"PAR-019", category:"Parfums",     price:54000, stock:9,  status:"draft",   sync:"pending", updatedAt:"2026-05-02" },
-];
+// ─── API → display conversion ──────────────────────────────────────────────────
+function apiToDisplay(p: ApiProduct): MockProduct {
+  const price = parseFloat(String(p.unitPrice ?? 0));
+  const stock = Number(p.stock ?? 0);
+  let status: MockProduct["status"];
+  if (stock === 0) status = "out";
+  else if (stock <= 5) status = "low";
+  else if (p.isActive === false) status = "draft";
+  else status = "active";
+  return {
+    id:        p.id,
+    name:      p.name,
+    sku:       p.sku ?? generateSku(p.name),
+    category:  p.category ?? (p.categories?.[0] ?? ""),
+    price,
+    stock,
+    status,
+    sync:      (p.syncStatus ?? "ok") as MockProduct["sync"],
+    updatedAt: p.updatedAt ? new Date(p.updatedAt).toISOString().slice(0, 10) : "",
+    imageUrl:  (p as { imageUrl?: string | null }).imageUrl ?? null,
+  };
+}
 
 const DONUT_DATA = [
   { label:"Accessoires", pct:34, color:"#0A8F45" },
@@ -746,7 +761,7 @@ function EditProductModal({ open, onClose, shopId, shopName, categories, product
       setStatus(product.status === "draft" ? "draft" : "active");
       setDescription(""); setPromoPrice("");
       setIsPublished(true); setTrackStock(true);
-      setMainFile(null); setMainPreview(null);
+      setMainFile(null); setMainPreview(product.imageUrl ?? null);
       setExtraFiles([null, null, null]); setExtraPreviews([null, null, null]);
       setSubmitError(null); setSubmitSuccess(false);
       setLocalCats([]); setNewCatInput(""); setShowNewCat(false);
@@ -1127,39 +1142,81 @@ function DeleteConfirmModal({ product, shopId, onClose, onDeleted }: DeleteConfi
 
 // ─── Main component ────────────────────────────────────────────────────────────
 export default function ProductsPage() {
-  const [activeShopId, setActiveShopId] = useActiveShop("s1");
+  const [activeShopId, setActiveShopId] = useActiveShop("");
   const [search, setSearch]             = useState("");
   const [catFilter, setCatFilter]       = useState("all");
   const [stockFilter, setStockFilter]   = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [sortBy, setSortBy]             = useState("name");
-  const [realShop, setRealShop]         = useState<Shop | null>(null);
+  const [realShops, setRealShops]       = useState<Shop[]>([]);
+  const [products, setProducts]         = useState<MockProduct[]>([]);
+  const [productsLoading, setProductsLoading] = useState(false);
+  const [apiCategories, setApiCategories] = useState<string[]>([]);
   const [quota, setQuota]               = useState<QuotaInfo | null>(null);
   const [showUpgrade, setShowUpgrade]   = useState(false);
   const [showAddProduct, setShowAddProduct] = useState(false);
+  const [showCreateShop, setShowCreateShop] = useState(false);
   const [editProduct, setEditProduct]   = useState<MockProduct | null>(null);
   const [deleteProduct, setDeleteProduct] = useState<MockProduct | null>(null);
   const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
 
-  const activeShop = MOCK_SHOPS.find(s => s.id === activeShopId) ?? MOCK_SHOPS[0];
+  const activeShop = realShops.find(s => s.id === activeShopId) ?? realShops[0] ?? null;
   const atProductLimit = quota !== null && quota.plan.maxProducts !== -1 && quota.usage.products >= quota.plan.maxProducts;
 
+  const shopColors = ["#0A8F45","#3B82F6","#F08A24","#8B5CF6","#EC4899","#14B8A6"];
+
+  // Fetch real shops on mount
   useEffect(() => {
-    fetch("/api/shop").then(r => r.json()).then(d => {
-      const sh = Array.isArray(d) ? d[0] : (d.data ?? d);
-      if (sh?.id) setRealShop(sh);
-    }).catch(() => {});
+    fetch("/api/shop?all=1")
+      .then(r => r.json())
+      .then(d => {
+        const list: Shop[] = d.data ?? [];
+        setRealShops(list);
+        // If no stored ID matches, use first shop
+        if (list.length > 0 && !list.find(s => s.id === activeShopId)) {
+          setActiveShopId(list[0].id);
+        }
+      })
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Fetch products whenever active shop changes
   useEffect(() => {
+    if (!activeShopId) return;
+    setProductsLoading(true);
+    fetch(`/api/products?shopId=${activeShopId}`)
+      .then(r => r.json())
+      .then(d => {
+        setProducts((d.data ?? []).map(apiToDisplay));
+        setApiCategories(d.meta?.categories ?? []);
+      })
+      .catch(() => {})
+      .finally(() => setProductsLoading(false));
+  }, [activeShopId]);
+
+  // Fetch quota when shop changes
+  useEffect(() => {
+    if (!activeShopId) return;
     fetch(`/api/subscription?shopId=${activeShopId}`)
       .then(r => r.json())
       .then(d => { if (d.plan) setQuota(d); })
       .catch(() => {});
   }, [activeShopId]);
 
+  function refreshProducts() {
+    if (!activeShopId) return;
+    fetch(`/api/products?shopId=${activeShopId}`)
+      .then(r => r.json())
+      .then(d => {
+        setProducts((d.data ?? []).map(apiToDisplay));
+        setApiCategories(d.meta?.categories ?? []);
+      })
+      .catch(() => {});
+  }
+
   const filtered = useMemo(() => {
-    let p = [...MOCK_PRODUCTS];
+    let p = [...products];
     if (search) p = p.filter(x => x.name.toLowerCase().includes(search.toLowerCase()) || x.sku.toLowerCase().includes(search.toLowerCase()));
     if (catFilter   !== "all") p = p.filter(x => x.category === catFilter);
     if (stockFilter !== "all") {
@@ -1173,12 +1230,10 @@ export default function ProductsPage() {
     if (sortBy === "stock")      p.sort((a,b) => a.stock - b.stock);
     if (sortBy === "name")       p.sort((a,b) => a.name.localeCompare(b.name));
     return p;
-  }, [search, catFilter, stockFilter, statusFilter, sortBy]);
-
-  const shopColors = ["#0A8F45","#3B82F6","#F08A24"];
+  }, [products, search, catFilter, stockFilter, statusFilter, sortBy]);
 
   async function handleDuplicate(p: MockProduct) {
-    if (!realShop?.id) return;
+    if (!activeShopId) return;
     setDuplicatingId(p.id);
     const fd = new FormData();
     fd.append("name", `${p.name} (copie)`);
@@ -1187,7 +1242,8 @@ export default function ProductsPage() {
     fd.append("stock", String(p.stock));
     fd.append("isActive", p.status !== "draft" ? "true" : "false");
     try {
-      await fetch(`/api/products?shopId=${realShop.id}`, { method: "POST", body: fd });
+      await fetch(`/api/products?shopId=${activeShopId}`, { method: "POST", body: fd });
+      refreshProducts();
     } finally {
       setDuplicatingId(null);
     }
@@ -1203,8 +1259,9 @@ export default function ProductsPage() {
           <div style={{ display:"flex", alignItems:"center", gap:8 }}>
             <span style={{ fontSize:12, color:"#667085", fontWeight:500 }}>Boutique active</span>
             <select className="sel" style={{ fontWeight:700, color:"#0A8F45", borderColor:"#0A8F45", minWidth:160 }}
-              value={activeShopId} onChange={e => setActiveShopId(e.target.value)}>
-              {MOCK_SHOPS.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+              value={activeShopId} onChange={e => setActiveShopId(e.target.value)}
+              disabled={realShops.length === 0}>
+              {realShops.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
           </div>
 
@@ -1224,7 +1281,7 @@ export default function ProductsPage() {
 
           <div className="pr-ctx-r">
             <button className="btn-secondary btn-sm">⬆ Importer un catalogue</button>
-            <button className="btn-primary  btn-sm">+ Créer une boutique</button>
+            <button className="btn-primary  btn-sm" onClick={() => setShowCreateShop(true)}>+ Créer une boutique</button>
           </div>
         </div>
 
@@ -1236,17 +1293,17 @@ export default function ProductsPage() {
           </p>
           <p style={{ margin:0, color:"#98A2B3", fontSize:12 }}>
             Les produits affichés ici appartiennent uniquement à la boutique&nbsp;
-            <strong style={{ color:"#0A8F45" }}>{activeShop.name}</strong>.
+            <strong style={{ color:"#0A8F45" }}>{activeShop?.name ?? "—"}</strong>.
           </p>
         </div>
 
         {/* ── KPI row ── */}
         <div className="pr-kpi">
           {[
-            { label:"Produits actifs",  val:"78",      sub:"+6,7%",     icon:"📦", color:"#DDF6E7", tc:"#0A8F45" },
-            { label:"Stock faible",     val:"8",        sub:"produits",  icon:"⚠️", color:"#FFF1E5", tc:"#F08A24" },
-            { label:"En rupture",       val:"3",        sub:"produits",  icon:"🔴", color:"#FDE8E8", tc:"#EF4444" },
-            { label:"Valeur du stock",  val:"12 480 €", sub:"en stock",  icon:"💰", color:"#EAF7EF", tc:"#0A8F45" },
+            { label:"Produits actifs", val:String(products.filter(p=>p.status==="active").length), sub:"produits",  icon:"📦", color:"#DDF6E7", tc:"#0A8F45" },
+            { label:"Stock faible",    val:String(products.filter(p=>p.status==="low").length),    sub:"produits",  icon:"⚠️", color:"#FFF1E5", tc:"#F08A24" },
+            { label:"En rupture",      val:String(products.filter(p=>p.status==="out").length),    sub:"produits",  icon:"🔴", color:"#FDE8E8", tc:"#EF4444" },
+            { label:"Total catalogue", val:String(products.length),                                sub:"produits",  icon:"💰", color:"#EAF7EF", tc:"#0A8F45" },
           ].map(k => (
             <div key={k.label} style={{ background:"#fff", border:"1px solid #E8ECEA", borderRadius:16,
               padding:"16px 18px", boxShadow:"0 2px 10px rgba(16,24,40,.04)" }}>
@@ -1256,7 +1313,7 @@ export default function ProductsPage() {
               </div>
               <div style={{ fontSize:26, fontWeight:800, color:"#1F2A24", margin:"8px 0 4px", letterSpacing:"-0.5px" }}>{k.val}</div>
               <div style={{ fontSize:11, color:k.tc, fontWeight:500 }}>{k.sub}</div>
-              <div style={{ fontSize:10, color:"#98A2B3", marginTop:6 }}>Boutique : {activeShop.name}</div>
+              <div style={{ fontSize:10, color:"#98A2B3", marginTop:6 }}>Boutique : {activeShop?.name ?? "—"}</div>
             </div>
           ))}
         </div>
@@ -1267,7 +1324,7 @@ export default function ProductsPage() {
           <div style={{ flex:1, minWidth:220 }}>
             <div style={{ fontWeight:700, color:"#1F2A24", fontSize:14 }}>
               Tous les produits affichés ici appartiennent à la boutique active&nbsp;
-              <span style={{ color:"#0A8F45" }}>{activeShop.name}</span>.
+              <span style={{ color:"#0A8F45" }}>{activeShop?.name ?? "—"}</span>.
             </div>
             <div style={{ color:"#667085", fontSize:12, marginTop:3 }}>
               Les produits ne sont plus liés directement au marchand mais à une boutique spécifique.
@@ -1276,12 +1333,12 @@ export default function ProductsPage() {
           <div style={{ borderLeft:"1px solid #E8ECEA", paddingLeft:20, minWidth:200 }}>
             <div className="pr-hier">
               <span style={{ background:"#EAF7EF", color:"#0A8F45", padding:"3px 8px", borderRadius:8, fontWeight:600, fontSize:12 }}>
-                {realShop ? realShop.name.slice(0,2).toUpperCase() : "MA"}
+                {activeShop ? activeShop.name.slice(0,2).toUpperCase() : "BM"}
               </span>
               <span className="pr-hier-sep">→</span>
-              <span style={{ fontWeight:600 }}>{activeShop.name}</span>
+              <span style={{ fontWeight:600 }}>{activeShop?.name ?? "—"}</span>
               <span className="pr-hier-sep">→</span>
-              <span style={{ color:"#667085" }}>78 produits</span>
+              <span style={{ color:"#667085" }}>{products.length} produits</span>
             </div>
             <div style={{ fontSize:11, color:"#98A2B3", marginTop:6 }}>Marchand → Boutique → Produits</div>
           </div>
@@ -1303,7 +1360,7 @@ export default function ProductsPage() {
             <div className="pr-tbar">
               <div>
                 <div style={{ fontWeight:700, color:"#1F2A24", fontSize:15 }}>
-                  Gestion des produits — {activeShop.name}
+                  Gestion des produits — {activeShop?.name ?? "—"}
                   <span className="badge badge-biz" style={{ marginLeft:10, fontSize:10 }}>Catalogue indépendant</span>
                 </div>
                 <div style={{ fontSize:11, color:"#98A2B3", marginTop:2 }}>
@@ -1330,8 +1387,7 @@ export default function ProductsPage() {
                 value={search} onChange={e => setSearch(e.target.value)} />
               <select className="sel" value={catFilter} onChange={e => setCatFilter(e.target.value)}>
                 <option value="all">Catégories</option>
-                {["Accessoires","Chaussures","Vêtements","Beauté","Parfums"].map(c =>
-                  <option key={c} value={c}>{c}</option>)}
+                {apiCategories.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
               <select className="sel" value={stockFilter} onChange={e => setStockFilter(e.target.value)}>
                 <option value="all">Stock</option>
@@ -1353,7 +1409,7 @@ export default function ProductsPage() {
                 <option value="stock">Stock ↑</option>
               </select>
               <div className="inp" style={{ display:"flex", alignItems:"center", gap:6, color:"#98A2B3", fontSize:12, cursor:"default", minWidth:130 }}>
-                🔒 {activeShop.name}
+                🔒 {activeShop?.name ?? "—"}
               </div>
             </div>
 
@@ -1379,7 +1435,11 @@ export default function ProductsPage() {
                     <tr key={p.id}>
                       <td>
                         <div className="pr-prod-cell">
-                          <div className="pr-prod-av">{EMOJIS[p.category] ?? "📦"}</div>
+                          <div className="pr-prod-av" style={{ padding: p.imageUrl ? 0 : undefined, overflow:"hidden" }}>
+                            {p.imageUrl
+                              ? <img src={p.imageUrl} alt={p.name} style={{ width:"100%", height:"100%", objectFit:"cover", borderRadius:10 }} />
+                              : (EMOJIS[p.category] ?? "📦")}
+                          </div>
                           <div>
                             <div style={{ fontWeight:600, fontSize:13 }}>{p.name}</div>
                             <div style={{ fontSize:11, color:"#98A2B3" }}>{p.category}</div>
@@ -1388,7 +1448,7 @@ export default function ProductsPage() {
                       </td>
                       <td style={{ fontFamily:"monospace", fontSize:12, color:"#667085" }}>{p.sku}</td>
                       <td>
-                        <span className="badge badge-biz" style={{ fontSize:10 }}>{activeShop.name}</span>
+                        <span className="badge badge-biz" style={{ fontSize:10 }}>{activeShop?.name ?? "—"}</span>
                       </td>
                       <td style={{ fontSize:12, color:"#667085" }}>{p.category}</td>
                       <td style={{ fontWeight:600 }}>{p.price.toLocaleString("fr-FR")} FCFA</td>
@@ -1414,9 +1474,14 @@ export default function ProductsPage() {
                       </td>
                     </tr>
                   ))}
-                  {filtered.length === 0 && (
+                  {productsLoading && (
                     <tr><td colSpan={10} style={{ textAlign:"center", padding:32, color:"#98A2B3" }}>
-                      Aucun produit trouvé.
+                      Chargement…
+                    </td></tr>
+                  )}
+                  {!productsLoading && filtered.length === 0 && (
+                    <tr><td colSpan={10} style={{ textAlign:"center", padding:32, color:"#98A2B3" }}>
+                      {products.length === 0 ? "Aucun produit dans cette boutique. Créez votre premier produit !" : "Aucun produit trouvé."}
                     </td></tr>
                   )}
                 </tbody>
@@ -1443,15 +1508,17 @@ export default function ProductsPage() {
                 <div style={{ width:44, height:44, borderRadius:12, background:"#EAF7EF",
                   display:"flex", alignItems:"center", justifyContent:"center", fontSize:20 }}>🏪</div>
                 <div>
-                  <div style={{ fontWeight:700, fontSize:15, color:"#1F2A24" }}>{activeShop.name}</div>
-                  <span className="badge badge-green" style={{ fontSize:10 }}>Active</span>
+                  <div style={{ fontWeight:700, fontSize:15, color:"#1F2A24" }}>{activeShop?.name ?? "—"}</div>
+                  <span className={activeShop?.isPublished ? "badge badge-green" : "badge badge-gray"} style={{ fontSize:10 }}>
+                    {activeShop?.isPublished ? "Publiée" : "Brouillon"}
+                  </span>
                 </div>
               </div>
               {[
-                { l:"Produits",  v: activeShop.products },
-                { l:"Catégories", v: 12 },
-                { l:"Commandes", v: activeShop.orders },
-                { l:"Chiffre d'affaires", v: `${activeShop.ca} €` },
+                { l:"Produits",   v: products.length },
+                { l:"Catégories", v: apiCategories.length },
+                { l:"Commandes",  v: activeShop?._count?.orders ?? "—" },
+                { l:"Clients",    v: activeShop?._count?.customers ?? "—" },
               ].map(r => (
                 <div key={r.l} style={{ display:"flex", justifyContent:"space-between",
                   padding:"7px 0", borderBottom:"1px solid #F4F6F5", fontSize:13 }}>
@@ -1460,10 +1527,13 @@ export default function ProductsPage() {
                 </div>
               ))}
               <div style={{ display:"flex", gap:8, marginTop:12 }}>
-                <button className="btn-secondary btn-sm" style={{ flex:1 }}>Voir la boutique</button>
+                <a href={activeShop ? `/shop/${activeShop.slug}` : "#"}
+                   className="btn-secondary btn-sm" style={{ flex:1, textAlign:"center", textDecoration:"none", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                  Voir la boutique
+                </a>
                 <button className="btn-primary btn-sm" style={{ flex:1 }}
                   onClick={() => {
-                    const next = MOCK_SHOPS.find(s => s.id !== activeShopId);
+                    const next = realShops.find(s => s.id !== activeShopId);
                     if (next) setActiveShopId(next.id);
                   }}>Changer</button>
               </div>
@@ -1472,11 +1542,11 @@ export default function ProductsPage() {
             {/* Mes boutiques */}
             <div className="pr-card">
               <div style={{ fontSize:13, fontWeight:700, color:"#1F2A24", marginBottom:10 }}>Mes boutiques</div>
-              {MOCK_SHOPS.map((s, i) => (
+              {realShops.map((s, i) => (
                 <div key={s.id} className="pr-shop-row"
                   style={{ background: s.id === activeShopId ? "#EAF7EF" : "transparent", borderRadius:10, padding:"8px 10px" }}
                   onClick={() => setActiveShopId(s.id)}>
-                  <div className="pr-shop-av" style={{ background: shopColors[i] ?? "#0A8F45" }}>
+                  <div className="pr-shop-av" style={{ background: shopColors[i % shopColors.length] }}>
                     {s.name.slice(0,2).toUpperCase()}
                   </div>
                   <div style={{ flex:1, minWidth:0 }}>
@@ -1484,16 +1554,18 @@ export default function ProductsPage() {
                       {s.name}
                       {s.id === activeShopId && <span style={{ fontSize:9, background:"#0A8F45", color:"#fff", borderRadius:4, padding:"1px 5px" }}>Actif</span>}
                     </div>
-                    <div style={{ fontSize:11, color:"#98A2B3" }}>{s.products} produits · {s.city}</div>
-                    <div className="pr-prog">
-                      <div className="pr-prog-bar" style={{ width:`${Math.round(s.products/5)}%`, background: shopColors[i] }} />
-                    </div>
+                    <div style={{ fontSize:11, color:"#98A2B3" }}>{s._count?.products ?? 0} produits · {s.city ?? ""}</div>
                   </div>
                   <span className={s.isPublished ? "badge badge-green" : "badge badge-gray"} style={{ fontSize:10 }}>
-                    {s.isPublished ? "Actif" : "Inactif"}
+                    {s.isPublished ? "Publiée" : "Brouillon"}
                   </span>
                 </div>
               ))}
+              {realShops.length === 0 && (
+                <div style={{ textAlign:"center", fontSize:12, color:"#98A2B3", padding:"12px 0" }}>
+                  Aucune boutique — créez-en une.
+                </div>
+              )}
             </div>
 
             {/* Architecture catalogue */}
@@ -1599,30 +1671,39 @@ export default function ProductsPage() {
 
       </div>
 
+      <CreateShopModal
+        open={showCreateShop}
+        onClose={() => setShowCreateShop(false)}
+        onCreated={() => {
+          setShowCreateShop(false);
+          fetch("/api/shop?all=1").then(r=>r.json()).then(d=>setRealShops(d.data??[])).catch(()=>{});
+        }}
+      />
+
       <AddProductModal
         open={showAddProduct}
         onClose={() => setShowAddProduct(false)}
-        shopId={realShop?.id ?? null}
-        shopName={activeShop.name}
-        categories={["Accessoires","Chaussures","Vêtements","Beauté","Parfums"]}
-        onCreated={() => { setShowAddProduct(false); }}
+        shopId={activeShopId || null}
+        shopName={activeShop?.name ?? ""}
+        categories={apiCategories}
+        onCreated={() => { setShowAddProduct(false); refreshProducts(); }}
       />
 
       <EditProductModal
         open={editProduct !== null}
         onClose={() => setEditProduct(null)}
-        shopId={realShop?.id ?? null}
-        shopName={activeShop.name}
-        categories={["Accessoires","Chaussures","Vêtements","Beauté","Parfums"]}
+        shopId={activeShopId || null}
+        shopName={activeShop?.name ?? ""}
+        categories={apiCategories}
         product={editProduct}
-        onUpdated={() => setEditProduct(null)}
+        onUpdated={() => { setEditProduct(null); refreshProducts(); }}
       />
 
       <DeleteConfirmModal
         product={deleteProduct}
-        shopId={realShop?.id ?? null}
+        shopId={activeShopId || null}
         onClose={() => setDeleteProduct(null)}
-        onDeleted={() => setDeleteProduct(null)}
+        onDeleted={() => { setDeleteProduct(null); refreshProducts(); }}
       />
 
       {showUpgrade && (

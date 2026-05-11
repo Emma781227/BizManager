@@ -49,9 +49,8 @@ export default function LoginPage() {
 
     function initGSI() {
       const g = (window as any).google;
-      console.log("GSI init attempt, client_id:", process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID);
-      if (!g || !process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID) {
-        console.warn("GSI not available or NEXT_PUBLIC_GOOGLE_CLIENT_ID missing");
+      const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+      if (!g || !clientId || clientId === "REPLACE_WITH_GOOGLE_CLIENT_ID") {
         return;
       }
       try {
@@ -110,8 +109,13 @@ export default function LoginPage() {
   }
 
   function handleGoogleButton() {
-    if (!gsiReady || !process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID) {
-      setError("Google Identity non initialisé. Ajoutez NEXT_PUBLIC_GOOGLE_CLIENT_ID dans .env.local puis redémarrez le serveur.");
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    if (!clientId || clientId === "REPLACE_WITH_GOOGLE_CLIENT_ID") {
+      setError("Connexion Google non configurée — ajoutez NEXT_PUBLIC_GOOGLE_CLIENT_ID dans .env.local et redémarrez.");
+      return;
+    }
+    if (!gsiReady) {
+      setError("Le service Google n'est pas encore chargé, réessayez dans quelques secondes.");
       return;
     }
 

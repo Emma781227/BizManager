@@ -1,25 +1,70 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import CreateShopModal from "../shops/CreateShopModal";
 
-type RealShop = { id: string; name: string; slug: string; isPublished: boolean; city: string | null; };
+type SettingsShop = {
+  id: string; name: string; slug: string; isPublished: boolean;
+  city: string | null; products: number; orders: number; clients: number;
+  ca: string; color: string;
+  whatsappNumber: string;
+  category: string | null;
+  regionCountry: string | null;
+  description: string | null;
+  address: string | null;
+  openingHours: string | null;
+  notificationEmail: string | null;
+  logoUrl: string | null;
+  coverUrl: string | null;
+};
 
-const MOCK_SHOPS = [
-  { id:"s1", name:"Mon Aventure",  slug:"mon-aventure",  isPublished:true,  city:"Dakar",   products:78,  orders:156, clients:1242, ca:"4 850 000", color:"#0A8F45" },
-  { id:"s2", name:"Urban Style",   slug:"urban-style",   isPublished:true,  city:"Abidjan", products:62,  orders:128, clients:573,  ca:"3 210 000", color:"#3B82F6" },
-  { id:"s3", name:"Beauty House",  slug:"beauty-house",  isPublished:false, city:"Douala",  products:16,  orders:58,  clients:42,   ca:"760 000",   color:"#F08A24" },
+const COLORS = ["#0A8F45", "#3B82F6", "#F08A24", "#8B5CF6", "#EC4899", "#14B8A6"];
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function toSettingsShop(sh: any, i: number): SettingsShop {
+  return {
+    id:                sh.id,
+    name:              sh.name,
+    slug:              sh.slug,
+    isPublished:       sh.isPublished,
+    city:              sh.city ?? null,
+    products:          sh._count?.products  ?? 0,
+    orders:            sh._count?.orders    ?? 0,
+    clients:           sh._count?.customers ?? 0,
+    ca:                "—",
+    color:             COLORS[i % COLORS.length],
+    whatsappNumber:    sh.whatsappNumber    ?? "",
+    category:          sh.category          ?? null,
+    regionCountry:     sh.regionCountry     ?? null,
+    description:       sh.description       ?? null,
+    address:           sh.address           ?? null,
+    openingHours:      sh.openingHours      ?? null,
+    notificationEmail: sh.notificationEmail ?? null,
+    logoUrl:           sh.logoUrl           ?? null,
+    coverUrl:          sh.coverUrl          ?? null,
+  };
+}
+
+const DAYS_LIST = [
+  { code:"LUN", label:"Lun" },
+  { code:"MAR", label:"Mar" },
+  { code:"MER", label:"Mer" },
+  { code:"JEU", label:"Jeu" },
+  { code:"VEN", label:"Ven" },
+  { code:"SAM", label:"Sam" },
+  { code:"DIM", label:"Dim" },
 ];
 
 const ACTIVITY = [
-  { label:"Chiffre d'affaires total", value:"5 820 000 FCFA", trend:"+18,6%", up:true },
-  { label:"Commandes total",          value:"342",             trend:"+12,4%", up:true },
-  { label:"Nouveaux clients",         value:"128",             trend:"+9,7%",  up:true },
-  { label:"Produits ajoutés",         value:"24",              trend:"+14,2%", up:true },
+  { label:"Chiffre d'affaires total", value:"5 820 000 FCFA", trend:"+18,6%" },
+  { label:"Commandes total",          value:"342",             trend:"+12,4%" },
+  { label:"Nouveaux clients",         value:"128",             trend:"+9,7%"  },
+  { label:"Produits ajoutés",         value:"24",              trend:"+14,2%" },
 ];
 
 const TIPS = [
-  { icon:"📊", t:"Analysez chaque boutique",  d:"Suivez les performances individuelles pour mieux décider.",                   link:"Voir les performances", href:"/dashboard" },
-  { icon:"📦", t:"Optimisez votre catalogue", d:"Maintenez vos produits à jour et adaptez vos stocks à la demande.",          link:"Gérer les produits",    href:"/products"  },
-  { icon:"🚀", t:"Développez vos ventes",     d:"Utilisez WhatsApp et votre boutique en ligne pour booster vos ventes.",      link:"Découvrir les outils",  href:"/whatsapp"  },
+  { icon:"📊", t:"Analysez chaque boutique",  d:"Suivez les performances individuelles pour mieux décider.",              link:"Voir les performances", href:"/dashboard" },
+  { icon:"📦", t:"Optimisez votre catalogue", d:"Maintenez vos produits à jour et adaptez vos stocks à la demande.",     link:"Gérer les produits",    href:"/products"  },
+  { icon:"🚀", t:"Développez vos ventes",     d:"Utilisez WhatsApp et votre boutique en ligne pour booster vos ventes.", link:"Découvrir les outils",  href:"/whatsapp"  },
 ];
 
 const CSS = `
@@ -29,7 +74,7 @@ const CSS = `
 .mb-main { display:grid; grid-template-columns:1fr 420px; gap:20px; margin-bottom:20px; }
 .mb-right { display:flex; flex-direction:column; gap:16px; }
 .mb-card { background:#fff; border:1px solid #E8ECEA; border-radius:18px; padding:20px; box-shadow:0 2px 10px rgba(16,24,40,.04); }
-.mb-shop-row { border:1px solid #E8ECEA; border-radius:14px; padding:16px 18px; margin-bottom:12px; transition:box-shadow .15s; background:#fff; position:relative; }
+.mb-shop-row { border:1px solid #E8ECEA; border-radius:14px; padding:16px 18px; margin-bottom:12px; transition:box-shadow .15s; background:#fff; }
 .mb-shop-row:last-child { margin-bottom:0; }
 .mb-shop-row:hover { box-shadow:0 4px 16px rgba(16,24,40,.06); }
 .mb-shop-row.is-active { border-color:#0A8F45; background:#FAFFFE; }
@@ -44,98 +89,727 @@ const CSS = `
 .mb-act-row { display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid #F4F6F5; }
 .mb-act-row:last-child { border-bottom:none; }
 .mb-tips { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
-.mb-modal { position:fixed; inset:0; z-index:1000; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.45); padding:20px; }
-.mb-modal-box { background:#fff; border-radius:18px; padding:28px; width:100%; max-width:460px; box-shadow:0 20px 60px rgba(0,0,0,.15); }
-.mb-actions-menu { position:absolute; right:0; top:36px; z-index:50; background:#fff; border:1px solid #E8ECEA; border-radius:12px; min-width:190px; box-shadow:0 8px 24px rgba(16,24,40,.1); overflow:hidden; }
-.mb-actions-item { display:block; width:100%; text-align:left; padding:10px 16px; font-size:13px; color:#1F2A24; background:none; border:none; cursor:pointer; transition:background .12s; }
-.mb-actions-item:hover { background:#F8FAF9; }
-.mb-actions-item.danger { color:#EF4444; }
 .badge { display:inline-flex; align-items:center; gap:4px; padding:3px 9px; border-radius:20px; font-size:11px; font-weight:600; white-space:nowrap; }
 .badge-green { background:#DDF6E7; color:#0A8F45; }
 .badge-gray  { background:#F2F4F7; color:#667085; }
 .badge-biz   { background:#EAF7EF; color:#08763A; }
+.sa-overlay { position:fixed; inset:0; background:rgba(15,20,18,0.5); z-index:2000; display:flex; align-items:center; justify-content:center; padding:16px; backdrop-filter:blur(2px); }
+.sa-modal   { background:#fff; border-radius:20px; width:100%; max-width:440px; box-shadow:0 16px 48px rgba(16,24,40,0.14); overflow:hidden; }
+.sa-header  { padding:20px 24px 16px; border-bottom:1px solid #E8ECEA; display:flex; align-items:center; gap:12px; }
+.sa-section { padding:18px 24px; border-bottom:1px solid #F4F6F5; }
+.sa-sec-title { font-size:11px; font-weight:700; color:#98A2B3; text-transform:uppercase; letter-spacing:.06em; margin-bottom:12px; }
+.sa-toggle-card { display:flex; align-items:center; gap:14px; padding:14px 16px; border:1.5px solid #E8ECEA; border-radius:12px; cursor:pointer; transition:all .15s; user-select:none; }
+.sa-toggle-card.on  { border-color:#0A8F45; background:#F6FFF9; }
+.sa-toggle-card.off { border-color:#E8ECEA; background:#F8FAF9; }
+.sa-sw { width:42px; height:24px; background:#E8ECEA; border-radius:999px; position:relative; transition:background .2s; flex-shrink:0; border:none; padding:0; cursor:pointer; outline:none; }
+.sa-sw.on { background:#0A8F45; }
+.sa-sw::after { content:''; position:absolute; top:4px; left:4px; width:16px; height:16px; background:#fff; border-radius:50%; transition:transform .2s; box-shadow:0 1px 3px rgba(0,0,0,.15); }
+.sa-sw.on::after { transform:translateX(18px); }
+.sa-inp { width:100%; height:40px; padding:0 12px; border:1.5px solid #E8ECEA; border-radius:10px; font-size:14px; color:#1F2A24; background:#fff; outline:none; box-sizing:border-box; transition:border-color .15s; }
+.sa-inp:focus { border-color:#0A8F45; box-shadow:0 0 0 3px rgba(10,143,69,.08); }
+.sa-link-btn { display:flex; align-items:center; gap:10px; width:100%; padding:12px 14px; background:#F8FAF9; border:1.5px solid #E8ECEA; border-radius:10px; font-size:13px; color:#1F2A24; font-weight:500; transition:background .12s; text-decoration:none; box-sizing:border-box; }
+.sa-link-btn:hover:not(.disabled) { background:#EAF7EF; border-color:#C2E8D0; }
+.sa-link-btn.disabled { opacity:.45; pointer-events:none; }
+.sa-footer  { display:flex; justify-content:flex-end; padding:14px 24px; }
+.sa-info-note { display:flex; align-items:flex-start; gap:8px; padding:10px 12px; background:#FFF8EC; border:1px solid #FFE5B0; border-radius:10px; font-size:12px; color:#92600A; margin-top:10px; line-height:1.5; }
+.sa-err { font-size:12px; color:#D92D20; margin-top:6px; }
 .inp { height:36px; padding:0 12px; border:1px solid #E8ECEA; border-radius:10px; font-size:13px; color:#1F2A24; background:#fff; outline:none; width:100%; box-sizing:border-box; }
 .inp:focus { border-color:#0A8F45; }
 .sel { height:36px; padding:0 10px; border:1px solid #E8ECEA; border-radius:10px; font-size:13px; color:#1F2A24; background:#fff; cursor:pointer; outline:none; }
 .btn-primary   { height:36px; padding:0 16px; background:#0A8F45; color:#fff; border:none; border-radius:10px; font-size:13px; font-weight:600; cursor:pointer; white-space:nowrap; }
-.btn-primary:hover { background:#08763A; }
+.btn-primary:hover:not(:disabled) { background:#08763A; }
+.btn-primary:disabled { opacity:.55; cursor:default; }
 .btn-secondary { height:36px; padding:0 14px; background:#fff; color:#1F2A24; border:1px solid #E8ECEA; border-radius:10px; font-size:13px; cursor:pointer; white-space:nowrap; }
 .btn-secondary:hover { background:#F8FAF9; }
 .btn-sm { height:30px; padding:0 12px; border-radius:8px; font-size:12px; cursor:pointer; }
+.se-modal   { background:#fff; border-radius:20px; width:100%; max-width:600px; box-shadow:0 16px 48px rgba(16,24,40,0.14); overflow:hidden; max-height:90vh; display:flex; flex-direction:column; }
+.se-body    { overflow-y:auto; flex:1; padding:20px 24px; }
+.se-section { margin-bottom:20px; }
+.se-sec-ttl { font-size:11px; font-weight:700; color:#98A2B3; text-transform:uppercase; letter-spacing:.06em; margin-bottom:12px; padding-bottom:6px; border-bottom:1px solid #F4F6F5; }
+.se-field   { margin-bottom:12px; }
+.se-label   { font-size:12px; font-weight:600; color:#1F2A24; display:block; margin-bottom:5px; }
+.se-inp     { width:100%; height:38px; padding:0 12px; border:1.5px solid #E8ECEA; border-radius:10px; font-size:13px; color:#1F2A24; background:#fff; outline:none; box-sizing:border-box; transition:border-color .15s; }
+.se-inp:focus { border-color:#0A8F45; box-shadow:0 0 0 3px rgba(10,143,69,.08); }
+.se-ta      { width:100%; padding:10px 12px; border:1.5px solid #E8ECEA; border-radius:10px; font-size:13px; color:#1F2A24; background:#fff; outline:none; box-sizing:border-box; resize:vertical; font-family:inherit; transition:border-color .15s; }
+.se-ta:focus { border-color:#0A8F45; box-shadow:0 0 0 3px rgba(10,143,69,.08); }
+.se-cover-zone { width:100%; height:90px; border-radius:12px; overflow:hidden; border:2px dashed #C8E6D5; cursor:pointer; display:flex; align-items:center; justify-content:center; position:relative; background:#EAF7EF; }
+.se-cover-zone img { width:100%; height:100%; object-fit:cover; }
+.se-cover-overlay { position:absolute; inset:0; background:rgba(0,0,0,.3); display:flex; align-items:center; justify-content:center; opacity:0; transition:opacity .15s; }
+.se-cover-zone:hover .se-cover-overlay { opacity:1; }
+.se-logo-zone  { width:72px; height:72px; border-radius:16px; overflow:hidden; border:2px dashed #C8E6D5; cursor:pointer; display:flex; align-items:center; justify-content:center; position:relative; background:#EAF7EF; flex-shrink:0; }
+.se-logo-zone img { width:100%; height:100%; object-fit:cover; }
+.se-logo-overlay { position:absolute; inset:0; background:rgba(0,0,0,.3); display:flex; align-items:center; justify-content:center; opacity:0; transition:opacity .15s; }
+.se-logo-zone:hover .se-logo-overlay { opacity:1; }
+.se-err     { font-size:12px; color:#D92D20; margin-top:8px; padding:8px 12px; background:#FDE8E8; border-radius:8px; }
+.se-footer  { padding:14px 24px; border-top:1px solid #E8ECEA; display:flex; gap:10px; justify-content:flex-end; background:#fff; }
 @media(max-width:1100px){ .mb-kpi{grid-template-columns:repeat(2,1fr);} .mb-main{grid-template-columns:1fr;} .mb-tips{grid-template-columns:1fr 1fr;} }
 @media(max-width:700px){ .mb-kpi{grid-template-columns:1fr 1fr;} .mb-tips{grid-template-columns:1fr;} .mb-wrap{padding:14px 12px;} .mb-ctx{flex-direction:column;align-items:flex-start;} }
 `;
 
-function CreateShopModal({ onClose }: { onClose: () => void }) {
-  const [name, setName] = useState("");
-  const [city, setCity] = useState("");
-  const [saving, setSaving] = useState(false);
+/* ─── ShopActionsModal ─────────────────────────────────────────────────────── */
 
-  async function handleCreate() {
-    if (!name.trim()) return;
-    setSaving(true);
-    await new Promise(r => setTimeout(r, 900));
-    setSaving(false);
-    onClose();
+function ShopActionsModal({
+  shop,
+  onClose,
+  onToggled,
+  onRenamed,
+  onUpdated,
+}: {
+  shop: SettingsShop | null;
+  onClose: () => void;
+  onToggled: (id: string, isPublished: boolean) => void;
+  onRenamed: (id: string, name: string) => void;
+  onUpdated: (shop: SettingsShop) => void;
+}) {
+  const [view, setView] = useState<"main" | "edit">("main");
+
+  /* ── Main view state ── */
+  const [publishing, setPublishing] = useState(false);
+  const [publishErr, setPublishErr] = useState("");
+  const [renaming,   setRenaming]   = useState(false);
+  const [nameInput,  setNameInput]  = useState("");
+  const [renameErr,  setRenameErr]  = useState("");
+
+  /* ── Edit view state ── */
+  const [editName,        setEditName]        = useState("");
+  const [editSlug,        setEditSlug]        = useState("");
+  const [editCategory,    setEditCategory]    = useState("");
+  const [editCity,        setEditCity]        = useState("");
+  const [editRegion,      setEditRegion]      = useState("");
+  const [editWhatsapp,    setEditWhatsapp]    = useState("");
+  const [editNotifEmail,  setEditNotifEmail]  = useState("");
+  const [editAddress,     setEditAddress]     = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editOpenDays,    setEditOpenDays]    = useState<string[]>([]);
+  const [editOpenTime,    setEditOpenTime]    = useState("");
+  const [editCloseTime,   setEditCloseTime]   = useState("");
+  const [logoUrl,         setLogoUrl]         = useState<string | null>(null);
+  const [coverUrl,        setCoverUrl]        = useState<string | null>(null);
+  const [logoFile,        setLogoFile]        = useState<File | null>(null);
+  const [coverFile,       setCoverFile]       = useState<File | null>(null);
+  const [editErr,         setEditErr]         = useState<string | null>(null);
+  const [submitting,      setSubmitting]      = useState(false);
+
+  const logoInputRef  = useRef<HTMLInputElement>(null);
+  const coverInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (shop) {
+      setNameInput(shop.name);
+      setRenameErr("");
+      setPublishErr("");
+      /* pre-populate edit fields */
+      setEditName(shop.name);
+      setEditSlug(shop.slug);
+      setEditCategory(shop.category ?? "");
+      setEditCity(shop.city ?? "");
+      setEditRegion(shop.regionCountry ?? "");
+      setEditWhatsapp(shop.whatsappNumber ?? "");
+      setEditNotifEmail(shop.notificationEmail ?? "");
+      setEditAddress(shop.address ?? "");
+      setEditDescription(shop.description ?? "");
+      const rawHours = shop.openingHours ?? "";
+      if (rawHours.includes("|")) {
+        const [daysStr, timeRange] = rawHours.split("|");
+        setEditOpenDays(daysStr.split(",").filter(Boolean));
+        const m = timeRange.match(/^(\d{2}:\d{2})-(\d{2}:\d{2})$/);
+        setEditOpenTime(m ? m[1] : "");
+        setEditCloseTime(m ? m[2] : "");
+      } else {
+        setEditOpenDays([]);
+        const m = rawHours.match(/^(\d{2}:\d{2})-(\d{2}:\d{2})$/);
+        setEditOpenTime(m ? m[1] : "");
+        setEditCloseTime(m ? m[2] : "");
+      }
+      setLogoUrl(shop.logoUrl ?? null);
+      setCoverUrl(shop.coverUrl ?? null);
+      setLogoFile(null);
+      setCoverFile(null);
+      setEditErr(null);
+      setView("main");
+    }
+  }, [shop?.id]);
+
+  if (!shop) return null;
+
+  /* ── Main view handlers ── */
+
+  async function handleToggle() {
+    if (publishing) return;
+    setPublishing(true);
+    setPublishErr("");
+    const next = !shop!.isPublished;
+    try {
+      const res = await fetch(`/api/shop?shopId=${shop!.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isPublished: next }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "Erreur serveur");
+      onToggled(shop!.id, next);
+    } catch (err) {
+      setPublishErr(err instanceof Error ? err.message : "Erreur serveur");
+    } finally {
+      setPublishing(false);
+    }
   }
 
-  return (
-    <div className="mb-modal" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="mb-modal-box">
-        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:18 }}>
-          <h2 style={{ fontSize:18, fontWeight:700, color:"#1F2A24", margin:0 }}>Créer une nouvelle boutique</h2>
-          <button onClick={onClose} style={{ border:"none", background:"none", cursor:"pointer", fontSize:22, color:"#98A2B3", lineHeight:1 }}>×</button>
-        </div>
-        <p style={{ fontSize:13, color:"#667085", marginBottom:18 }}>
-          Chaque boutique possède son propre catalogue, ses commandes et ses clients indépendants.
-        </p>
-        <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
-          <div>
-            <label style={{ fontSize:12, fontWeight:600, color:"#1F2A24", display:"block", marginBottom:6 }}>Nom de la boutique *</label>
-            <input className="inp" placeholder="Ex : Ma Boutique Mode" value={name} onChange={e => setName(e.target.value)} />
-          </div>
-          <div>
-            <label style={{ fontSize:12, fontWeight:600, color:"#1F2A24", display:"block", marginBottom:6 }}>Ville</label>
-            <input className="inp" placeholder="Dakar, Abidjan, Douala…" value={city} onChange={e => setCity(e.target.value)} />
-          </div>
-          <div style={{ padding:"12px 14px", background:"#EAF7EF", borderRadius:10, fontSize:12, color:"#08763A", fontWeight:500 }}>
-            Plan Business · 1 boutique restante sur 3 autorisées
-          </div>
-          <div style={{ display:"flex", gap:10 }}>
-            <button className="btn-secondary" style={{ flex:1 }} onClick={onClose}>Annuler</button>
-            <button className="btn-primary" style={{ flex:1 }} onClick={handleCreate} disabled={saving || !name.trim()}>
-              {saving ? "Création…" : "Créer la boutique"}
+  async function handleRename() {
+    if (!shop) return;
+    const trimmed = nameInput.trim();
+    if (trimmed.length < 2) { setRenameErr("Nom trop court (minimum 2 caractères)"); return; }
+    if (trimmed.length > 100) { setRenameErr("Nom trop long (maximum 100 caractères)"); return; }
+    if (trimmed === shop.name) { onClose(); return; }
+    setRenaming(true);
+    setRenameErr("");
+    try {
+      const res = await fetch(`/api/shop?shopId=${shop.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: trimmed }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "Erreur serveur");
+      if (shop) onRenamed(shop.id, trimmed);
+    } catch (err) {
+      setRenameErr(err instanceof Error ? err.message : "Erreur serveur");
+    } finally {
+      setRenaming(false);
+    }
+  }
+
+  /* ── Edit view handler ── */
+
+  async function handleEditSubmit() {
+    if (!shop) return;
+    setEditErr(null);
+    const name = editName.trim();
+    const slug = editSlug.trim().toLowerCase();
+    const whatsapp = editWhatsapp.trim();
+
+    if (name.length < 2) { setEditErr("Le nom doit faire au moins 2 caractères."); return; }
+    if (slug.length < 3) { setEditErr("Le slug doit faire au moins 3 caractères."); return; }
+    if (!/^[a-z0-9-]+$/.test(slug)) { setEditErr("Le slug ne peut contenir que des lettres minuscules, chiffres et tirets."); return; }
+    if (!whatsapp) { setEditErr("Le numéro WhatsApp est requis."); return; }
+
+    setSubmitting(true);
+    try {
+      const fd = new FormData();
+      fd.append("name", name);
+      fd.append("slug", slug);
+      fd.append("whatsappNumber", whatsapp);
+      fd.append("city", editCity.trim());
+      fd.append("regionCountry", editRegion.trim());
+      fd.append("category", editCategory.trim());
+      fd.append("description", editDescription.trim());
+      fd.append("address", editAddress.trim());
+      const hoursStr = editOpenDays.length > 0 && editOpenTime && editCloseTime
+        ? `${editOpenDays.join(",")}|${editOpenTime}-${editCloseTime}`
+        : editOpenTime && editCloseTime
+        ? `${editOpenTime}-${editCloseTime}`
+        : "";
+      fd.append("openingHours", hoursStr);
+      fd.append("notificationEmail", editNotifEmail.trim());
+      fd.append("isPublished", String(shop.isPublished));
+      if (logoFile) fd.append("logoFile", logoFile);
+      else fd.append("logoUrl", logoUrl ?? "");
+      if (coverFile) fd.append("coverFile", coverFile);
+      else fd.append("coverUrl", coverUrl ?? "");
+
+      const res = await fetch(`/api/shop?shopId=${shop.id}`, { method: "PUT", body: fd });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "Erreur serveur");
+      onUpdated(json.data);
+      setView("main");
+    } catch (err) {
+      setEditErr(err instanceof Error ? err.message : "Erreur serveur");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  function handleLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setLogoFile(file);
+    setLogoUrl(URL.createObjectURL(file));
+  }
+
+  function handleCoverChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setCoverFile(file);
+    setCoverUrl(URL.createObjectURL(file));
+  }
+
+  const published = shop.isPublished;
+
+  /* ── Edit view ── */
+  if (view === "edit") {
+    return (
+      <div className="sa-overlay" onClick={onClose}>
+        <div className="se-modal" onClick={e => e.stopPropagation()}>
+
+          {/* Edit header */}
+          <div className="sa-header">
+            <button
+              type="button"
+              onClick={() => setView("main")}
+              style={{ background:"none", border:"none", cursor:"pointer", color:"#1F2A24", fontSize:18, lineHeight:1, padding:4, marginRight:4, display:"flex", alignItems:"center" }}>
+              ←
+            </button>
+            <div style={{ flex:1, fontWeight:700, fontSize:15, color:"#1F2A24" }}>Modifier la boutique</div>
+            <button
+              onClick={onClose}
+              style={{ background:"none", border:"none", cursor:"pointer", color:"#98A2B3", fontSize:20, lineHeight:1, padding:4 }}>
+              ✕
             </button>
           </div>
+
+          {/* Edit body */}
+          <div className="se-body">
+
+            {/* Informations générales */}
+            <div className="se-section">
+              <div className="se-sec-ttl">Informations générales</div>
+
+              <div className="se-field">
+                <label className="se-label">Nom *</label>
+                <input
+                  className="se-inp"
+                  value={editName}
+                  onChange={e => setEditName(e.target.value)}
+                  placeholder="Nom de la boutique"
+                  maxLength={100}
+                />
+              </div>
+
+              <div className="se-field">
+                <label className="se-label">Slug * <span style={{ fontWeight:400, color:"#98A2B3" }}>(URL de votre boutique)</span></label>
+                <input
+                  className="se-inp"
+                  value={editSlug}
+                  onChange={e => setEditSlug(e.target.value.toLowerCase())}
+                  placeholder="mon-nom-boutique"
+                  maxLength={80}
+                />
+                <div style={{ fontSize:11, color:"#98A2B3", marginTop:4 }}>
+                  {editSlug.trim() ? `/shop/${editSlug.trim().toLowerCase()}` : "/shop/votre-slug"}
+                </div>
+              </div>
+
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+                <div className="se-field" style={{ marginBottom:0 }}>
+                  <label className="se-label">Secteur</label>
+                  <input
+                    className="se-inp"
+                    value={editCategory}
+                    onChange={e => setEditCategory(e.target.value)}
+                    placeholder="ex: Alimentation"
+                  />
+                </div>
+                <div className="se-field" style={{ marginBottom:0 }}>
+                  <label className="se-label">Ville</label>
+                  <input
+                    className="se-inp"
+                    value={editCity}
+                    onChange={e => setEditCity(e.target.value)}
+                    placeholder="ex: Dakar"
+                  />
+                </div>
+              </div>
+
+              <div className="se-field" style={{ marginTop:10 }}>
+                <label className="se-label">Pays / Région</label>
+                <input
+                  className="se-inp"
+                  value={editRegion}
+                  onChange={e => setEditRegion(e.target.value)}
+                  placeholder="ex: Sénégal"
+                />
+              </div>
+            </div>
+
+            {/* Contact */}
+            <div className="se-section">
+              <div className="se-sec-ttl">Contact</div>
+
+              <div className="se-field">
+                <label className="se-label">Numéro WhatsApp *</label>
+                <input
+                  className="se-inp"
+                  value={editWhatsapp}
+                  onChange={e => setEditWhatsapp(e.target.value)}
+                  placeholder="+221771234567"
+                />
+              </div>
+
+              <div className="se-field">
+                <label className="se-label">Email de notification</label>
+                <input
+                  className="se-inp"
+                  type="email"
+                  value={editNotifEmail}
+                  onChange={e => setEditNotifEmail(e.target.value)}
+                  placeholder="vous@exemple.com"
+                />
+              </div>
+
+              <div className="se-field" style={{ marginBottom:0 }}>
+                <label className="se-label">Adresse</label>
+                <input
+                  className="se-inp"
+                  value={editAddress}
+                  onChange={e => setEditAddress(e.target.value)}
+                  placeholder="Rue, quartier…"
+                />
+              </div>
+            </div>
+
+            {/* Images */}
+            <div className="se-section">
+              <div className="se-sec-ttl">Images</div>
+
+              {/* Cover */}
+              <div className="se-field">
+                <label className="se-label">Image de couverture</label>
+                <div
+                  className="se-cover-zone"
+                  onClick={() => coverInputRef.current?.click()}
+                  role="button"
+                  aria-label="Changer l'image de couverture">
+                  {coverUrl
+                    ? <img src={coverUrl} alt="Couverture" />
+                    : <div style={{ background:"linear-gradient(135deg,#EAF7EF,#C8E6D5)", width:"100%", height:"100%" }} />
+                  }
+                  <div className="se-cover-overlay">
+                    <span style={{ color:"#fff", fontSize:13, fontWeight:600 }}>Changer</span>
+                  </div>
+                </div>
+                <div style={{ fontSize:11, color:"#98A2B3", marginTop:4 }}>Changer l'image de couverture</div>
+                <input
+                  ref={coverInputRef}
+                  type="file"
+                  accept="image/*"
+                  style={{ display:"none" }}
+                  onChange={handleCoverChange}
+                />
+              </div>
+
+              {/* Logo */}
+              <div className="se-field" style={{ marginBottom:0 }}>
+                <label className="se-label">Logo</label>
+                <div style={{ display:"flex", alignItems:"center", gap:14 }}>
+                  <div
+                    className="se-logo-zone"
+                    onClick={() => logoInputRef.current?.click()}
+                    role="button"
+                    aria-label="Changer le logo">
+                    {logoUrl
+                      ? <img src={logoUrl} alt="Logo" />
+                      : <span style={{ fontSize:28 }}>🏷️</span>
+                    }
+                    <div className="se-logo-overlay">
+                      <span style={{ color:"#fff", fontSize:11, fontWeight:600 }}>Changer</span>
+                    </div>
+                  </div>
+                  <div style={{ fontSize:12, color:"#667085" }}>Changer le logo</div>
+                </div>
+                <input
+                  ref={logoInputRef}
+                  type="file"
+                  accept="image/*"
+                  style={{ display:"none" }}
+                  onChange={handleLogoChange}
+                />
+              </div>
+            </div>
+
+            {/* Description & horaires */}
+            <div className="se-section" style={{ marginBottom:0 }}>
+              <div className="se-sec-ttl">Description &amp; horaires</div>
+
+              <div className="se-field">
+                <label className="se-label">Description</label>
+                <textarea
+                  className="se-ta"
+                  rows={3}
+                  value={editDescription}
+                  onChange={e => setEditDescription(e.target.value)}
+                  placeholder="Décrivez votre boutique…"
+                />
+              </div>
+
+              <div className="se-field" style={{ marginBottom:0 }}>
+                <label className="se-label">Jours d&apos;ouverture</label>
+                <div style={{ display:"flex", gap:5, flexWrap:"wrap", marginBottom:10 }}>
+                  {DAYS_LIST.map(d => (
+                    <button key={d.code} type="button"
+                      onClick={() => setEditOpenDays(prev => prev.includes(d.code) ? prev.filter(x=>x!==d.code) : [...prev, d.code])}
+                      style={{
+                        padding:"5px 10px", borderRadius:7, fontSize:12, fontWeight:600,
+                        border:"1.5px solid",
+                        borderColor: editOpenDays.includes(d.code) ? "#0A8F45" : "#E8ECEA",
+                        background: editOpenDays.includes(d.code) ? "#EAF7EF" : "#fff",
+                        color: editOpenDays.includes(d.code) ? "#0A8F45" : "#667085",
+                        cursor:"pointer"
+                      }}>
+                      {d.label}
+                    </button>
+                  ))}
+                </div>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:8 }}>
+                  <div>
+                    <div style={{ fontSize:11, color:"#667085", marginBottom:4 }}>Ouverture</div>
+                    <input
+                      type="time"
+                      className="se-inp"
+                      value={editOpenTime}
+                      onChange={e => setEditOpenTime(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <div style={{ fontSize:11, color:"#667085", marginBottom:4 }}>Fermeture</div>
+                    <input
+                      type="time"
+                      className="se-inp"
+                      value={editCloseTime}
+                      onChange={e => setEditCloseTime(e.target.value)}
+                    />
+                  </div>
+                </div>
+                {editOpenDays.length > 0 && editOpenTime && editCloseTime ? (
+                  <div style={{ fontSize:12, color:"#0A8F45", background:"#EAF7EF", borderRadius:8, padding:"6px 10px", display:"inline-flex", alignItems:"center", gap:6 }}>
+                    🕐 {editOpenDays.join(", ")} · <strong>{editOpenTime}</strong> – <strong>{editCloseTime}</strong>
+                  </div>
+                ) : (
+                  <div style={{ fontSize:11, color:"#98A2B3" }}>Sélectionnez les jours et les horaires.</div>
+                )}
+              </div>
+            </div>
+
+            {editErr && <div className="se-err" style={{ marginTop:16 }}>{editErr}</div>}
+
+          </div>
+
+          {/* Edit footer */}
+          <div className="se-footer">
+            <button
+              type="button"
+              className="btn-secondary"
+              style={{ height:38, padding:"0 16px", fontSize:13 }}
+              onClick={() => setView("main")}
+              disabled={submitting}>
+              Annuler
+            </button>
+            <button
+              type="button"
+              className="btn-primary"
+              style={{ height:38, padding:"0 20px", fontSize:13 }}
+              onClick={handleEditSubmit}
+              disabled={submitting}>
+              {submitting ? "Enregistrement…" : "Enregistrer"}
+            </button>
+          </div>
+
         </div>
+      </div>
+    );
+  }
+
+  /* ── Main view ── */
+  return (
+    <div className="sa-overlay" onClick={onClose}>
+      <div className="sa-modal" onClick={e => e.stopPropagation()}>
+
+        {/* Header */}
+        <div className="sa-header">
+          <div className="mb-shop-av" style={{ background: shop.color, width:40, height:40, fontSize:13 }}>
+            {shop.name.slice(0,2).toUpperCase()}
+          </div>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ fontWeight:700, fontSize:15, color:"#1F2A24", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+              {shop.name}
+            </div>
+            <span className={published ? "badge badge-green" : "badge badge-gray"} style={{ fontSize:10, marginTop:2 }}>
+              {published ? "● Publiée" : "○ Brouillon"}
+            </span>
+          </div>
+          <button onClick={onClose}
+            style={{ background:"none", border:"none", cursor:"pointer", color:"#98A2B3", fontSize:20, lineHeight:1, padding:4 }}>
+            ✕
+          </button>
+        </div>
+
+        {/* Visibilité */}
+        <div className="sa-section">
+          <div className="sa-sec-title">Visibilité</div>
+          <div
+            className={`sa-toggle-card ${published ? "on" : "off"}`}
+            onClick={handleToggle}
+            style={{ opacity: publishing ? 0.65 : 1 }}>
+            <button
+              type="button"
+              className={`sa-sw${published ? " on" : ""}`}
+              onClick={e => { e.stopPropagation(); handleToggle(); }}
+              disabled={publishing}
+              aria-label={published ? "Dépublier la boutique" : "Publier la boutique"}
+            />
+            <div style={{ flex:1 }}>
+              <div style={{ fontWeight:600, fontSize:13, color:"#1F2A24" }}>
+                {publishing ? "Mise à jour…" : published ? "Boutique publiée" : "Boutique en brouillon"}
+              </div>
+              <div style={{ fontSize:11, color:"#667085", marginTop:2 }}>
+                {published
+                  ? "Visible par vos clients sur le web"
+                  : "Non visible — accessible seulement par vous"}
+              </div>
+            </div>
+          </div>
+          {publishErr && <div className="sa-err">{publishErr}</div>}
+          <div className="sa-info-note">
+            <span style={{ flexShrink:0 }}>⚠️</span>
+            <span>Une boutique dépubliée reste comptabilisée dans votre quota de plan.</span>
+          </div>
+        </div>
+
+        {/* Renommer */}
+        <div className="sa-section">
+          <div className="sa-sec-title">Renommer</div>
+          <div style={{ display:"flex", gap:8 }}>
+            <input
+              className="sa-inp"
+              value={nameInput}
+              onChange={e => { setNameInput(e.target.value); setRenameErr(""); }}
+              onKeyDown={e => e.key === "Enter" && handleRename()}
+              placeholder="Nom de la boutique"
+              maxLength={100}
+            />
+            <button
+              type="button"
+              className="btn-primary"
+              style={{ height:40, padding:"0 16px", flexShrink:0, fontSize:13 }}
+              onClick={handleRename}
+              disabled={renaming || nameInput.trim() === shop.name || nameInput.trim().length < 2}>
+              {renaming ? "…" : "Sauvegarder"}
+            </button>
+          </div>
+          {renameErr && <div className="sa-err">{renameErr}</div>}
+        </div>
+
+        {/* Accès rapide */}
+        <div className="sa-section">
+          <div className="sa-sec-title">Accès rapide</div>
+          <a
+            href={`/shop/${shop.slug}`}
+            target="_blank"
+            rel="noreferrer"
+            className={`sa-link-btn${published ? "" : " disabled"}`}>
+            <span style={{ fontSize:16 }}>🔗</span>
+            <div style={{ flex:1 }}>
+              <div style={{ fontSize:13, fontWeight:600 }}>Voir la boutique publique</div>
+              <div style={{ fontSize:11, color:"#98A2B3" }}>/shop/{shop.slug}</div>
+            </div>
+            <span style={{ fontSize:11, color:"#98A2B3" }}>↗</span>
+          </a>
+          {!published && (
+            <div style={{ fontSize:11, color:"#98A2B3", marginTop:6 }}>
+              Publiez la boutique pour activer ce lien.
+            </div>
+          )}
+        </div>
+
+        {/* Modifier les informations */}
+        <div className="sa-section" style={{ borderBottom:"none" }}>
+          <div className="sa-sec-title">Informations de la boutique</div>
+          <button
+            type="button"
+            className="sa-link-btn"
+            style={{ cursor:"pointer", border:"none", width:"100%", textAlign:"left" }}
+            onClick={() => setView("edit")}>
+            <span style={{ fontSize:16 }}>✏️</span>
+            <div style={{ flex:1 }}>
+              <div style={{ fontSize:13, fontWeight:600 }}>Modifier les informations</div>
+              <div style={{ fontSize:11, color:"#98A2B3" }}>Nom, logo, cover, WhatsApp, horaires…</div>
+            </div>
+            <span style={{ fontSize:11, color:"#98A2B3" }}>→</span>
+          </button>
+        </div>
+
+        {/* Footer */}
+        <div className="sa-footer">
+          <button type="button" className="btn-secondary" onClick={onClose}>Fermer</button>
+        </div>
+
       </div>
     </div>
   );
 }
 
+/* ─── Page principale ──────────────────────────────────────────────────────── */
+
 export default function ShopsPage() {
-  const [activeId, setActiveId]       = useState("s1");
+  const [activeId, setActiveId]       = useState("");
   const [period, setPeriod]           = useState("30d");
   const [createOpen, setCreateOpen]   = useState(false);
-  const [actionMenuId, setActionMenuId] = useState<string | null>(null);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [_realShop, setRealShop]      = useState<RealShop | null>(null);
+  const [shops, setShops]             = useState<SettingsShop[]>([]);
+  const [loading, setLoading]         = useState(true);
+  const [actionsShop, setActionsShop] = useState<SettingsShop | null>(null);
 
   useEffect(() => {
-    fetch("/api/shop").then(r => r.json()).then(d => {
-      const sh = Array.isArray(d) ? d[0] : (d.data ?? d);
-      if (sh?.id) setRealShop(sh);
-    }).catch(() => {});
-
-    function closeMenus() { setActionMenuId(null); }
-    document.addEventListener("click", closeMenus);
-    return () => document.removeEventListener("click", closeMenus);
+    fetch("/api/shop?all=1")
+      .then(r => r.json())
+      .then(d => {
+        const list: SettingsShop[] = (d.data ?? []).map(toSettingsShop);
+        setShops(list);
+        if (list.length > 0) setActiveId(list[0].id);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
+
+  function onToggled(id: string, isPublished: boolean) {
+    setShops(prev => prev.map(s => s.id === id ? { ...s, isPublished } : s));
+    setActionsShop(prev => prev?.id === id ? { ...prev, isPublished } : prev);
+  }
+
+  function onRenamed(id: string, name: string) {
+    setShops(prev => prev.map(s => s.id === id ? { ...s, name } : s));
+    setActionsShop(prev => prev?.id === id ? { ...prev, name } : prev);
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  function onUpdated(raw: any) {
+    setShops(prev => prev.map((s, i) =>
+      s.id === raw.id ? { ...toSettingsShop(raw, i), color: COLORS[i % COLORS.length] } : s
+    ));
+    setActionsShop(prev => {
+      if (!prev || prev.id !== raw.id) return prev;
+      const idx = shops.findIndex(s => s.id === raw.id);
+      return { ...toSettingsShop(raw, idx >= 0 ? idx : 0), color: prev.color };
+    });
+  }
+
+  const totalProducts = shops.reduce((s, sh) => s + sh.products, 0);
+  const totalOrders   = shops.reduce((s, sh) => s + sh.orders,   0);
+  const totalClients  = shops.reduce((s, sh) => s + sh.clients,  0);
 
   return (
     <>
       <style>{CSS}</style>
-      {createOpen && <CreateShopModal onClose={() => setCreateOpen(false)} />}
+      <CreateShopModal
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        onCreated={() => { setCreateOpen(false); fetch("/api/shop?all=1").then(r=>r.json()).then(d=>{ const list=(d.data??[]).map(toSettingsShop); setShops(list); }); }}
+      />
+      <ShopActionsModal
+        shop={actionsShop}
+        onClose={() => setActionsShop(null)}
+        onToggled={onToggled}
+        onRenamed={onRenamed}
+        onUpdated={onUpdated}
+      />
 
       <div className="mb-wrap">
 
@@ -144,13 +818,14 @@ export default function ShopsPage() {
           <div style={{ display:"flex", alignItems:"center", gap:8 }}>
             <span style={{ fontSize:12, color:"#667085", fontWeight:500 }}>Boutique active</span>
             <select className="sel" style={{ fontWeight:700, color:"#0A8F45", borderColor:"#0A8F45", minWidth:160 }}
-              value={activeId} onChange={e => setActiveId(e.target.value)}>
-              {MOCK_SHOPS.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+              value={activeId} onChange={e => setActiveId(e.target.value)}
+              disabled={shops.length === 0}>
+              {shops.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
           </div>
           <div style={{ display:"flex", alignItems:"center", gap:10 }}>
             <span className="badge badge-biz" style={{ padding:"5px 12px", fontSize:12 }}>Plan Business</span>
-            <span style={{ fontSize:12, color:"#667085", fontWeight:500 }}>2 / 3 boutiques utilisées</span>
+            <span style={{ fontSize:12, color:"#667085", fontWeight:500 }}>{shops.length} / 3 boutiques utilisées</span>
           </div>
           <button className="btn-primary" style={{ marginLeft:"auto" }} onClick={() => setCreateOpen(true)}>
             + Créer une boutique
@@ -166,10 +841,10 @@ export default function ShopsPage() {
         {/* KPI row */}
         <div className="mb-kpi">
           {[
-            { icon:"🏪", l:"Total boutiques",  v:"2 / 3", s:"Utilisées",               i:"Limite selon votre plan Business" },
-            { icon:"📦", l:"Total produits",   v:"156",    s:"Sur toutes vos boutiques", i:"+12 ce mois" },
-            { icon:"🛒", l:"Total commandes",  v:"342",    s:"Sur toutes vos boutiques", i:"+28 ce mois" },
-            { icon:"👥", l:"Total clients",    v:"1 857",  s:"Sur toutes vos boutiques", i:"+128 ce mois" },
+            { icon:"🏪", l:"Total boutiques",  v:`${shops.length} / 3`, s:"Utilisées",               i:"Limite selon votre plan Business" },
+            { icon:"📦", l:"Total produits",   v:String(totalProducts), s:"Sur toutes vos boutiques", i:"" },
+            { icon:"🛒", l:"Total commandes",  v:String(totalOrders),   s:"Sur toutes vos boutiques", i:"" },
+            { icon:"👥", l:"Total clients",    v:String(totalClients),  s:"Sur toutes vos boutiques", i:"" },
           ].map(k => (
             <div key={k.l} style={{ background:"#fff", border:"1px solid #E8ECEA", borderRadius:16,
               padding:"16px 18px", boxShadow:"0 2px 10px rgba(16,24,40,.04)" }}>
@@ -179,7 +854,7 @@ export default function ShopsPage() {
               </div>
               <div style={{ fontSize:26, fontWeight:800, color:"#1F2A24", letterSpacing:"-0.5px" }}>{k.v}</div>
               <div style={{ fontSize:11, color:"#0A8F45", fontWeight:500, marginTop:3 }}>{k.s}</div>
-              <div style={{ fontSize:10, color:"#98A2B3", marginTop:4 }}>{k.i}</div>
+              {k.i && <div style={{ fontSize:10, color:"#98A2B3", marginTop:4 }}>{k.i}</div>}
             </div>
           ))}
         </div>
@@ -191,7 +866,19 @@ export default function ShopsPage() {
           <div className="mb-card">
             <div style={{ fontWeight:700, color:"#1F2A24", fontSize:15, marginBottom:16 }}>Toutes mes boutiques</div>
 
-            {MOCK_SHOPS.map((shop, i) => (
+            {loading && (
+              <div style={{ textAlign:"center", padding:"32px 0", color:"#98A2B3", fontSize:14 }}>
+                Chargement…
+              </div>
+            )}
+
+            {!loading && shops.length === 0 && (
+              <div style={{ textAlign:"center", padding:"32px 0", color:"#98A2B3", fontSize:14 }}>
+                Aucune boutique — créez-en une ci-dessous.
+              </div>
+            )}
+
+            {shops.map(shop => (
               <div key={shop.id} className={`mb-shop-row${shop.id === activeId ? " is-active" : ""}`}>
                 <div className="mb-shop-top">
                   <div className="mb-shop-av" style={{ background: shop.color }}>
@@ -200,46 +887,35 @@ export default function ShopsPage() {
                   <div style={{ flex:1, minWidth:0 }}>
                     <div style={{ display:"flex", alignItems:"center", gap:7, flexWrap:"wrap" }}>
                       <span style={{ fontWeight:700, fontSize:14, color:"#1F2A24" }}>{shop.name}</span>
-                      {shop.id === activeId && <span className="badge badge-green" style={{ fontSize:10 }}>Boutique active</span>}
+                      {shop.id === activeId && <span className="badge badge-green" style={{ fontSize:10 }}>Active</span>}
                       <span className={shop.isPublished ? "badge badge-green" : "badge badge-gray"} style={{ fontSize:10 }}>
-                        {shop.isPublished ? "Active" : "Inactive"}
+                        {shop.isPublished ? "Publiée" : "Brouillon"}
                       </span>
                     </div>
                     <div style={{ fontSize:11, color:"#98A2B3", marginTop:2 }}>
-                      {shop.slug}.bizmanager.shop · {shop.city}
+                      /shop/{shop.slug}{shop.city ? ` · ${shop.city}` : ""}
                     </div>
                   </div>
                   <div style={{ display:"flex", gap:8, alignItems:"center", flexShrink:0 }}>
-                    <button className="btn-primary btn-sm"
+                    <button type="button" className="btn-primary btn-sm"
                       style={{ background: shop.id === activeId ? "#08763A" : "#0A8F45" }}
                       onClick={() => setActiveId(shop.id)}>
                       Gérer
                     </button>
-                    <div style={{ position:"relative" }}>
-                      <button className="btn-secondary btn-sm"
-                        onClick={e => { e.stopPropagation(); setActionMenuId(actionMenuId === shop.id ? null : shop.id); }}>
-                        ···
-                      </button>
-                      {actionMenuId === shop.id && (
-                        <div className="mb-actions-menu" onClick={e => e.stopPropagation()}>
-                          <button className="mb-actions-item">✏️&nbsp; Renommer</button>
-                          <button className="mb-actions-item">🔗&nbsp; Voir la boutique publique</button>
-                          <button className="mb-actions-item">📋&nbsp; Dupliquer les réglages</button>
-                          <button className="mb-actions-item">{shop.isPublished ? "⏸ Suspendre" : "▶ Activer"}</button>
-                          <button className="mb-actions-item">📁&nbsp; Archiver</button>
-                          <button className="mb-actions-item danger">🗑️&nbsp; Supprimer</button>
-                        </div>
-                      )}
-                    </div>
+                    <button type="button" className="btn-secondary btn-sm"
+                      onClick={() => setActionsShop(shop)}
+                      title="Options de la boutique">
+                      ···
+                    </button>
                   </div>
                 </div>
 
                 <div className="mb-shop-kpis">
                   {[
-                    { l:"Produits",   v: String(shop.products) },
-                    { l:"Commandes",  v: String(shop.orders)   },
-                    { l:"Clients",    v: String(shop.clients)  },
-                    { l:"CA (FCFA)",  v: shop.ca               },
+                    { l:"Produits",  v: String(shop.products) },
+                    { l:"Commandes", v: String(shop.orders)   },
+                    { l:"Clients",   v: String(shop.clients)  },
+                    { l:"CA",        v: shop.ca               },
                   ].map((k, ki) => (
                     <div key={k.l} className="mb-shop-kpi-item"
                       style={{ borderLeft: ki > 0 ? "1px solid #E8ECEA" : "none" }}>
@@ -251,7 +927,6 @@ export default function ShopsPage() {
               </div>
             ))}
 
-            {/* Create new shop CTA */}
             <div className="mb-create" onClick={() => setCreateOpen(true)}>
               <div style={{ width:40, height:40, borderRadius:12, background:"#EAF7EF",
                 display:"flex", alignItems:"center", justifyContent:"center",
@@ -272,12 +947,16 @@ export default function ShopsPage() {
                 <span style={{ fontSize:12, color:"#667085" }}>Jusqu'à 3 boutiques</span>
               </div>
               <div style={{ display:"flex", alignItems:"baseline", gap:6, marginBottom:2 }}>
-                <span style={{ fontSize:38, fontWeight:800, color:"#1F2A24", letterSpacing:"-1px" }}>2</span>
+                <span style={{ fontSize:38, fontWeight:800, color:"#1F2A24", letterSpacing:"-1px" }}>{shops.length}</span>
                 <span style={{ fontSize:22, color:"#98A2B3" }}>/ 3</span>
                 <span style={{ fontSize:13, color:"#667085", marginLeft:8 }}>boutiques utilisées</span>
               </div>
-              <div className="mb-prog"><div className="mb-prog-bar" style={{ width:"66%" }} /></div>
-              <div style={{ fontSize:11, color:"#98A2B3", marginBottom:16 }}>66% du quota utilisé · 1 boutique restante</div>
+              <div className="mb-prog">
+                <div className="mb-prog-bar" style={{ width:`${Math.round((shops.length / 3) * 100)}%` }} />
+              </div>
+              <div style={{ fontSize:11, color:"#98A2B3", marginBottom:16 }}>
+                {Math.round((shops.length / 3) * 100)}% du quota utilisé · {3 - shops.length} boutique{3 - shops.length !== 1 ? "s" : ""} restante{3 - shops.length !== 1 ? "s" : ""}
+              </div>
               <div style={{ background:"#EAF7EF", border:"1px solid #C8E6D5", borderRadius:12, padding:"14px 16px" }}>
                 <div style={{ display:"flex", gap:10, alignItems:"flex-start" }}>
                   <span style={{ fontSize:20 }}>👑</span>

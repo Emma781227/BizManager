@@ -5,12 +5,12 @@ import MerchantNav from "./MerchantNav";
 
 const links = [
   { href: "/dashboard", label: "Tableau de bord", short: "DB" },
-  { href: "/products", label: "Produits", short: "PR" },
-  { href: "/orders", label: "Commandes", short: "CO" },
-  { href: "/customers", label: "Clients", short: "CL" },
-  { href: "/settings", label: "Boutique", short: "BT" },
-  { href: "/payments", label: "Paiements", short: "PA" },
-  { href: "/whatsapp", label: "WhatsApp", short: "WA" },
+  { href: "/shops",     label: "Mes boutiques",   short: "🏪" },
+  { href: "/products",  label: "Produits",         short: "PR" },
+  { href: "/orders",    label: "Commandes",        short: "CO" },
+  { href: "/customers", label: "Clients",          short: "CL" },
+  { href: "/settings",  label: "Paramètres",       short: "BT" },
+  { href: "/whatsapp",  label: "WhatsApp",         short: "WA" },
 ];
 
 export default async function DashboardLayout({

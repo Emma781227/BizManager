@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSessionFromRequest } from "@/lib/auth";
-import { shopSchema } from "@/lib/validators";
+import { shopSchema, createShopSchema } from "@/lib/validators";
+import { z } from "zod";
 import { resolveShop, checkShopQuota } from "@/lib/shop";
 
 // GET /api/shop → première boutique (rétrocompatibilité) ou toutes via ?all=1
@@ -140,6 +141,134 @@ export async function PUT(request: NextRequest) {
     }
 
     return NextResponse.json({ data: shop });
+  } catch (error) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Erreur serveur" }, { status: 500 });
+  }
+}
+
+// POST /api/shop → crée une nouvelle boutique
+export async function POST(request: NextRequest) {
+  try {
+    const session = await getSessionFromRequest(request);
+    if (!session) return NextResponse.json({ error: "Non authentifie" }, { status: 401 });
+
+    const quotaError = await checkShopQuota(session.userId);
+    if (quotaError) return NextResponse.json({ error: quotaError }, { status: 403 });
+
+    const contentType = request.headers.get("content-type") ?? "";
+    let body: Record<string, unknown> | null = null;
+
+    async function saveImage(file: File, maxMb: number) {
+      if (!file.type.startsWith("image/")) throw new Error("Le fichier doit être une image");
+      if (file.size > maxMb * 1024 * 1024) throw new Error(`Image trop lourde (max ${maxMb} Mo)`);
+      const base64 = Buffer.from(await file.arrayBuffer()).toString("base64");
+      return `data:${file.type};base64,${base64}`;
+    }
+
+    if (contentType.includes("multipart/form-data")) {
+      const fd = await request.formData();
+      body = {
+        name:              String(fd.get("name")              ?? ""),
+        slug:              String(fd.get("slug")              ?? ""),
+        category:          String(fd.get("category")          ?? ""),
+        whatsappNumber:    String(fd.get("whatsappNumber")    ?? ""),
+        notificationEmail: String(fd.get("notificationEmail") ?? "").trim(),
+        city:              String(fd.get("city")              ?? ""),
+        regionCountry:     String(fd.get("regionCountry")     ?? ""),
+        address:           String(fd.get("address")           ?? ""),
+        description:       String(fd.get("description")       ?? ""),
+        logoUrl:           String(fd.get("logoUrl")           ?? "").trim(),
+        coverUrl:          String(fd.get("coverUrl")          ?? "").trim(),
+        openingHours:      String(fd.get("openingHours")      ?? ""),
+        paymentMethods:    JSON.parse(String(fd.get("paymentMethods") ?? "[]")),
+        isPublished:       String(fd.get("isPublished") ?? "false") === "true",
+      };
+      const coverFile = fd.get("coverFile");
+      const logoFile  = fd.get("logoFile");
+      if (coverFile instanceof File && coverFile.size > 0) body.coverUrl = await saveImage(coverFile, 5);
+      if (logoFile  instanceof File && logoFile.size  > 0) body.logoUrl  = await saveImage(logoFile,  2);
+    } else {
+      body = await request.json().catch(() => null);
+    }
+
+    if (!body) return NextResponse.json({ error: "Payload invalide" }, { status: 400 });
+
+    const normalizedBody = {
+      ...body,
+      slug: String(body.slug ?? "").trim().toLowerCase()
+        .normalize("NFD").replace(/[̀-ͯ]/g, "")
+        .replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-")
+        .replace(/^-+|-+$/g, ""),
+    };
+
+    const result = createShopSchema.safeParse(normalizedBody);
+    if (!result.success) {
+      return NextResponse.json({ error: result.error.issues[0]?.message ?? "Payload invalide" }, { status: 400 });
+    }
+
+    const data = result.data;
+    const slug = data.slug;
+
+    const slugTaken = await prisma.shop.findUnique({ where: { slug }, select: { id: true } });
+    if (slugTaken) return NextResponse.json({ error: "Ce slug est déjà pris — choisissez-en un autre." }, { status: 409 });
+
+    const shop = await prisma.shop.create({
+      data: {
+        userId:            session.userId,
+        slug,
+        name:              data.name.trim(),
+        category:          data.category,
+        whatsappNumber:    data.whatsappNumber,
+        notificationEmail: data.notificationEmail?.trim() || session.email,
+        city:              data.city,
+        regionCountry:     data.regionCountry,
+        address:           data.address?.trim()     || null,
+        description:       data.description?.trim() || null,
+        logoUrl:           data.logoUrl?.trim()      || null,
+        coverUrl:          data.coverUrl?.trim()     || null,
+        openingHours:      data.openingHours?.trim() || null,
+        paymentMethods:    data.paymentMethods ?? [],
+        isPublished:       data.isPublished ?? false,
+      },
+    });
+
+    return NextResponse.json({ data: shop }, { status: 201 });
+  } catch (error) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Erreur serveur" }, { status: 500 });
+  }
+}
+
+// PATCH /api/shop?shopId={id} → mise à jour partielle (isPublished, name)
+export async function PATCH(request: NextRequest) {
+  try {
+    const session = await getSessionFromRequest(request);
+    if (!session) return NextResponse.json({ error: "Non authentifie" }, { status: 401 });
+
+    const shopId = request.nextUrl.searchParams.get("shopId");
+    if (!shopId) return NextResponse.json({ error: "shopId requis" }, { status: 400 });
+
+    const shop = await resolveShop(session.userId, shopId);
+    if (!shop) return NextResponse.json({ error: "Boutique introuvable" }, { status: 404 });
+
+    const body = await request.json().catch(() => null);
+    if (!body) return NextResponse.json({ error: "Payload invalide" }, { status: 400 });
+
+    const patchSchema = z.object({
+      isPublished: z.boolean().optional(),
+      name: z.string().min(2, "Nom trop court").max(100, "Nom trop long").optional(),
+    }).strict();
+
+    const result = patchSchema.safeParse(body);
+    if (!result.success) {
+      return NextResponse.json({ error: result.error.issues[0]?.message ?? "Payload invalide" }, { status: 400 });
+    }
+
+    const updated = await prisma.shop.update({
+      where: { id: shopId },
+      data: result.data,
+    });
+
+    return NextResponse.json({ data: updated });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Erreur serveur" }, { status: 500 });
   }

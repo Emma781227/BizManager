@@ -1,38 +1,67 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useActiveShop } from "@/hooks/useActiveShop";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
+type ApiOrderStatus = "pending"|"new"|"confirmed"|"in_progress"|"ready"|"delivered"|"cancelled";
+type ApiPaymentStatus = "unpaid"|"partial"|"paid"|"refunded";
+type ApiPaymentMethod = "cash"|"mobile_money"|"bank_transfer"|"cod";
+type ApiChannel = "whatsapp"|"online"|"manual";
+
+type ApiShop = {
+  id: string; name: string; slug: string; isPublished: boolean;
+  _count: { orders: number; products: number; customers: number };
+};
+
+type ApiOrder = {
+  id: string;
+  channel: ApiChannel;
+  status: ApiOrderStatus;
+  paymentStatus: ApiPaymentStatus;
+  paymentMethod: ApiPaymentMethod | null;
+  totalAmount: string;
+  createdAt: string;
+  customer: { id: string; fullName: string; phone: string };
+  items: { id: string; quantity: number; unitPrice: string; lineTotal: string; product: { id: string; name: string } }[];
+};
+
 type Order = {
   id: string; ref: string; client: string; phone: string;
-  channel: "whatsapp"|"online"|"manual";
-  amount: number; payment: "paid"|"pending"|"unpaid";
-  status: "waiting"|"confirmed"|"preparing"|"delivered"|"cancelled";
-  date: string; lastAction: string;
+  channel: ApiChannel; amount: number;
+  paymentStatus: ApiPaymentStatus; paymentMethod: ApiPaymentMethod | null;
+  status: ApiOrderStatus; date: string;
+  items: { name: string; qty: number; price: number }[];
 };
 
-// ─── Static data ──────────────────────────────────────────────────────────────
-const MOCK_SHOPS = [
-  { id:"s1", name:"Mon Aventure", isPublished:true,  city:"Dakar",   products:78, orders:156, clients:1242, color:"#0A8F45" },
-  { id:"s2", name:"Urban Style",  isPublished:true,  city:"Abidjan", products:62, orders:128, clients:573,  color:"#3B82F6" },
-  { id:"s3", name:"Beauty House", isPublished:false, city:"Douala",  products:16, orders:58,  clients:42,   color:"#F08A24" },
-];
+type ShopProduct = { id: string; name: string; unitPrice: number; stock: number };
 
-const MOCK_ORDERS: Order[] = [
-  { id:"o1", ref:"#ORD-2341", client:"Awa Diallo",      phone:"+221771234567", channel:"whatsapp", amount:32500,  payment:"paid",    status:"delivered",  date:"2026-05-09", lastAction:"Livraison confirmée" },
-  { id:"o2", ref:"#ORD-2340", client:"Ibrahim Ba",      phone:"+221776543210", channel:"online",   amount:18900,  payment:"pending", status:"preparing",  date:"2026-05-09", lastAction:"En préparation"     },
-  { id:"o3", ref:"#ORD-2339", client:"Fatou Sow",       phone:"+221789012345", channel:"whatsapp", amount:45000,  payment:"paid",    status:"confirmed",  date:"2026-05-08", lastAction:"Commande confirmée"  },
-  { id:"o4", ref:"#ORD-2338", client:"Moussa Ndiaye",   phone:"+221770987654", channel:"manual",   amount:8500,   payment:"unpaid",  status:"waiting",    date:"2026-05-08", lastAction:"Relance envoyée"     },
-  { id:"o5", ref:"#ORD-2337", client:"Aissatou Camara", phone:"+221778901234", channel:"online",   amount:12800,  payment:"paid",    status:"delivered",  date:"2026-05-07", lastAction:"Livraison confirmée" },
-  { id:"o6", ref:"#ORD-2336", client:"Cheikh Fall",     phone:"+221772345678", channel:"whatsapp", amount:28000,  payment:"pending", status:"waiting",    date:"2026-05-07", lastAction:"Message client"      },
-  { id:"o7", ref:"#ORD-2335", client:"Mariama Balde",   phone:"+221773456789", channel:"online",   amount:54000,  payment:"paid",    status:"cancelled",  date:"2026-05-06", lastAction:"Commande annulée"    },
-];
-
-const CHANNEL_LABELS: Record<Order["channel"], string> = { whatsapp:"WhatsApp", online:"En ligne", manual:"Manuel" };
-const CHANNEL_ICONS:  Record<Order["channel"], string> = { whatsapp:"💬", online:"🌐", manual:"✍️"  };
-const STATUS_LABELS:  Record<Order["status"],  string> = {
-  waiting:"En attente", confirmed:"Confirmée", preparing:"En préparation", delivered:"Livrée", cancelled:"Annulée"
+// ─── Constants ────────────────────────────────────────────────────────────────
+const STATUS_LABELS: Record<ApiOrderStatus, string> = {
+  pending:"En attente", new:"Nouvelle", confirmed:"Confirmée",
+  in_progress:"En traitement", ready:"Prête", delivered:"Livrée", cancelled:"Annulée",
 };
-const PAY_LABELS: Record<Order["payment"], string> = { paid:"Payée", pending:"En attente", unpaid:"Non payée" };
+const STATUS_BADGE: Record<ApiOrderStatus, string> = {
+  pending:"badge-gray", new:"badge-orange", confirmed:"badge-blue",
+  in_progress:"badge-blue", ready:"badge-biz", delivered:"badge-green", cancelled:"badge-red",
+};
+const PAY_LABELS: Record<ApiPaymentStatus, string> = {
+  unpaid:"Non payée", partial:"Partielle", paid:"Payée", refunded:"Remboursée",
+};
+const PAY_BADGE: Record<ApiPaymentStatus, string> = {
+  unpaid:"badge-red", partial:"badge-orange", paid:"badge-green", refunded:"badge-gray",
+};
+const CHANNEL_LABELS: Record<ApiChannel, string> = { whatsapp:"WhatsApp", online:"En ligne", manual:"Manuel" };
+const CHANNEL_ICONS:  Record<ApiChannel, string> = { whatsapp:"💬", online:"🌐", manual:"✍️" };
+const PAY_METHOD_LABELS: Record<ApiPaymentMethod, string> = {
+  cash:"Espèces", mobile_money:"Mobile Money", bank_transfer:"Virement", cod:"Contre remboursement",
+};
+const NEXT_STATUS: Partial<Record<ApiOrderStatus, ApiOrderStatus>> = {
+  pending:"new", new:"confirmed", confirmed:"in_progress", in_progress:"ready", ready:"delivered",
+};
+const NEXT_STATUS_LABEL: Partial<Record<ApiOrderStatus, string>> = {
+  pending:"Activer", new:"Confirmer", confirmed:"Traiter", in_progress:"Prête", ready:"Livrer",
+};
+const SHOP_COLORS = ["#0A8F45","#3B82F6","#F08A24","#8B5CF6","#EC4899"];
 
 // ─── CSS ──────────────────────────────────────────────────────────────────────
 const CSS = `
@@ -40,9 +69,6 @@ const CSS = `
 .or-ctx  { display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:16px; }
 .or-ctx-r { margin-left:auto; display:flex; gap:8px; }
 .or-kpi  { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:16px; }
-.or-info { display:flex; align-items:center; gap:24px; background:#fff; border:1px solid #E8ECEA;
-           border-radius:16px; padding:16px 22px; margin-bottom:18px;
-           box-shadow:0 2px 10px rgba(16,24,40,.04); flex-wrap:wrap; }
 .or-main { display:grid; grid-template-columns:1fr 360px; gap:18px; margin-bottom:18px; }
 .or-right { display:flex; flex-direction:column; gap:14px; }
 .or-card { background:#fff; border:1px solid #E8ECEA; border-radius:18px;
@@ -59,11 +85,11 @@ const CSS = `
 .or-table td { padding:10px 11px; border-bottom:1px solid #F4F6F5; color:#1F2A24; vertical-align:middle; }
 .or-table tr:hover td { background:#FAFBFA; }
 .or-table tr:last-child td { border-bottom:none; }
-.or-act-btns { display:flex; gap:3px; }
+.or-act-btns { display:flex; gap:3px; align-items:center; }
 .or-act-btn  { border:none; background:none; cursor:pointer; padding:4px 6px;
                border-radius:6px; font-size:13px; color:#667085; transition:background .15s; }
 .or-act-btn:hover { background:#F4F6F5; }
-.or-shop-row { display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid #F4F6F5; }
+.or-shop-row { display:flex; align-items:center; gap:10px; padding:8px 10px; border-bottom:1px solid #F4F6F5; }
 .or-shop-row:last-child { border-bottom:none; }
 .or-shop-av  { width:34px; height:34px; border-radius:10px; display:flex; align-items:center;
                justify-content:center; font-weight:700; font-size:12px; color:#fff; flex-shrink:0; }
@@ -77,8 +103,8 @@ const CSS = `
 .or-tips  { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
 .or-modal { position:fixed; inset:0; z-index:1000; display:flex; align-items:center;
             justify-content:center; background:rgba(0,0,0,.45); padding:20px; }
-.or-modal-box { background:#fff; border-radius:18px; padding:26px; width:100%; max-width:460px;
-                box-shadow:0 20px 60px rgba(0,0,0,.15); }
+.or-modal-box { background:#fff; border-radius:18px; padding:26px; width:100%; max-width:520px;
+                box-shadow:0 20px 60px rgba(0,0,0,.15); max-height:90vh; overflow-y:auto; }
 .badge { display:inline-flex; align-items:center; gap:4px; padding:3px 9px;
          border-radius:20px; font-size:11px; font-weight:600; white-space:nowrap; }
 .badge-green  { background:#DDF6E7; color:#0A8F45; }
@@ -95,30 +121,45 @@ const CSS = `
 .btn-primary   { height:34px; padding:0 14px; background:#0A8F45; color:#fff; border:none;
                  border-radius:10px; font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap; }
 .btn-primary:hover { background:#08763A; }
+.btn-primary:disabled { opacity:.5; cursor:not-allowed; }
 .btn-secondary { height:34px; padding:0 12px; background:#fff; color:#1F2A24;
                  border:1px solid #E8ECEA; border-radius:10px; font-size:12px; cursor:pointer; white-space:nowrap; }
 .btn-secondary:hover { background:#F8FAF9; }
-.quota-bar  { height:6px; border-radius:4px; background:#E8ECEA; overflow:hidden; margin-top:4px; }
-.quota-fill { height:100%; border-radius:4px; background:#0A8F45; }
 @media(max-width:1100px){ .or-kpi{grid-template-columns:repeat(2,1fr);} .or-main{grid-template-columns:1fr;} }
 @media(max-width:700px){ .or-kpi{grid-template-columns:1fr 1fr;} .or-wrap{padding:14px 12px;}
   .or-ctx{flex-direction:column;align-items:flex-start;} .or-ctx-r{margin-left:0;}
   .or-bottom{grid-template-columns:1fr;} .or-tips{grid-template-columns:1fr;} }
 `;
 
-// ─── Badges ───────────────────────────────────────────────────────────────────
-function StatusBadge({ s }: { s: Order["status"] }) {
-  const map: Record<Order["status"], string> = {
-    waiting:"badge-orange", confirmed:"badge-blue", preparing:"badge-blue",
-    delivered:"badge-green", cancelled:"badge-red",
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function apiToDisplay(o: ApiOrder): Order {
+  return {
+    id: o.id,
+    ref: "#" + o.id.slice(-6).toUpperCase(),
+    client: o.customer?.fullName ?? "—",
+    phone: o.customer?.phone ?? "",
+    channel: o.channel,
+    amount: parseFloat(String(o.totalAmount ?? 0)),
+    paymentStatus: o.paymentStatus ?? "unpaid",
+    paymentMethod: o.paymentMethod ?? null,
+    status: o.status,
+    date: o.createdAt ? o.createdAt.slice(0, 10) : "",
+    items: (o.items ?? []).map(i => ({
+      name: i.product?.name ?? "—",
+      qty: i.quantity,
+      price: parseFloat(String(i.lineTotal ?? 0)),
+    })),
   };
-  return <span className={`badge ${map[s]}`}>{STATUS_LABELS[s]}</span>;
 }
-function PayBadge({ p }: { p: Order["payment"] }) {
-  const map: Record<Order["payment"], string> = { paid:"badge-green", pending:"badge-orange", unpaid:"badge-red" };
-  return <span className={`badge ${map[p]}`}>{PAY_LABELS[p]}</span>;
+
+// ─── Badges ───────────────────────────────────────────────────────────────────
+function StatusBadge({ s }: { s: ApiOrderStatus }) {
+  return <span className={`badge ${STATUS_BADGE[s]}`}>{STATUS_LABELS[s]}</span>;
 }
-function ChannelBadge({ c }: { c: Order["channel"] }) {
+function PayBadge({ p }: { p: ApiPaymentStatus }) {
+  return <span className={`badge ${PAY_BADGE[p]}`}>{PAY_LABELS[p]}</span>;
+}
+function ChannelBadge({ c }: { c: ApiChannel }) {
   return (
     <span style={{ fontSize:12, color:"#667085", display:"flex", alignItems:"center", gap:4 }}>
       {CHANNEL_ICONS[c]} {CHANNEL_LABELS[c]}
@@ -126,33 +167,40 @@ function ChannelBadge({ c }: { c: Order["channel"] }) {
   );
 }
 
-// ─── Donut ────────────────────────────────────────────────────────────────────
-const DONUT_DATA = [
-  { label:"WhatsApp",   pct:52, color:"#0A8F45" },
-  { label:"En ligne",   pct:34, color:"#3B82F6" },
-  { label:"Manuel",     pct:14, color:"#98A2B3" },
-];
-function DonutChart() {
+// ─── Donut Chart ──────────────────────────────────────────────────────────────
+function DonutChart({ orders }: { orders: Order[] }) {
+  const total = orders.length || 1;
+  const counts = { whatsapp: 0, online: 0, manual: 0 };
+  orders.forEach(o => counts[o.channel]++);
+  const data = [
+    { label:"WhatsApp", pct: Math.round(counts.whatsapp / total * 100), color:"#0A8F45" },
+    { label:"En ligne",  pct: Math.round(counts.online  / total * 100), color:"#3B82F6" },
+    { label:"Manuel",   pct: Math.round(counts.manual  / total * 100), color:"#98A2B3" },
+  ];
   const r = 38; const cx = 46; const cy = 46; const circ = 2 * Math.PI * r;
   let off = 0;
-  const slices = DONUT_DATA.map(d => {
-    const dash = (d.pct / 100) * circ; const s = { dash, gap: circ - dash, offset: off };
-    off += dash; return s;
+  const slices = data.map(d => {
+    const dash = (d.pct / 100) * circ;
+    const s = { dash, gap: circ - dash, offset: off };
+    off += dash;
+    return s;
   });
   return (
     <div className="or-donut-wrap">
       <svg width="92" height="92" viewBox="0 0 92 92" style={{ flexShrink:0 }}>
-        {DONUT_DATA.map((d, i) => (
+        {orders.length === 0 ? (
+          <circle cx={cx} cy={cy} r={r} fill="none" stroke="#E8ECEA" strokeWidth="12" />
+        ) : data.map((d, i) => (
           <circle key={d.label} cx={cx} cy={cy} r={r} fill="none" stroke={d.color} strokeWidth="12"
             strokeDasharray={`${slices[i].dash} ${slices[i].gap}`}
             strokeDashoffset={-slices[i].offset}
             style={{ transform:"rotate(-90deg)", transformOrigin:"46px 46px" }} />
         ))}
-        <text x="46" y="43" textAnchor="middle" fontSize="12" fill="#1F2A24" fontWeight="700">156</text>
+        <text x="46" y="43" textAnchor="middle" fontSize="12" fill="#1F2A24" fontWeight="700">{orders.length}</text>
         <text x="46" y="56" textAnchor="middle" fontSize="9" fill="#98A2B3">cmd</text>
       </svg>
       <div className="or-donut-legend">
-        {DONUT_DATA.map(d => (
+        {data.map(d => (
           <div key={d.label} style={{ display:"flex", alignItems:"center", gap:7, fontSize:12, color:"#1F2A24" }}>
             <span className="or-dot" style={{ background:d.color }} />
             <span style={{ flex:1 }}>{d.label}</span>
@@ -164,18 +212,127 @@ function DonutChart() {
   );
 }
 
-// ─── New order modal ──────────────────────────────────────────────────────────
-function NewOrderModal({ shopName, onClose }: { shopName: string; onClose: () => void }) {
-  const [client, setClient] = useState("");
-  const [amount, setAmount] = useState("");
-  const [channel, setChannel] = useState<Order["channel"]>("manual");
-  const [saving, setSaving] = useState(false);
-  async function save() {
-    if (!client.trim() || !amount.trim()) return;
-    setSaving(true);
-    await new Promise(r => setTimeout(r, 800));
-    setSaving(false); onClose();
+// ─── New Order Modal ──────────────────────────────────────────────────────────
+function NewOrderModal({
+  shopId, shopName, onClose, onCreated,
+}: {
+  shopId: string; shopName: string; onClose: () => void; onCreated: () => void;
+}) {
+  const [phone, setPhone]               = useState("");
+  const [customerName, setCustomerName] = useState("");
+  const [foundCustId, setFoundCustId]   = useState<string | null>(null);
+  const [lookupState, setLookupState]   = useState<"idle"|"searching"|"found"|"new">("idle");
+
+  const [shopProducts, setShopProducts]     = useState<ShopProduct[]>([]);
+  const [selectedProd, setSelectedProd]     = useState("");
+  const [selectedQty, setSelectedQty]       = useState(1);
+  const [items, setItems]                   = useState<{productId:string;name:string;unitPrice:number;qty:number}[]>([]);
+
+  const [payMethod, setPayMethod] = useState<ApiPaymentMethod>("cash");
+  const [channel, setChannel]     = useState<"manual"|"whatsapp">("manual");
+  const [saving, setSaving]       = useState(false);
+  const [errorMsg, setErrorMsg]   = useState("");
+
+  useEffect(() => {
+    fetch(`/api/products?shopId=${shopId}`)
+      .then(r => r.json())
+      .then(data => {
+        const list = Array.isArray(data.data) ? data.data : [];
+        setShopProducts(
+          list
+            .filter((p: { isActive?: boolean; stock?: number }) => p.isActive !== false && Number(p.stock ?? 0) > 0)
+            .map((p: { id: string; name: string; unitPrice: unknown; stock: unknown }) => ({
+              id: p.id, name: p.name,
+              unitPrice: parseFloat(String(p.unitPrice ?? 0)),
+              stock: Number(p.stock ?? 0),
+            }))
+        );
+      })
+      .catch(() => {});
+  }, [shopId]);
+
+  async function lookupCustomer() {
+    if (phone.trim().length < 8) return;
+    setLookupState("searching");
+    try {
+      const res  = await fetch(`/api/customers?shopId=${shopId}&q=${encodeURIComponent(phone.trim())}`);
+      const data = await res.json();
+      const list = Array.isArray(data.data) ? data.data : [];
+      const match = list.find((c: { phone: string; id: string; fullName: string }) =>
+        c.phone === phone.trim() || c.phone.replace(/\s/g,"") === phone.trim().replace(/\s/g,"")
+      );
+      if (match) {
+        setFoundCustId(match.id);
+        setCustomerName(match.fullName);
+        setLookupState("found");
+      } else {
+        setFoundCustId(null);
+        setLookupState("new");
+      }
+    } catch {
+      setFoundCustId(null);
+      setLookupState("new");
+    }
   }
+
+  function addItem() {
+    const prod = shopProducts.find(p => p.id === selectedProd);
+    if (!prod || selectedQty < 1) return;
+    const idx = items.findIndex(i => i.productId === prod.id);
+    if (idx >= 0) {
+      const next = [...items];
+      next[idx] = { ...next[idx], qty: next[idx].qty + selectedQty };
+      setItems(next);
+    } else {
+      setItems([...items, { productId: prod.id, name: prod.name, unitPrice: prod.unitPrice, qty: selectedQty }]);
+    }
+    setSelectedProd(""); setSelectedQty(1);
+  }
+
+  const orderTotal = items.reduce((s, i) => s + i.unitPrice * i.qty, 0);
+  const canSubmit  = phone.trim().length >= 8 && customerName.trim().length >= 2 && items.length > 0 && !saving;
+
+  async function submit() {
+    if (!canSubmit) return;
+    setSaving(true); setErrorMsg("");
+    try {
+      let customerId = foundCustId;
+      if (!customerId) {
+        const cRes = await fetch(`/api/customers?shopId=${shopId}`, {
+          method: "POST",
+          headers: { "Content-Type":"application/json" },
+          body: JSON.stringify({ fullName: customerName.trim(), phone: phone.trim() }),
+        });
+        if (!cRes.ok) {
+          const cd = await cRes.json().catch(() => ({}));
+          throw new Error((cd as { error?: string }).error ?? "Erreur création client");
+        }
+        const cd = await cRes.json();
+        customerId = (cd as { data?: { id?: string } }).data?.id ?? null;
+        if (!customerId) throw new Error("Client non créé");
+      }
+      const oRes = await fetch(`/api/orders?shopId=${shopId}`, {
+        method: "POST",
+        headers: { "Content-Type":"application/json" },
+        body: JSON.stringify({
+          customerId,
+          items: items.map(i => ({ productId: i.productId, quantity: i.qty })),
+          paymentMethod: payMethod,
+          channel,
+        }),
+      });
+      if (!oRes.ok) {
+        const od = await oRes.json().catch(() => ({}));
+        throw new Error((od as { error?: string }).error ?? "Erreur création commande");
+      }
+      onCreated();
+    } catch (e) {
+      setErrorMsg((e as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <div className="or-modal" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="or-modal-box">
@@ -186,26 +343,93 @@ function NewOrderModal({ shopName, onClose }: { shopName: string; onClose: () =>
         <div style={{ padding:"8px 12px", background:"#EAF7EF", borderRadius:8, fontSize:12, color:"#08763A", marginBottom:16 }}>
           Boutique : <strong>{shopName}</strong>
         </div>
-        <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+        <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+
+          {/* Customer phone */}
           <div>
-            <label style={{ fontSize:12, fontWeight:600, color:"#1F2A24", display:"block", marginBottom:5 }}>Client *</label>
-            <input className="inp" style={{ width:"100%", boxSizing:"border-box" }} placeholder="Nom du client" value={client} onChange={e => setClient(e.target.value)} />
+            <label style={{ fontSize:12, fontWeight:600, color:"#1F2A24", display:"block", marginBottom:5 }}>Téléphone client *</label>
+            <div style={{ display:"flex", gap:8 }}>
+              <input className="inp" style={{ flex:1 }} placeholder="+221771234567" value={phone}
+                onChange={e => { setPhone(e.target.value); setLookupState("idle"); setFoundCustId(null); }}
+                onBlur={lookupCustomer} />
+              <button className="btn-secondary" onClick={lookupCustomer} disabled={phone.trim().length < 8}>
+                {lookupState === "searching" ? "…" : "Vérifier"}
+              </button>
+            </div>
+            {lookupState === "found" && <div style={{ fontSize:11, color:"#0A8F45", marginTop:3 }}>✓ Client existant trouvé</div>}
+            {lookupState === "new"   && <div style={{ fontSize:11, color:"#F08A24", marginTop:3 }}>Nouveau client — sera créé automatiquement</div>}
           </div>
+
+          {/* Customer name */}
           <div>
-            <label style={{ fontSize:12, fontWeight:600, color:"#1F2A24", display:"block", marginBottom:5 }}>Montant (FCFA) *</label>
-            <input className="inp" style={{ width:"100%", boxSizing:"border-box" }} type="number" placeholder="Ex : 25000" value={amount} onChange={e => setAmount(e.target.value)} />
+            <label style={{ fontSize:12, fontWeight:600, color:"#1F2A24", display:"block", marginBottom:5 }}>Nom du client *</label>
+            <input className="inp" style={{ width:"100%", boxSizing:"border-box" }} placeholder="Prénom Nom"
+              value={customerName} onChange={e => setCustomerName(e.target.value)} />
           </div>
+
+          {/* Items */}
           <div>
-            <label style={{ fontSize:12, fontWeight:600, color:"#1F2A24", display:"block", marginBottom:5 }}>Canal</label>
-            <select className="sel" style={{ width:"100%", boxSizing:"border-box" }} value={channel} onChange={e => setChannel(e.target.value as Order["channel"])}>
-              <option value="manual">Manuel</option>
-              <option value="whatsapp">WhatsApp</option>
-              <option value="online">Boutique en ligne</option>
-            </select>
+            <label style={{ fontSize:12, fontWeight:600, color:"#1F2A24", display:"block", marginBottom:5 }}>Produits *</label>
+            <div style={{ display:"flex", gap:8, marginBottom:8 }}>
+              <select className="sel" style={{ flex:1 }} value={selectedProd} onChange={e => setSelectedProd(e.target.value)}>
+                <option value="">Choisir un produit…</option>
+                {shopProducts.map(p => (
+                  <option key={p.id} value={p.id}>{p.name} — {p.unitPrice.toLocaleString("fr-FR")} FCFA (stock : {p.stock})</option>
+                ))}
+              </select>
+              <input type="number" className="inp" style={{ width:64 }} min={1} value={selectedQty}
+                onChange={e => setSelectedQty(Math.max(1, parseInt(e.target.value) || 1))} />
+              <button className="btn-primary" onClick={addItem} disabled={!selectedProd}>Ajouter</button>
+            </div>
+            {items.length > 0 && (
+              <div style={{ border:"1px solid #E8ECEA", borderRadius:10, overflow:"hidden" }}>
+                {items.map(item => (
+                  <div key={item.productId} style={{ display:"flex", alignItems:"center", gap:8,
+                    padding:"8px 12px", borderBottom:"1px solid #F4F6F5", fontSize:13 }}>
+                    <span style={{ flex:1, fontWeight:500, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{item.name}</span>
+                    <span style={{ color:"#667085" }}>×{item.qty}</span>
+                    <span style={{ fontWeight:700, minWidth:90, textAlign:"right" }}>
+                      {(item.unitPrice * item.qty).toLocaleString("fr-FR")} FCFA
+                    </span>
+                    <button onClick={() => setItems(items.filter(i => i.productId !== item.productId))}
+                      style={{ border:"none", background:"none", color:"#EF4444", cursor:"pointer", fontSize:18, lineHeight:1, padding:0 }}>×</button>
+                  </div>
+                ))}
+                <div style={{ padding:"8px 12px", background:"#F8FAF9", fontWeight:700, fontSize:13, textAlign:"right" }}>
+                  Total : {orderTotal.toLocaleString("fr-FR")} FCFA
+                </div>
+              </div>
+            )}
           </div>
-          <div style={{ display:"flex", gap:10, marginTop:4 }}>
+
+          {/* Payment & Channel */}
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+            <div>
+              <label style={{ fontSize:12, fontWeight:600, color:"#1F2A24", display:"block", marginBottom:5 }}>Mode de paiement</label>
+              <select className="sel" style={{ width:"100%", boxSizing:"border-box" }} value={payMethod}
+                onChange={e => setPayMethod(e.target.value as ApiPaymentMethod)}>
+                {(Object.entries(PAY_METHOD_LABELS) as [ApiPaymentMethod, string][]).map(([v, l]) => (
+                  <option key={v} value={v}>{l}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label style={{ fontSize:12, fontWeight:600, color:"#1F2A24", display:"block", marginBottom:5 }}>Canal</label>
+              <select className="sel" style={{ width:"100%", boxSizing:"border-box" }} value={channel}
+                onChange={e => setChannel(e.target.value as "manual"|"whatsapp")}>
+                <option value="manual">Manuel</option>
+                <option value="whatsapp">WhatsApp</option>
+              </select>
+            </div>
+          </div>
+
+          {errorMsg && (
+            <div style={{ padding:"8px 12px", background:"#FDE8E8", borderRadius:8, fontSize:12, color:"#EF4444" }}>{errorMsg}</div>
+          )}
+
+          <div style={{ display:"flex", gap:10 }}>
             <button className="btn-secondary" style={{ flex:1, height:38 }} onClick={onClose}>Annuler</button>
-            <button className="btn-primary" style={{ flex:1, height:38 }} onClick={save} disabled={saving || !client.trim() || !amount.trim()}>
+            <button className="btn-primary" style={{ flex:1, height:38 }} onClick={submit} disabled={!canSubmit}>
               {saving ? "Création…" : "Créer la commande"}
             </button>
           </div>
@@ -217,87 +441,187 @@ function NewOrderModal({ shopName, onClose }: { shopName: string; onClose: () =>
 
 // ─── Main component ────────────────────────────────────────────────────────────
 export default function OrdersPage() {
-  const [activeId, setActiveId]   = useState("s1");
-  const [search, setSearch]       = useState("");
-  const [statusF, setStatusF]     = useState("all");
-  const [payF, setPayF]           = useState("all");
-  const [channelF, setChannelF]   = useState("all");
-  const [dateF, setDateF]         = useState("all");
+  const [activeShopId, setActiveShopId] = useActiveShop("");
+  const [shops, setShops]               = useState<ApiShop[]>([]);
+  const [orders, setOrders]             = useState<Order[]>([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
+  const [search, setSearch]             = useState("");
+  const [statusF, setStatusF]           = useState("all");
+  const [payF, setPayF]                 = useState("all");
+  const [channelF, setChannelF]         = useState("all");
+  const [dateF, setDateF]               = useState("all");
   const [newOrderOpen, setNewOrderOpen] = useState(false);
-  const [loading, setLoading]     = useState(false);
+  const [newBadge, setNewBadge]         = useState(0);
+  const knownIds = useRef<Set<string>>(new Set());
 
-  const activeShop = MOCK_SHOPS.find(s => s.id === activeId) ?? MOCK_SHOPS[0];
+  const activeShop = shops.find(s => s.id === activeShopId) ?? null;
 
+  // Load shops once
   useEffect(() => {
-    fetch("/api/orders").then(() => {}).catch(() => {});
-  }, []);
+    fetch("/api/shop?all=1")
+      .then(r => r.json())
+      .then(data => {
+        const list: ApiShop[] = Array.isArray(data.data) ? data.data : (Array.isArray(data) ? data : []);
+        setShops(list);
+        const stored = typeof window !== "undefined" ? (localStorage.getItem("biz_active_shop_id") ?? "") : "";
+        if (list.length > 0 && !list.find(s => s.id === stored)) {
+          setActiveShopId(list[0].id);
+        }
+      })
+      .catch(() => {});
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  function refresh() {
-    setLoading(true);
-    setTimeout(() => setLoading(false), 800);
+  // Load orders when active shop changes
+  useEffect(() => {
+    if (!activeShopId) return;
+    fetchOrders(activeShopId);
+  }, [activeShopId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Poll every 30s for new orders
+  useEffect(() => {
+    if (!activeShopId) return;
+    const iv = setInterval(async () => {
+      try {
+        const res  = await fetch(`/api/orders?shopId=${activeShopId}`);
+        const data = await res.json();
+        if (!Array.isArray(data.data)) return;
+        const fetched = (data.data as ApiOrder[]).map(apiToDisplay);
+        const brandNew = fetched.filter(o => !knownIds.current.has(o.id) && o.status === "new");
+        if (brandNew.length > 0) {
+          setOrders(fetched);
+          fetched.forEach(o => knownIds.current.add(o.id));
+          setNewBadge(c => c + brandNew.length);
+        }
+      } catch {}
+    }, 30_000);
+    return () => clearInterval(iv);
+  }, [activeShopId]);
+
+  async function fetchOrders(shopId: string) {
+    if (!shopId) return;
+    setOrdersLoading(true);
+    try {
+      const res  = await fetch(`/api/orders?shopId=${shopId}`);
+      const data = await res.json();
+      if (Array.isArray(data.data)) {
+        const mapped = (data.data as ApiOrder[]).map(apiToDisplay);
+        setOrders(mapped);
+        knownIds.current = new Set(mapped.map(o => o.id));
+      }
+    } catch {}
+    setOrdersLoading(false);
+  }
+
+  async function advanceStatus(orderId: string, nextStatus: ApiOrderStatus) {
+    try {
+      const res  = await fetch(`/api/orders/${orderId}`, {
+        method: "PATCH",
+        headers: { "Content-Type":"application/json" },
+        body: JSON.stringify({ status: nextStatus }),
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.data) {
+        setOrders(prev => prev.map(o => o.id === orderId ? apiToDisplay(data.data as ApiOrder) : o));
+      }
+    } catch {}
   }
 
   const filtered = useMemo(() => {
-    let list = [...MOCK_ORDERS];
-    if (search)           list = list.filter(o => o.ref.toLowerCase().includes(search.toLowerCase()) || o.client.toLowerCase().includes(search.toLowerCase()));
-    if (statusF  !== "all") list = list.filter(o => o.status  === statusF);
-    if (payF     !== "all") list = list.filter(o => o.payment === payF);
-    if (channelF !== "all") list = list.filter(o => o.channel === channelF);
-    if (dateF === "today") list = list.filter(o => o.date === "2026-05-09");
-    if (dateF === "7d")    list = list.filter(o => o.date >= "2026-05-03");
+    const today   = new Date().toISOString().slice(0, 10);
+    const d7ago   = new Date(Date.now() - 7  * 86400_000).toISOString().slice(0, 10);
+    const d30ago  = new Date(Date.now() - 30 * 86400_000).toISOString().slice(0, 10);
+    let list = [...orders];
+    if (search) {
+      const q = search.toLowerCase();
+      list = list.filter(o =>
+        o.ref.toLowerCase().includes(q) || o.client.toLowerCase().includes(q) || o.phone.includes(q)
+      );
+    }
+    if (statusF  !== "all") list = list.filter(o => o.status        === statusF);
+    if (payF     !== "all") list = list.filter(o => o.paymentStatus === payF);
+    if (channelF !== "all") list = list.filter(o => o.channel       === channelF);
+    if (dateF === "today") list = list.filter(o => o.date === today);
+    if (dateF === "7d")    list = list.filter(o => o.date >= d7ago);
+    if (dateF === "30d")   list = list.filter(o => o.date >= d30ago);
     return list;
-  }, [search, statusF, payF, channelF, dateF]);
+  }, [orders, search, statusF, payF, channelF, dateF]);
 
-  const shopColors = ["#0A8F45","#3B82F6","#F08A24"];
+  // KPIs
+  const pendingCount   = orders.filter(o => o.status === "new" || o.status === "pending").length;
+  const deliveredCount = orders.filter(o => o.status === "delivered").length;
+  const revenue        = orders.filter(o => o.status !== "cancelled").reduce((s, o) => s + o.amount, 0);
+  const unpaidCount    = orders.filter(o => o.paymentStatus === "unpaid" && o.status !== "cancelled").length;
+  const waPendingCount = orders.filter(o => o.channel === "whatsapp" && (o.status === "new" || o.status === "pending")).length;
 
   return (
     <>
       <style>{CSS}</style>
-      {newOrderOpen && <NewOrderModal shopName={activeShop.name} onClose={() => setNewOrderOpen(false)} />}
+      {newOrderOpen && activeShopId && (
+        <NewOrderModal
+          shopId={activeShopId}
+          shopName={activeShop?.name ?? ""}
+          onClose={() => setNewOrderOpen(false)}
+          onCreated={() => { setNewOrderOpen(false); fetchOrders(activeShopId); }}
+        />
+      )}
 
       <div className="or-wrap">
+
+        {/* New orders banner */}
+        {newBadge > 0 && (
+          <div style={{ background:"#EAF7EF", border:"1px solid #0A8F45", borderRadius:10,
+            padding:"10px 16px", marginBottom:16, display:"flex", alignItems:"center", gap:10, fontSize:13 }}>
+            <span style={{ fontSize:18 }}>🔔</span>
+            <span style={{ fontWeight:700, color:"#0A8F45" }}>
+              {newBadge} nouvelle{newBadge > 1 ? "s" : ""} commande{newBadge > 1 ? "s" : ""} reçue{newBadge > 1 ? "s" : ""} !
+            </span>
+            <button className="btn-primary" style={{ marginLeft:"auto", height:30, fontSize:11 }}
+              onClick={() => { setNewBadge(0); fetchOrders(activeShopId); }}>
+              Voir maintenant
+            </button>
+            <button style={{ border:"none", background:"none", color:"#98A2B3", cursor:"pointer", fontSize:20 }}
+              onClick={() => setNewBadge(0)}>×</button>
+          </div>
+        )}
 
         {/* Context bar */}
         <div className="or-ctx">
           <div style={{ display:"flex", alignItems:"center", gap:8 }}>
             <span style={{ fontSize:12, color:"#667085", fontWeight:500 }}>Boutique active</span>
-            <select className="sel" style={{ fontWeight:700, color:"#0A8F45", borderColor:"#0A8F45", minWidth:155 }}
-              value={activeId} onChange={e => setActiveId(e.target.value)}>
-              {MOCK_SHOPS.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+            <select className="sel"
+              style={{ fontWeight:700, color:"#0A8F45", borderColor:"#0A8F45", minWidth:155 }}
+              value={activeShopId}
+              onChange={e => setActiveShopId(e.target.value)}>
+              {shops.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
           </div>
-          <div style={{ display:"flex", alignItems:"center", gap:10, flexWrap:"wrap" }}>
-            <span className="badge badge-biz" style={{ padding:"5px 12px", fontSize:12 }}>Plan Business</span>
-            <div>
-              <div style={{ fontSize:12, color:"#1F2A24", fontWeight:500 }}>2 / 3 boutiques utilisées</div>
-              <div style={{ fontSize:11, color:"#98A2B3" }}>156 commandes ce mois-ci</div>
-            </div>
+          <div style={{ fontSize:12, color:"#1F2A24" }}>
+            <span style={{ fontWeight:500 }}>{shops.length} boutique{shops.length > 1 ? "s" : ""}</span>
+            <span style={{ color:"#98A2B3" }}> · {orders.length} commande{orders.length !== 1 ? "s" : ""}</span>
           </div>
           <div className="or-ctx-r">
-            <button className="btn-secondary">⬇ Exporter</button>
-            <button className="btn-primary">+ Créer une boutique</button>
+            <button className="btn-secondary" onClick={() => fetchOrders(activeShopId)} disabled={ordersLoading}>
+              {ordersLoading ? "…" : "🔄 Actualiser"}
+            </button>
           </div>
         </div>
 
         {/* Title */}
         <div style={{ marginBottom:16 }}>
           <h1 style={{ fontSize:22, fontWeight:700, color:"#1F2A24", margin:"0 0 4px" }}>Commandes</h1>
-          <p style={{ margin:"0 0 2px", color:"#667085", fontSize:14 }}>
-            Gérez les commandes de votre boutique active et suivez vos ventes par canal.
-          </p>
-          <p style={{ margin:0, color:"#98A2B3", fontSize:12 }}>
-            Les commandes affichées ici appartiennent uniquement à la boutique&nbsp;
-            <strong style={{ color:"#0A8F45" }}>{activeShop.name}</strong>.
+          <p style={{ margin:0, color:"#667085", fontSize:14 }}>
+            Commandes de <strong style={{ color:"#0A8F45" }}>{activeShop?.name ?? "votre boutique"}</strong> — gérez et faites avancer chaque commande.
           </p>
         </div>
 
-        {/* KPI row */}
+        {/* KPIs */}
         <div className="or-kpi">
           {[
-            { icon:"🛒", l:"Total commandes",     v:String(activeShop.orders),  t:"+12,4%", tc:"#0A8F45" },
-            { icon:"⏳", l:"En attente",           v:"24",                        t:"+9,1%",  tc:"#F08A24" },
-            { icon:"✅", l:"Livrées",              v:"98",                        t:"+15,3%", tc:"#0A8F45" },
-            { icon:"💰", l:"Chiffre d'affaires",  v:"2 458 760 FCFA",            t:"+18,7%", tc:"#0A8F45" },
+            { icon:"🛒", l:"Total commandes",       v: String(orders.length),                              tc:"#0A8F45" },
+            { icon:"⏳", l:"Nouvelles / En attente", v: String(pendingCount),                               tc:"#F08A24" },
+            { icon:"✅", l:"Livrées",                v: String(deliveredCount),                             tc:"#0A8F45" },
+            { icon:"💰", l:"Chiffre d'affaires",     v: revenue.toLocaleString("fr-FR") + " FCFA",         tc:"#0A8F45" },
           ].map(k => (
             <div key={k.l} style={{ background:"#fff", border:"1px solid #E8ECEA", borderRadius:16,
               padding:"16px 18px", boxShadow:"0 2px 10px rgba(16,24,40,.04)" }}>
@@ -305,85 +629,52 @@ export default function OrdersPage() {
                 <span style={{ fontSize:13, color:"#667085", fontWeight:500 }}>{k.l}</span>
                 <span style={{ fontSize:18 }}>{k.icon}</span>
               </div>
-              <div style={{ fontSize:24, fontWeight:800, color:"#1F2A24", letterSpacing:"-0.5px" }}>{k.v}</div>
-              <div style={{ display:"flex", alignItems:"center", gap:6, marginTop:4 }}>
-                <span style={{ fontSize:11, fontWeight:600, color:k.tc }}>{k.t}</span>
-                <span style={{ fontSize:11, color:"#98A2B3" }}>vs mois dernier</span>
-              </div>
-              <div style={{ fontSize:10, color:"#98A2B3", marginTop:4 }}>Boutique : {activeShop.name}</div>
+              <div style={{ fontSize:22, fontWeight:800, color:"#1F2A24", letterSpacing:"-0.5px" }}>{k.v}</div>
+              {activeShop && <div style={{ fontSize:10, color:"#98A2B3", marginTop:4 }}>{activeShop.name}</div>}
             </div>
           ))}
-        </div>
-
-        {/* Info card */}
-        <div className="or-info">
-          <div style={{ fontSize:26 }}>🏪</div>
-          <div style={{ flex:1, minWidth:200 }}>
-            <div style={{ fontWeight:700, color:"#1F2A24", fontSize:13 }}>
-              Toutes les commandes affichées ici appartiennent à la boutique active&nbsp;
-              <span style={{ color:"#0A8F45" }}>{activeShop.name}</span>.
-            </div>
-            <div style={{ color:"#667085", fontSize:12, marginTop:2 }}>
-              Les commandes ne sont pas directement liées au marchand, mais à une boutique spécifique.
-            </div>
-          </div>
-          <div style={{ borderLeft:"1px solid #E8ECEA", paddingLeft:20, minWidth:200 }}>
-            <div style={{ display:"flex", alignItems:"center", gap:8, fontSize:12 }}>
-              <span style={{ background:"#EAF7EF", color:"#0A8F45", padding:"3px 8px", borderRadius:8, fontWeight:600 }}>Marie A.</span>
-              <span style={{ color:"#98A2B3", fontSize:14 }}>→</span>
-              <span style={{ fontWeight:600, color:"#1F2A24" }}>{activeShop.name}</span>
-              <span style={{ color:"#98A2B3", fontSize:14 }}>→</span>
-              <span style={{ color:"#667085" }}>{activeShop.orders} commandes</span>
-            </div>
-            <div style={{ fontSize:10, color:"#98A2B3", marginTop:5 }}>Marchand → Boutique → Commandes</div>
-          </div>
-          <div style={{ minWidth:140 }}>
-            <div style={{ fontSize:12, color:"#667085", fontWeight:500 }}>Quota boutiques</div>
-            <div style={{ fontWeight:700, color:"#1F2A24", margin:"3px 0 2px" }}>2 / 3</div>
-            <div className="quota-bar" style={{ width:120 }}><div className="quota-fill" style={{ width:"66%" }} /></div>
-          </div>
         </div>
 
         {/* Main 2-col */}
         <div className="or-main">
 
-          {/* Left: orders table */}
+          {/* Orders table */}
           <div className="or-tcard">
-            {/* card header */}
             <div className="or-tbar">
               <div>
                 <div style={{ fontWeight:700, color:"#1F2A24", fontSize:15 }}>
-                  Gestion des commandes — {activeShop.name}
-                  <span className="badge badge-biz" style={{ marginLeft:10, fontSize:10 }}>Canal multi-source</span>
+                  Commandes — {activeShop?.name ?? "…"}
+                  {newBadge > 0 && (
+                    <span style={{ marginLeft:8, background:"#EF4444", color:"#fff",
+                      borderRadius:10, padding:"2px 7px", fontSize:11, fontWeight:700 }}>{newBadge}</span>
+                  )}
                 </div>
-                <div style={{ fontSize:11, color:"#98A2B3", marginTop:2 }}>
-                  Suivez toutes les commandes de cette boutique, quel que soit le canal de vente.
-                </div>
+                <div style={{ fontSize:11, color:"#98A2B3", marginTop:2 }}>Tous les canaux (WhatsApp, En ligne, Manuel)</div>
               </div>
               <div className="or-tacts">
                 <button className="btn-primary" onClick={() => setNewOrderOpen(true)}>+ Nouvelle commande</button>
-                <button className="btn-secondary">↩ Relancer</button>
-                <button className="btn-secondary" onClick={refresh}>{loading ? "…" : "🔄"} Actualiser</button>
+                <button className="btn-secondary" onClick={() => fetchOrders(activeShopId)}>{ordersLoading ? "…" : "🔄"}</button>
               </div>
             </div>
 
-            {/* filters */}
+            {/* Filters */}
             <div className="or-ftrow">
-              <input className="inp" placeholder="🔍 Commande, client…" style={{ flex:1, minWidth:130 }}
-                value={search} onChange={e => setSearch(e.target.value)} />
+              <input className="inp" placeholder="🔍 Référence, client, téléphone…"
+                style={{ flex:1, minWidth:130 }} value={search} onChange={e => setSearch(e.target.value)} />
               <select className="sel" value={statusF} onChange={e => setStatusF(e.target.value)}>
                 <option value="all">Statut</option>
-                <option value="waiting">En attente</option>
+                <option value="new">Nouvelle</option>
                 <option value="confirmed">Confirmée</option>
-                <option value="preparing">En préparation</option>
+                <option value="in_progress">En traitement</option>
+                <option value="ready">Prête</option>
                 <option value="delivered">Livrée</option>
                 <option value="cancelled">Annulée</option>
               </select>
               <select className="sel" value={payF} onChange={e => setPayF(e.target.value)}>
                 <option value="all">Paiement</option>
                 <option value="paid">Payée</option>
-                <option value="pending">En attente</option>
                 <option value="unpaid">Non payée</option>
+                <option value="partial">Partielle</option>
               </select>
               <select className="sel" value={channelF} onChange={e => setChannelF(e.target.value)}>
                 <option value="all">Canal</option>
@@ -393,171 +684,200 @@ export default function OrdersPage() {
               </select>
               <select className="sel" value={dateF} onChange={e => setDateF(e.target.value)}>
                 <option value="all">Date</option>
-                <option value="today">Aujourd'hui</option>
+                <option value="today">Aujourd&apos;hui</option>
                 <option value="7d">7 derniers jours</option>
                 <option value="30d">30 derniers jours</option>
               </select>
-              <div className="inp" style={{ display:"flex", alignItems:"center", gap:5, color:"#98A2B3",
-                fontSize:11, cursor:"default", minWidth:130, height:36, boxSizing:"border-box" }}>
-                🔒 {activeShop.name}
-              </div>
             </div>
 
-            {/* table */}
-            <div style={{ overflowX:"auto" }}>
-              <table className="or-table">
-                <thead>
-                  <tr>
-                    <th>Commande</th>
-                    <th>Client</th>
-                    <th>Boutique</th>
-                    <th>Canal</th>
-                    <th>Montant</th>
-                    <th>Paiement</th>
-                    <th>Statut</th>
-                    <th>Date</th>
-                    <th>Dernière action</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map(o => (
-                    <tr key={o.id}>
-                      <td><span style={{ fontFamily:"monospace", fontWeight:600, fontSize:12 }}>{o.ref}</span></td>
-                      <td>
-                        <div style={{ fontWeight:600, fontSize:13 }}>{o.client}</div>
-                        <div style={{ fontSize:11, color:"#98A2B3" }}>{o.phone}</div>
-                      </td>
-                      <td><span className="badge badge-biz" style={{ fontSize:10 }}>{activeShop.name}</span></td>
-                      <td><ChannelBadge c={o.channel} /></td>
-                      <td style={{ fontWeight:700 }}>{o.amount.toLocaleString("fr-FR")} FCFA</td>
-                      <td><PayBadge p={o.payment} /></td>
-                      <td><StatusBadge s={o.status} /></td>
-                      <td style={{ fontSize:11, color:"#98A2B3" }}>{o.date}</td>
-                      <td style={{ fontSize:11, color:"#667085" }}>{o.lastAction}</td>
-                      <td>
-                        <div className="or-act-btns">
-                          <button className="or-act-btn" title="Voir">👁️</button>
-                          <button className="or-act-btn" title="WhatsApp"
-                            onClick={() => window.open(`https://wa.me/${o.phone.replace(/\D/g,"")}`, "_blank")}>💬</button>
-                          <button className="or-act-btn" title="Modifier">✏️</button>
-                          <button className="or-act-btn" title="Annuler" style={{ color:"#EF4444" }}>🗑️</button>
-                        </div>
-                      </td>
+            {/* Table */}
+            {ordersLoading ? (
+              <div style={{ textAlign:"center", padding:40, color:"#98A2B3", fontSize:14 }}>Chargement des commandes…</div>
+            ) : (
+              <div style={{ overflowX:"auto" }}>
+                <table className="or-table">
+                  <thead>
+                    <tr>
+                      <th>Référence</th>
+                      <th>Client</th>
+                      <th>Canal</th>
+                      <th>Produits</th>
+                      <th>Montant</th>
+                      <th>Paiement</th>
+                      <th>Statut</th>
+                      <th>Date</th>
+                      <th>Actions</th>
                     </tr>
-                  ))}
-                  {filtered.length === 0 && (
-                    <tr><td colSpan={10} style={{ textAlign:"center", padding:28, color:"#98A2B3" }}>
-                      Aucune commande trouvée.
-                    </td></tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {filtered.map(o => {
+                      const nextStatus = NEXT_STATUS[o.status];
+                      const nextLabel  = NEXT_STATUS_LABEL[o.status];
+                      return (
+                        <tr key={o.id}>
+                          <td><span style={{ fontFamily:"monospace", fontWeight:600, fontSize:12 }}>{o.ref}</span></td>
+                          <td>
+                            <div style={{ fontWeight:600, fontSize:13 }}>{o.client}</div>
+                            <div style={{ fontSize:11, color:"#98A2B3" }}>{o.phone}</div>
+                          </td>
+                          <td><ChannelBadge c={o.channel} /></td>
+                          <td style={{ fontSize:11, color:"#667085", maxWidth:160 }}>
+                            <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", display:"block" }}>
+                              {o.items.slice(0, 2).map(i => i.name).join(", ")}
+                              {o.items.length > 2 && ` +${o.items.length - 2}`}
+                            </span>
+                          </td>
+                          <td style={{ fontWeight:700, whiteSpace:"nowrap" }}>{o.amount.toLocaleString("fr-FR")} FCFA</td>
+                          <td><PayBadge p={o.paymentStatus} /></td>
+                          <td><StatusBadge s={o.status} /></td>
+                          <td style={{ fontSize:11, color:"#98A2B3", whiteSpace:"nowrap" }}>{o.date}</td>
+                          <td>
+                            <div className="or-act-btns">
+                              {nextStatus && nextLabel && (
+                                <button
+                                  style={{ background:"#EAF7EF", color:"#0A8F45", border:"none", cursor:"pointer",
+                                    fontWeight:600, fontSize:11, padding:"3px 8px", borderRadius:6, whiteSpace:"nowrap" }}
+                                  title={nextLabel}
+                                  onClick={() => advanceStatus(o.id, nextStatus)}>
+                                  {nextLabel}
+                                </button>
+                              )}
+                              <button className="or-act-btn" title="WhatsApp"
+                                onClick={() => window.open(`https://wa.me/${o.phone.replace(/\D/g,"")}`, "_blank")}>
+                                💬
+                              </button>
+                              {o.status !== "cancelled" && o.status !== "delivered" && (
+                                <button className="or-act-btn" title="Annuler" style={{ color:"#EF4444" }}
+                                  onClick={() => advanceStatus(o.id, "cancelled")}>
+                                  🗑️
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    {filtered.length === 0 && (
+                      <tr>
+                        <td colSpan={9} style={{ textAlign:"center", padding:32, color:"#98A2B3" }}>
+                          {orders.length === 0
+                            ? "Aucune commande pour cette boutique."
+                            : "Aucune commande correspond à vos filtres."}
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
 
-            {/* pagination */}
             <div style={{ padding:"11px 18px", display:"flex", justifyContent:"space-between",
               alignItems:"center", borderTop:"1px solid #E8ECEA", fontSize:12, color:"#98A2B3" }}>
-              <span>Affichage de 1 à {filtered.length} sur {activeShop.orders} commandes</span>
-              <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                <button className="btn-secondary" style={{ height:28, padding:"0 10px", fontSize:11 }}>← Précédent</button>
-                {[1,2,3].map(p => (
-                  <button key={p} style={{ width:28, height:28, borderRadius:8, border:"1px solid",
-                    background: p===1 ? "#0A8F45" : "#fff", color: p===1 ? "#fff" : "#1F2A24",
-                    borderColor: p===1 ? "#0A8F45" : "#E8ECEA", fontSize:12, cursor:"pointer" }}>{p}</button>
-                ))}
-                <button className="btn-secondary" style={{ height:28, padding:"0 10px", fontSize:11 }}>Suivant →</button>
-                <select className="sel" style={{ height:28, fontSize:11 }}>
-                  <option>10 / page</option>
-                  <option>25 / page</option>
-                  <option>50 / page</option>
-                </select>
-              </div>
+              <span>{filtered.length} commande{filtered.length !== 1 ? "s" : ""} affichée{filtered.length !== 1 ? "s" : ""} sur {orders.length}</span>
             </div>
           </div>
 
-          {/* Right col */}
+          {/* Right sidebar */}
           <div className="or-right">
 
-            {/* Boutique active */}
+            {/* Active shop card */}
             <div className="or-card">
               <div style={{ fontSize:13, fontWeight:700, color:"#1F2A24", marginBottom:12 }}>Boutique active</div>
-              <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:12 }}>
-                <div style={{ width:42, height:42, borderRadius:12, background:"#EAF7EF",
-                  display:"flex", alignItems:"center", justifyContent:"center", fontSize:18 }}>🏪</div>
-                <div>
-                  <div style={{ fontWeight:700, fontSize:14, color:"#1F2A24" }}>{activeShop.name}</div>
-                  <span className={activeShop.isPublished ? "badge badge-green" : "badge badge-gray"} style={{ fontSize:10 }}>
-                    {activeShop.isPublished ? "Active" : "Inactive"}
-                  </span>
-                </div>
-              </div>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6, marginBottom:12 }}>
-                {[
-                  { l:"Commandes", v: activeShop.orders },
-                  { l:"Produits",  v: activeShop.products },
-                  { l:"Clients",   v: activeShop.clients },
-                  { l:"Catégories", v: 12 },
-                ].map(r => (
-                  <div key={r.l} style={{ background:"#F8FAF9", borderRadius:8, padding:"7px 10px" }}>
-                    <div style={{ fontSize:15, fontWeight:700, color:"#1F2A24" }}>{r.v}</div>
-                    <div style={{ fontSize:10, color:"#98A2B3" }}>{r.l}</div>
+              {activeShop ? (
+                <>
+                  <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:12 }}>
+                    <div style={{ width:42, height:42, borderRadius:12, background:"#EAF7EF",
+                      display:"flex", alignItems:"center", justifyContent:"center", fontSize:18 }}>🏪</div>
+                    <div>
+                      <div style={{ fontWeight:700, fontSize:14, color:"#1F2A24" }}>{activeShop.name}</div>
+                      <span className={activeShop.isPublished ? "badge badge-green" : "badge badge-gray"} style={{ fontSize:10 }}>
+                        {activeShop.isPublished ? "Publiée" : "Brouillon"}
+                      </span>
+                    </div>
                   </div>
-                ))}
-              </div>
-              <div style={{ display:"flex", gap:8 }}>
-                <button className="btn-secondary" style={{ flex:1, height:32, fontSize:11 }}>Voir la boutique</button>
-                <button className="btn-primary" style={{ flex:1, height:32, fontSize:11 }}
-                  onClick={() => { const n = MOCK_SHOPS.find(s => s.id !== activeId); if (n) setActiveId(n.id); }}>
-                  Changer
-                </button>
-              </div>
+                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6 }}>
+                    {[
+                      { l:"Commandes",  v: activeShop._count.orders },
+                      { l:"Produits",   v: activeShop._count.products },
+                      { l:"Clients",    v: activeShop._count.customers },
+                      { l:"Livrées",    v: deliveredCount },
+                    ].map(r => (
+                      <div key={r.l} style={{ background:"#F8FAF9", borderRadius:8, padding:"7px 10px" }}>
+                        <div style={{ fontSize:15, fontWeight:700, color:"#1F2A24" }}>{r.v}</div>
+                        <div style={{ fontSize:10, color:"#98A2B3" }}>{r.l}</div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <div style={{ fontSize:13, color:"#98A2B3" }}>Chargement…</div>
+              )}
             </div>
 
-            {/* Mes boutiques */}
+            {/* Shop list */}
             <div className="or-card">
               <div style={{ fontSize:13, fontWeight:700, color:"#1F2A24", marginBottom:10 }}>Mes boutiques</div>
-              {MOCK_SHOPS.map((s, i) => (
+              {shops.length === 0 ? (
+                <div style={{ fontSize:12, color:"#98A2B3" }}>Aucune boutique.</div>
+              ) : shops.map((s, i) => (
                 <div key={s.id} className="or-shop-row"
-                  style={{ background: s.id === activeId ? "#EAF7EF" : "transparent", borderRadius:8, padding:"8px 10px", cursor:"pointer" }}
-                  onClick={() => setActiveId(s.id)}>
-                  <div className="or-shop-av" style={{ background: shopColors[i] }}>
-                    {s.name.slice(0,2).toUpperCase()}
+                  style={{ background: s.id === activeShopId ? "#EAF7EF" : "transparent",
+                    borderRadius:8, cursor:"pointer" }}
+                  onClick={() => setActiveShopId(s.id)}>
+                  <div className="or-shop-av" style={{ background: SHOP_COLORS[i % SHOP_COLORS.length] }}>
+                    {s.name.slice(0, 2).toUpperCase()}
                   </div>
                   <div style={{ flex:1, minWidth:0 }}>
                     <div style={{ fontWeight:600, fontSize:12, color:"#1F2A24", display:"flex", alignItems:"center", gap:5 }}>
-                      {s.name}
-                      {s.id === activeId && <span style={{ fontSize:9, background:"#0A8F45", color:"#fff", borderRadius:4, padding:"1px 5px" }}>Actif</span>}
+                      <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{s.name}</span>
+                      {s.id === activeShopId && (
+                        <span style={{ fontSize:9, background:"#0A8F45", color:"#fff", borderRadius:4, padding:"1px 5px", flexShrink:0 }}>Actif</span>
+                      )}
                     </div>
-                    <div style={{ fontSize:10, color:"#98A2B3" }}>{s.orders} commandes · {s.products} produits</div>
+                    <div style={{ fontSize:10, color:"#98A2B3" }}>{s._count.orders} commandes · {s._count.products} produits</div>
                   </div>
                   <span className={s.isPublished ? "badge badge-green" : "badge badge-gray"} style={{ fontSize:9 }}>
-                    {s.isPublished ? "Active" : "Inactif"}
+                    {s.isPublished ? "Active" : "Brouillon"}
                   </span>
                 </div>
               ))}
             </div>
 
-            {/* Alertes */}
+            {/* Alerts */}
             <div className="or-card">
-              <div style={{ fontSize:13, fontWeight:700, color:"#1F2A24", marginBottom:10 }}>Alertes commandes</div>
-              {[
-                { icon:"⏳", label:"12 commandes en attente de confirmation", color:"#F08A24" },
-                { icon:"💳", label:"5 paiements en attente",                  color:"#3B82F6" },
-                { icon:"🚚", label:"3 livraisons en retard",                  color:"#EF4444" },
-                { icon:"💬", label:"4 commandes WhatsApp à relancer",         color:"#0A8F45" },
-              ].map(a => (
-                <div key={a.label} className="or-alert-row">
-                  <span style={{ fontSize:15 }}>{a.icon}</span>
-                  <span style={{ color: a.color, fontWeight:500 }}>{a.label}</span>
+              <div style={{ fontSize:13, fontWeight:700, color:"#1F2A24", marginBottom:10 }}>Alertes</div>
+              {pendingCount === 0 && unpaidCount === 0 && waPendingCount === 0 ? (
+                <div style={{ fontSize:12, color:"#98A2B3", textAlign:"center", padding:"8px 0" }}>
+                  {orders.length === 0 ? "Aucune commande" : "Aucune alerte en cours ✓"}
                 </div>
-              ))}
+              ) : (
+                <>
+                  {pendingCount > 0 && (
+                    <div className="or-alert-row">
+                      <span style={{ fontSize:15 }}>⏳</span>
+                      <span style={{ color:"#F08A24", fontWeight:500 }}>{pendingCount} commande{pendingCount > 1 ? "s" : ""} en attente</span>
+                    </div>
+                  )}
+                  {unpaidCount > 0 && (
+                    <div className="or-alert-row">
+                      <span style={{ fontSize:15 }}>💳</span>
+                      <span style={{ color:"#3B82F6", fontWeight:500 }}>{unpaidCount} paiement{unpaidCount > 1 ? "s" : ""} non reçu{unpaidCount > 1 ? "s" : ""}</span>
+                    </div>
+                  )}
+                  {waPendingCount > 0 && (
+                    <div className="or-alert-row">
+                      <span style={{ fontSize:15 }}>💬</span>
+                      <span style={{ color:"#0A8F45", fontWeight:500 }}>{waPendingCount} WhatsApp à relancer</span>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
 
-            {/* Répartition */}
+            {/* Donut */}
             <div className="or-card">
-              <div style={{ fontSize:13, fontWeight:700, color:"#1F2A24", marginBottom:12 }}>Répartition des commandes</div>
-              <DonutChart />
+              <div style={{ fontSize:13, fontWeight:700, color:"#1F2A24", marginBottom:12 }}>Répartition par canal</div>
+              <DonutChart orders={orders} />
             </div>
 
           </div>
@@ -569,10 +889,10 @@ export default function OrdersPage() {
             <div style={{ fontSize:13, fontWeight:700, color:"#1F2A24", marginBottom:12 }}>Conseils de gestion</div>
             <div className="or-tips">
               {[
-                { icon:"⏱️", t:"Traitez rapidement les commandes en attente", d:"Un délai rapide améliore la satisfaction client.", link:"Voir les commandes", href:"#" },
-                { icon:"💳", t:"Relancez les paiements en attente",            d:"5 paiements non confirmés peuvent impacter votre trésorerie.", link:"Voir les paiements", href:"/payments" },
-                { icon:"📊", t:"Surveillez les ventes par canal",              d:"WhatsApp représente 52% de vos commandes.", link:"Voir les statistiques", href:"/dashboard" },
-                { icon:"🏪", t:"Analysez la performance par boutique",         d:"Comparez vos boutiques pour identifier les meilleures.", link:"Voir mes boutiques", href:"/settings" },
+                { icon:"⏱️", t:"Traitez les nouvelles commandes rapidement",  d:"Cliquez sur « Confirmer » dans le tableau dès qu'une commande arrive.", link:"Voir commandes",   href:"#" },
+                { icon:"💳", t:"Relancez les paiements en attente",           d:"Contactez les clients avec un paiement non reçu via WhatsApp.",        link:"WhatsApp clients", href:"#" },
+                { icon:"📊", t:"Analysez vos canaux de vente",               d:"Comparez WhatsApp, boutique en ligne et commandes manuelles.",          link:"Statistiques",     href:"/dashboard" },
+                { icon:"🏪", t:"Comparez vos boutiques",                      d:"Identifiez quelle boutique performe le mieux.",                        link:"Mes boutiques",    href:"/shops" },
               ].map(c => (
                 <div key={c.t} style={{ background:"#F8FAF9", borderRadius:10, padding:"11px 13px", border:"1px solid #F0F2F1" }}>
                   <div style={{ fontSize:18, marginBottom:5 }}>{c.icon}</div>
@@ -587,9 +907,9 @@ export default function OrdersPage() {
           <div className="or-card">
             <div style={{ fontSize:13, fontWeight:700, color:"#1F2A24", marginBottom:12 }}>Support</div>
             {[
-              { icon:"💬", label:"Contacter le support", href:"mailto:support@bizmanager.app" },
-              { icon:"📚", label:"Documentation",         href:"#docs"  },
-              { icon:"❓", label:"Aide commandes & canaux", href:"#help" },
+              { icon:"💬", label:"Contacter le support",      href:"mailto:support@bizmanager.app" },
+              { icon:"📚", label:"Documentation",              href:"#docs" },
+              { icon:"❓", label:"Aide commandes et canaux",   href:"#help" },
             ].map(r => (
               <a key={r.label} href={r.href}
                 style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 12px", background:"#F8FAF9",
@@ -602,10 +922,6 @@ export default function OrdersPage() {
                 <span style={{ marginLeft:"auto", color:"#98A2B3" }}>→</span>
               </a>
             ))}
-            <div style={{ marginTop:8, padding:"10px 12px", background:"#EAF7EF", borderRadius:10 }}>
-              <div style={{ fontSize:12, fontWeight:600, color:"#0A8F45" }}>Plan Business actif</div>
-              <div style={{ fontSize:11, color:"#08763A", marginTop:2 }}>3 boutiques · Sync illimitée · Multi-canal</div>
-            </div>
           </div>
         </div>
 

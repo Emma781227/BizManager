@@ -2,7 +2,7 @@ import { z } from "zod";
 
 const strictEmailRegex = /^[A-Za-z0-9._-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
 const internationalPhoneRegex = /^\+[1-9]\d{7,15}$/;
-const openingHoursRegex = /^([01]\d|2[0-3]):[0-5]\d-([01]\d|2[0-3]):[0-5]\d$/;
+const openingHoursRegex = /^(([A-Z]{2,3},)*[A-Z]{2,3}\|)?([01]\d|2[0-3]):[0-5]\d-([01]\d|2[0-3]):[0-5]\d$/;
 
 export const registerSchema = z.object({
   fullName: z.string().min(2),
@@ -162,6 +162,24 @@ export const shopSchema = z.object({
     ])
     .optional(),
   isPublished: z.boolean().optional(),
+});
+
+export const createShopSchema = z.object({
+  name:              z.string().min(2, "Nom trop court").max(100, "Nom trop long"),
+  slug:              z.string().min(3, "Slug trop court").max(63, "Slug trop long")
+                       .regex(/^[a-z0-9-]+$/, "Slug invalide (minuscules, chiffres, tirets)"),
+  category:          z.string().min(1, "Secteur requis").max(120),
+  whatsappNumber:    z.string().trim().regex(internationalPhoneRegex, "Numéro WhatsApp invalide"),
+  notificationEmail: z.union([z.literal(""), z.string().trim().regex(strictEmailRegex, "Email invalide")]).optional(),
+  city:              z.string().min(1, "Ville requise").max(100),
+  regionCountry:     z.string().min(1, "Pays requis").max(100),
+  address:           z.string().max(255).optional().or(z.literal("")),
+  description:       z.string().max(1000).optional().or(z.literal("")),
+  logoUrl:           z.string().optional().or(z.literal("")),
+  coverUrl:          z.string().optional().or(z.literal("")),
+  openingHours:      z.string().optional().or(z.literal("")),
+  paymentMethods:    z.array(z.string()).optional(),
+  isPublished:       z.boolean().optional(),
 });
 
 export const publicWhatsAppOrderSchema = z.object({

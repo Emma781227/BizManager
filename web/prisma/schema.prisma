@@ -164,6 +164,7 @@ model Shop {
   category          String?
   address           String?
   openingHours      String?
+  paymentMethods    String[]   @default([])
   isPublished       Boolean    @default(true)
   createdAt         DateTime   @default(now())
   updatedAt         DateTime   @updatedAt
