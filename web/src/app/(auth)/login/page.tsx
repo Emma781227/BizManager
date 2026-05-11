@@ -8,6 +8,7 @@ type Mode = "login" | "register";
 export default function LoginPage() {
   const router = useRouter();
   const [mode, setMode] = useState<Mode>("login");
+  const [isMobile, setIsMobile] = useState(false);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -43,6 +44,20 @@ export default function LoginPage() {
       setSelectedPlan(p);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const updateMobileState = () => {
+      const mobile = window.innerWidth < 1024;
+      setIsMobile(mobile);
+      if (mobile) {
+        setMode("register");
+      }
+    };
+
+    updateMobileState();
+    window.addEventListener("resize", updateMobileState);
+    return () => window.removeEventListener("resize", updateMobileState);
   }, []);
 
   useEffect(() => {
@@ -381,7 +396,7 @@ export default function LoginPage() {
       ) : null}
 
       <section className="grid min-h-screen lg:grid-cols-[1.1fr_1.05fr]">
-        <div className="relative overflow-hidden border-b border-emerald-100 bg-linear-to-br from-[#f7fbf5] via-white to-[#edf4ee] px-3 py-4 sm:px-4 lg:border-b-0 lg:border-r lg:px-8 lg:py-4">
+        <div className="relative hidden overflow-hidden border-b border-emerald-100 bg-linear-to-br from-[#f7fbf5] via-white to-[#edf4ee] px-3 py-4 sm:px-4 lg:block lg:border-b-0 lg:border-r lg:px-8 lg:py-4">
           <div className="pointer-events-none absolute left-0 top-0 h-full w-full">
             <div className="absolute -left-20 top-12 h-72 w-72 rounded-full bg-emerald-100/70 blur-3xl" />
             <div className="absolute right-12 top-8 h-48 w-48 rounded-full bg-white/70 blur-3xl" />
@@ -562,7 +577,7 @@ export default function LoginPage() {
             <div className="absolute bottom-10 right-6 h-28 w-28 rounded-full bg-white/80 blur-3xl" />
           </div>
 
-          <div className="relative  max-w-3xl rounded-2xl border border-white/80 bg-white px-4 py-5 shadow-[0_16px_50px_rgba(15,23,42,0.08)] sm:px-5 sm:py-6 lg:px-6 lg:py-6">
+          <div className={`relative w-full ${isMobile ? "max-w-md" : "max-w-3xl"} rounded-2xl border border-white/80 bg-white px-4 py-5 shadow-[0_16px_50px_rgba(15,23,42,0.08)] sm:px-5 sm:py-6 lg:px-6 lg:py-6`}>
             <div className="mb-4 text-center">
               <h2 className="text-xl font-black tracking-tight text-slate-950">Connexion</h2>
               <p className="mx-auto mt-2 max-w-80 text-xs leading-5 text-slate-500 sm:text-sm">
