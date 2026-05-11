@@ -30,14 +30,24 @@ export async function getUserShops(userId: string) {
  * Retourne null si la création est autorisée, un message d'erreur sinon.
  */
 export async function checkShopQuota(userId: string): Promise<string | null> {
-  const sub = await prisma.subscription.findUnique({
-    where: { userId },
-    include: { plan: true },
-  });
-  const maxShops = sub?.plan.maxShops ?? 1;
+  let sub: { plan?: { maxShops: number; displayName: string } } | null = null;
+
+  try {
+    sub = await prisma.subscription.findUnique({
+      where: { userId },
+      include: { plan: true },
+    });
+  } catch (error) {
+    const code = (error as { code?: string } | null)?.code;
+    if (code !== "P2021") {
+      throw error;
+    }
+  }
+
+  const maxShops = sub?.plan?.maxShops ?? 1;
   const currentCount = await prisma.shop.count({ where: { userId } });
   if (currentCount >= maxShops) {
-    return `Quota atteint : votre plan ${sub?.plan.displayName ?? "Starter"} permet ${maxShops} boutique${maxShops > 1 ? "s" : ""} au maximum.`;
+    return `Quota atteint : votre plan ${sub?.plan?.displayName ?? "Starter"} permet ${maxShops} boutique${maxShops > 1 ? "s" : ""} au maximum.`;
   }
   return null;
 }
@@ -48,15 +58,25 @@ export async function checkShopQuota(userId: string): Promise<string | null> {
 export async function checkProductQuota(shopId: string): Promise<string | null> {
   const shop = await prisma.shop.findUnique({ where: { id: shopId }, select: { userId: true } });
   if (!shop) return "Boutique introuvable";
-  const sub = await prisma.subscription.findUnique({
-    where: { userId: shop.userId },
-    include: { plan: true },
-  });
-  const maxProducts = sub?.plan.maxProducts ?? 50;
+  let sub: { plan?: { maxProducts: number; displayName: string } } | null = null;
+
+  try {
+    sub = await prisma.subscription.findUnique({
+      where: { userId: shop.userId },
+      include: { plan: true },
+    });
+  } catch (error) {
+    const code = (error as { code?: string } | null)?.code;
+    if (code !== "P2021") {
+      throw error;
+    }
+  }
+
+  const maxProducts = sub?.plan?.maxProducts ?? 50;
   if (maxProducts === -1) return null; // unlimited
   const currentCount = await prisma.product.count({ where: { shopId } });
   if (currentCount >= maxProducts) {
-    return `Quota atteint : votre plan ${sub?.plan.displayName ?? "Starter"} permet ${maxProducts} produits par boutique.`;
+    return `Quota atteint : votre plan ${sub?.plan?.displayName ?? "Starter"} permet ${maxProducts} produits par boutique.`;
   }
   return null;
 }
