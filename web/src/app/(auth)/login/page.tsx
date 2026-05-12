@@ -612,8 +612,8 @@ export default function LoginPage() {
                       <span className="text-xs text-emerald-800 font-medium">
                         Plan sélectionné :{" "}
                         <span className="font-bold capitalize">{selectedPlan}</span>
-                        {selectedPlan === "business" && " — 9 900 FCFA/mois"}
-                        {selectedPlan === "premium" && " — 19 900 FCFA/mois"}
+                        {selectedPlan === "business" && " — 4 500 FCFA/mois"}
+                        {selectedPlan === "premium" && " — 10 000 FCFA/mois"}
                         {selectedPlan === "starter" && " — Gratuit"}
                       </span>
                     </div>
@@ -692,6 +692,22 @@ export default function LoginPage() {
                     </button>
                   </div>
                 </label>
+
+                {mode === "register" && registerStep === "verify" ? (
+                  <label className="block space-y-1 text-xs font-medium text-slate-700">
+                    <span>Code de vérification</span>
+                    <input
+                      required
+                      inputMode="numeric"
+                      pattern="[0-9]{6}"
+                      maxLength={6}
+                      value={verificationCode}
+                      onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, ""))}
+                      placeholder="Entrez le code à 6 chiffres"
+                      className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                    />
+                  </label>
+                ) : null}
 
                 {mode === "login" ? (
                   <div className="flex items-center justify-between gap-3 pt-0 text-xs">

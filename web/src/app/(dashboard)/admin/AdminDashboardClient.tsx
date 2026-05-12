@@ -19,6 +19,7 @@ type ShopRow = {
   whatsappNumber: string;
   createdAt: string;
   owner: { id: string; fullName: string; email: string; phone: string | null };
+  plan: { name: string; displayName: string };
   productsCount: number;
   ordersCount: number;
 };
@@ -434,7 +435,7 @@ export default function AdminDashboardClient() {
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 600 }}>
                   <thead>
                     <tr style={{ background: "#F8FAF9" }}>
-                      {["Boutique", "Marchand", "Ville", "Statut", "Prod.", "Cmd.", "Créée le", ""].map((h) => (
+                      {["Boutique", "Marchand", "Plan", "Ville", "Statut", "Prod.", "Cmd.", "Créée le", ""].map((h) => (
                         <th key={h} style={{ padding: "10px 12px", textAlign: "left", color: "#667085", fontWeight: 600, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.04em", borderBottom: "1.5px solid #E8ECEA", whiteSpace: "nowrap" }}>
                           {h}
                         </th>
@@ -444,7 +445,7 @@ export default function AdminDashboardClient() {
                   <tbody>
                     {paginatedShops.length === 0 ? (
                       <tr>
-                        <td colSpan={8} style={{ padding: "40px 20px", textAlign: "center", color: "#98A2B3", fontSize: 14 }}>
+                        <td colSpan={9} style={{ padding: "40px 20px", textAlign: "center", color: "#98A2B3", fontSize: 14 }}>
                           Aucune boutique trouvée
                         </td>
                       </tr>
@@ -458,6 +459,19 @@ export default function AdminDashboardClient() {
                           <td style={{ padding: "11px 12px" }}>
                             <div style={{ fontWeight: 500, color: "#1F2A24", fontSize: 13 }}>{shop.owner.fullName}</div>
                             <div style={{ fontSize: 11, color: "#98A2B3", maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{shop.owner.email}</div>
+                          </td>
+                          <td style={{ padding: "11px 12px" }}>
+                            <span style={{
+                              display: "inline-block",
+                              padding: "3px 9px",
+                              borderRadius: 20,
+                              fontSize: 11,
+                              fontWeight: 600,
+                              background: shop.plan?.name === "premium" ? "#F3E8FF" : shop.plan?.name === "business" ? "#EAF7EF" : "#F2F4F7",
+                              color: shop.plan?.name === "premium" ? "#7C3AED" : shop.plan?.name === "business" ? "#0A8F45" : "#667085",
+                            }}>
+                              {shop.plan?.displayName ?? "Starter"}
+                            </span>
                           </td>
                           <td style={{ padding: "11px 12px", color: "#667085", fontSize: 13 }}>{shop.city ?? "—"}</td>
                           <td style={{ padding: "11px 12px" }}>

@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { loginSchema } from "@/lib/validators";
 import { setSessionCookie, signSession } from "@/lib/auth";
+import { ensureUserSubscription } from "@/lib/subscription";
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
@@ -36,6 +37,8 @@ export async function POST(request: Request) {
   if (!passwordOk) {
     return NextResponse.json({ error: "Identifiants invalides" }, { status: 401 });
   }
+
+  await ensureUserSubscription(user.id);
 
   const token = await signSession({ userId: user.id, email: user.email, role: user.role });
   const response = NextResponse.json(

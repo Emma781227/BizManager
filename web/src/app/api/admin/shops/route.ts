@@ -41,6 +41,16 @@ export async function GET(request: NextRequest) {
           fullName: true,
           email: true,
           phone: true,
+          subscription: {
+            select: {
+              plan: {
+                select: {
+                  name: true,
+                  displayName: true,
+                },
+              },
+            },
+          },
         },
       },
     },
@@ -73,7 +83,21 @@ export async function GET(request: NextRequest) {
       isPublished: shop.isPublished,
       whatsappNumber: shop.whatsappNumber,
       createdAt: shop.createdAt,
-      owner: shop.user,
+      owner: {
+        id: shop.user.id,
+        fullName: shop.user.fullName,
+        email: shop.user.email,
+        phone: shop.user.phone,
+      },
+      plan: shop.user.subscription?.plan
+        ? {
+            name: shop.user.subscription.plan.name,
+            displayName: shop.user.subscription.plan.displayName,
+          }
+        : {
+            name: "starter",
+            displayName: "Starter",
+          },
       productsCount: productsMap.get(shop.id) ?? 0,
       ordersCount: ordersMap.get(shop.id) ?? 0,
     })),

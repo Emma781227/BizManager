@@ -624,14 +624,14 @@ export default function HomePage() {
                 </div>
                 <div style={{ fontSize: 16, fontWeight: 700, color: "#0A8F45", marginBottom: 16 }}>Business</div>
                 <div style={{ display: "flex", alignItems: "flex-end", gap: 4, marginBottom: 6 }}>
-                  <span style={{ fontSize: 42, fontWeight: 800, color: "#1F2A24", lineHeight: 1 }}>9 900 FCFA</span>
+                  <span style={{ fontSize: 42, fontWeight: 800, color: "#1F2A24", lineHeight: 1 }}>4 500 FCFA</span>
                   <span style={{ fontSize: 14, color: "#667085", marginBottom: 4 }}>/mois</span>
                 </div>
                 <p style={{ fontSize: 14, color: "#667085", marginTop: 0, marginBottom: 0 }}>Pour les boutiques en croissance</p>
                 <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 8 }}>
                   {[
                     "3 boutiques",
-                    "Produits illimités",
+                    "500 produits",
                     "Commandes illimitées",
                     "Analytics complets",
                     "Gestion clients",
@@ -652,7 +652,7 @@ export default function HomePage() {
               <div style={{ ...card, padding: 28 }}>
                 <div style={{ fontSize: 16, fontWeight: 700, color: "#667085", marginBottom: 16 }}>Premium</div>
                 <div style={{ display: "flex", alignItems: "flex-end", gap: 4, marginBottom: 6 }}>
-                  <span style={{ fontSize: 42, fontWeight: 800, color: "#1F2A24", lineHeight: 1 }}>19 900 FCFA</span>
+                  <span style={{ fontSize: 42, fontWeight: 800, color: "#1F2A24", lineHeight: 1 }}>10 000 FCFA</span>
                   <span style={{ fontSize: 14, color: "#667085", marginBottom: 4 }}>/mois</span>
                 </div>
                 <p style={{ fontSize: 14, color: "#667085", marginTop: 0, marginBottom: 0 }}>Pour les pros multi-boutiques</p>

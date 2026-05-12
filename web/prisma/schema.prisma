@@ -120,7 +120,7 @@ model Plan {
   name         String         @unique   // "starter" | "business" | "premium"
   displayName  String                   // "Starter" | "Business" | "Premium"
   maxShops     Int                      // 1 / 3 / 10
-  maxProducts  Int                      // 50 / 500 / -1 (unlimited)
+  maxProducts  Int                      // 20 / 500 / -1 (unlimited)
   priceMonthly Decimal        @db.Decimal(10, 2)
   features     String[]       @default([])
   isActive     Boolean        @default(true)

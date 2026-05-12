@@ -3,6 +3,7 @@ import { OAuth2Client } from "google-auth-library";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { signSession, setSessionCookie } from "@/lib/auth";
+import { ensureUserSubscription } from "@/lib/subscription";
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -44,6 +45,8 @@ export async function POST(request: Request) {
         user = await prisma.user.update({ where: { id: user.id }, data: updates });
       }
     }
+
+    await ensureUserSubscription(user.id);
 
     const token = await signSession({ userId: user.id, email: user.email, role: user.role });
     const response = NextResponse.json({ ok: true, user: { id: user.id, email: user.email, fullName: user.fullName } }, { status: 200 });

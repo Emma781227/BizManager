@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { registerVerifySchema } from "@/lib/validators";
 import { setSessionCookie, signSession } from "@/lib/auth";
+import { resolvePlan } from "@/lib/subscription";
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
@@ -46,7 +47,7 @@ export async function POST(request: Request) {
   }
 
   const planName = result.data.plan ?? "starter";
-  const plan = await prisma.plan.findUnique({ where: { name: planName } });
+  const plan = await resolvePlan(planName);
 
   const user = await prisma.user.create({
     data: {
@@ -54,11 +55,9 @@ export async function POST(request: Request) {
       email,
       passwordHash: pending.passwordHash,
       role: "merchant",
-      ...(plan ? {
-        subscription: {
-          create: { planId: plan.id, status: "active" },
-        },
-      } : {}),
+      subscription: {
+        create: { planId: plan.id, status: "active" },
+      },
     },
     select: { id: true, email: true, fullName: true, role: true },
   });
