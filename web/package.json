@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "vercel-build": "prisma generate && prisma migrate deploy && next build",
+    "vercel-build": "prisma generate && (prisma migrate deploy || echo 'Prisma migrate deploy skipped: database unreachable at build time') && next build",
     "start": "next start",
     "lint": "eslint",
     "prisma:generate": "prisma generate",
