@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import QRCode from "qrcode";
 import CreateShopModal from "../shops/CreateShopModal";
 
 type SettingsShop = {
@@ -189,6 +190,10 @@ function ShopActionsModal({
   const [coverFile,       setCoverFile]       = useState<File | null>(null);
   const [editErr,         setEditErr]         = useState<string | null>(null);
   const [submitting,      setSubmitting]      = useState(false);
+  const [qrOpen,          setQrOpen]          = useState(false);
+  const [qrLoading,       setQrLoading]       = useState(false);
+  const [qrDataUrl,       setQrDataUrl]       = useState<string | null>(null);
+  const [qrError,         setQrError]         = useState<string | null>(null);
 
   const logoInputRef  = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
@@ -226,11 +231,125 @@ function ShopActionsModal({
       setLogoFile(null);
       setCoverFile(null);
       setEditErr(null);
+      setQrOpen(false);
+      setQrLoading(false);
+      setQrDataUrl(null);
+      setQrError(null);
       setView("main");
     }
   }, [shop?.id]);
 
+  useEffect(() => {
+    if (!shop || !qrOpen) return;
+
+    let cancelled = false;
+    const activeShop = shop;
+    const shopUrl = `${window.location.origin}/shop/${activeShop.slug}`;
+
+    async function buildQr() {
+      setQrLoading(true);
+      setQrError(null);
+      try {
+        const baseQr = await QRCode.toDataURL(shopUrl, {
+          errorCorrectionLevel: "M",
+          margin: 1,
+          width: 280,
+          color: {
+            dark: "#145f38",
+            light: "#FFFFFF",
+          },
+        });
+
+        let finalQr = baseQr;
+
+        if (activeShop.logoUrl) {
+          try {
+            const qrImage = await loadImage(baseQr);
+            const logoSrc = new URL(activeShop.logoUrl, window.location.origin).toString();
+            const logoImage = await loadImage(logoSrc);
+
+            const size = 280;
+            const canvas = document.createElement("canvas");
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext("2d");
+            if (!ctx) throw new Error("Canvas non disponible");
+
+            ctx.drawImage(qrImage, 0, 0, size, size);
+
+            const badgeSize = 72;
+            const logoSize = 52;
+            const x = (size - badgeSize) / 2;
+            const y = (size - badgeSize) / 2;
+
+            // Pastille blanche au centre pour améliorer le contraste du logo.
+            ctx.fillStyle = "#FFFFFF";
+            roundRect(ctx, x, y, badgeSize, badgeSize, 16);
+            ctx.fill();
+
+            const lx = (size - logoSize) / 2;
+            const ly = (size - logoSize) / 2;
+            ctx.save();
+            roundRect(ctx, lx, ly, logoSize, logoSize, 12);
+            ctx.clip();
+            ctx.drawImage(logoImage, lx, ly, logoSize, logoSize);
+            ctx.restore();
+
+            finalQr = canvas.toDataURL("image/png");
+          } catch {
+            // Si le logo ne peut pas être rendu (CORS, URL invalide...), on garde le QR simple.
+          }
+        }
+
+        if (!cancelled) {
+          setQrDataUrl(finalQr);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setQrError(error instanceof Error ? error.message : "Impossible de générer le QR code");
+          setQrDataUrl(null);
+        }
+      } finally {
+        if (!cancelled) setQrLoading(false);
+      }
+    }
+
+    void buildQr();
+    return () => {
+      cancelled = true;
+    };
+  }, [shop, qrOpen]);
+
+  function roundRect(
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    radius: number,
+  ) {
+    const r = Math.min(radius, width / 2, height / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + width, y, x + width, y + height, r);
+    ctx.arcTo(x + width, y + height, x, y + height, r);
+    ctx.arcTo(x, y + height, x, y, r);
+    ctx.arcTo(x, y, x + width, y, r);
+    ctx.closePath();
+  }
+
+  function loadImage(src: string): Promise<HTMLImageElement> {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error("Image non chargee"));
+      img.src = src;
+    });
+  }
+
   if (!shop) return null;
+  const currentShop = shop;
 
   /* ── Main view handlers ── */
 
@@ -327,6 +446,40 @@ function ShopActionsModal({
     } finally {
       setSubmitting(false);
     }
+  }
+
+  async function handleShareQrCode() {
+    if (!shop) return;
+
+    const shopUrl = `${window.location.origin}/shop/${shop.slug}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: shop.name,
+          text: `Découvrez la boutique ${shop.name}`,
+          url: shopUrl,
+        });
+        return;
+      } catch {
+        // fallback below
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(shopUrl);
+      setQrError("Lien de la boutique copié dans le presse-papiers. Ouvrez le QR pour le partager visuellement.");
+    } catch {
+      setQrError("Impossible de partager automatiquement. Ouvrez le QR code pour le télécharger.");
+    }
+    setQrOpen(true);
+  }
+
+  function handleDownloadQr() {
+    if (!qrDataUrl || !shop) return;
+    const link = document.createElement("a");
+    link.href = qrDataUrl;
+    link.download = `qr-${shop.slug}.png`;
+    link.click();
   }
 
   function handleLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -620,130 +773,156 @@ function ShopActionsModal({
 
   /* ── Main view ── */
   return (
-    <div className="sa-overlay" onClick={onClose}>
-      <div className="sa-modal" onClick={e => e.stopPropagation()}>
-
-        {/* Header */}
-        <div className="sa-header">
-          <div className="mb-shop-av" style={{ background: shop.color, width:40, height:40, fontSize:13 }}>
-            {shop.name.slice(0,2).toUpperCase()}
-          </div>
-          <div style={{ flex:1, minWidth:0 }}>
-            <div style={{ fontWeight:700, fontSize:15, color:"#1F2A24", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-              {shop.name}
+    <>
+      <div className="sa-overlay" onClick={onClose}>
+        <div className="sa-modal" onClick={e => e.stopPropagation()}>
+          <div className="sa-header">
+            <div className="mb-shop-av" style={{ background: currentShop.color, width:40, height:40, fontSize:13 }}>
+              {currentShop.name.slice(0,2).toUpperCase()}
             </div>
-            <span className={published ? "badge badge-green" : "badge badge-gray"} style={{ fontSize:10, marginTop:2 }}>
-              {published ? "● Publiée" : "○ Brouillon"}
-            </span>
-          </div>
-          <button onClick={onClose}
-            style={{ background:"none", border:"none", cursor:"pointer", color:"#98A2B3", fontSize:20, lineHeight:1, padding:4 }}>
-            ✕
-          </button>
-        </div>
-
-        {/* Visibilité */}
-        <div className="sa-section">
-          <div className="sa-sec-title">Visibilité</div>
-          <div
-            className={`sa-toggle-card ${published ? "on" : "off"}`}
-            onClick={handleToggle}
-            style={{ opacity: publishing ? 0.65 : 1 }}>
-            <button
-              type="button"
-              className={`sa-sw${published ? " on" : ""}`}
-              onClick={e => { e.stopPropagation(); handleToggle(); }}
-              disabled={publishing}
-              aria-label={published ? "Dépublier la boutique" : "Publier la boutique"}
-            />
-            <div style={{ flex:1 }}>
-              <div style={{ fontWeight:600, fontSize:13, color:"#1F2A24" }}>
-                {publishing ? "Mise à jour…" : published ? "Boutique publiée" : "Boutique en brouillon"}
+            <div style={{ flex:1, minWidth:0 }}>
+              <div style={{ fontWeight:700, fontSize:15, color:"#1F2A24", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                {currentShop.name}
               </div>
-              <div style={{ fontSize:11, color:"#667085", marginTop:2 }}>
-                {published
-                  ? "Visible par vos clients sur le web"
-                  : "Non visible — accessible seulement par vous"}
-              </div>
+              <span className={published ? "badge badge-green" : "badge badge-gray"} style={{ fontSize:10, marginTop:2 }}>
+                {published ? "● Publiée" : "○ Brouillon"}
+              </span>
             </div>
-          </div>
-          {publishErr && <div className="sa-err">{publishErr}</div>}
-          <div className="sa-info-note">
-            <span style={{ flexShrink:0 }}>⚠️</span>
-            <span>Une boutique dépubliée reste comptabilisée dans votre quota de plan.</span>
-          </div>
-        </div>
-
-        {/* Renommer */}
-        <div className="sa-section">
-          <div className="sa-sec-title">Renommer</div>
-          <div style={{ display:"flex", gap:8 }}>
-            <input
-              className="sa-inp"
-              value={nameInput}
-              onChange={e => { setNameInput(e.target.value); setRenameErr(""); }}
-              onKeyDown={e => e.key === "Enter" && handleRename()}
-              placeholder="Nom de la boutique"
-              maxLength={100}
-            />
-            <button
-              type="button"
-              className="btn-primary"
-              style={{ height:40, padding:"0 16px", flexShrink:0, fontSize:13 }}
-              onClick={handleRename}
-              disabled={renaming || nameInput.trim() === shop.name || nameInput.trim().length < 2}>
-              {renaming ? "…" : "Sauvegarder"}
+            <button onClick={onClose} style={{ background:"none", border:"none", cursor:"pointer", color:"#98A2B3", fontSize:20, lineHeight:1, padding:4 }}>
+              ✕
             </button>
           </div>
-          {renameErr && <div className="sa-err">{renameErr}</div>}
-        </div>
 
-        {/* Accès rapide */}
-        <div className="sa-section">
-          <div className="sa-sec-title">Accès rapide</div>
-          <a
-            href={`/shop/${shop.slug}`}
-            target="_blank"
-            rel="noreferrer"
-            className={`sa-link-btn${published ? "" : " disabled"}`}>
-            <span style={{ fontSize:16 }}>🔗</span>
-            <div style={{ flex:1 }}>
-              <div style={{ fontSize:13, fontWeight:600 }}>Voir la boutique publique</div>
-              <div style={{ fontSize:11, color:"#98A2B3" }}>/shop/{shop.slug}</div>
+          <div className="sa-section">
+            <div className="sa-sec-title">Visibilité</div>
+            <div className={`sa-toggle-card ${published ? "on" : "off"}`} onClick={handleToggle} style={{ opacity: publishing ? 0.65 : 1 }}>
+              <button
+                type="button"
+                className={`sa-sw${published ? " on" : ""}`}
+                onClick={e => { e.stopPropagation(); handleToggle(); }}
+                disabled={publishing}
+                aria-label={published ? "Dépublier la boutique" : "Publier la boutique"}
+              />
+              <div style={{ flex:1 }}>
+                <div style={{ fontWeight:600, fontSize:13, color:"#1F2A24" }}>
+                  {publishing ? "Mise à jour…" : published ? "Boutique publiée" : "Boutique en brouillon"}
+                </div>
+                <div style={{ fontSize:11, color:"#667085", marginTop:2 }}>
+                  {published ? "Visible par vos clients sur le web" : "Non visible — accessible seulement par vous"}
+                </div>
+              </div>
             </div>
-            <span style={{ fontSize:11, color:"#98A2B3" }}>↗</span>
-          </a>
-          {!published && (
-            <div style={{ fontSize:11, color:"#98A2B3", marginTop:6 }}>
-              Publiez la boutique pour activer ce lien.
+            {publishErr && <div className="sa-err">{publishErr}</div>}
+            <div className="sa-info-note">
+              <span style={{ flexShrink:0 }}>⚠️</span>
+              <span>Une boutique dépubliée reste comptabilisée dans votre quota de plan.</span>
             </div>
-          )}
-        </div>
+          </div>
 
-        {/* Modifier les informations */}
-        <div className="sa-section" style={{ borderBottom:"none" }}>
-          <div className="sa-sec-title">Informations de la boutique</div>
-          <button
-            type="button"
-            className="sa-link-btn"
-            style={{ cursor:"pointer", border:"none", width:"100%", textAlign:"left" }}
-            onClick={() => setView("edit")}>
-            <span style={{ fontSize:16 }}>✏️</span>
-            <div style={{ flex:1 }}>
-              <div style={{ fontSize:13, fontWeight:600 }}>Modifier les informations</div>
-              <div style={{ fontSize:11, color:"#98A2B3" }}>Nom, logo, cover, WhatsApp, horaires…</div>
+          <div className="sa-section">
+            <div className="sa-sec-title">Renommer</div>
+            <div style={{ display:"flex", gap:8 }}>
+              <input
+                className="sa-inp"
+                value={nameInput}
+                onChange={e => { setNameInput(e.target.value); setRenameErr(""); }}
+                onKeyDown={e => e.key === "Enter" && handleRename()}
+                placeholder="Nom de la boutique"
+                maxLength={100}
+              />
+              <button type="button" className="btn-primary" style={{ height:40, padding:"0 16px", flexShrink:0, fontSize:13 }} onClick={handleRename} disabled={renaming || nameInput.trim() === currentShop.name || nameInput.trim().length < 2}>
+                {renaming ? "…" : "Sauvegarder"}
+              </button>
             </div>
-            <span style={{ fontSize:11, color:"#98A2B3" }}>→</span>
-          </button>
-        </div>
+            {renameErr && <div className="sa-err">{renameErr}</div>}
+          </div>
 
-        {/* Footer */}
-        <div className="sa-footer">
-          <button type="button" className="btn-secondary" onClick={onClose}>Fermer</button>
-        </div>
+          <div className="sa-section">
+            <div className="sa-sec-title">Accès rapide</div>
+            <a href={`/shop/${currentShop.slug}`} target="_blank" rel="noreferrer" className={`sa-link-btn${published ? "" : " disabled"}`}>
+              <span style={{ fontSize:16 }}>🔗</span>
+              <div style={{ flex:1 }}>
+                <div style={{ fontSize:13, fontWeight:600 }}>Voir la boutique publique</div>
+                <div style={{ fontSize:11, color:"#98A2B3" }}>/shop/{currentShop.slug}</div>
+              </div>
+              <span style={{ fontSize:11, color:"#98A2B3" }}>↗</span>
+            </a>
+            {!published && <div style={{ fontSize:11, color:"#98A2B3", marginTop:6 }}>Publiez la boutique pour activer ce lien.</div>}
+          </div>
 
+          <div className="sa-section" style={{ borderBottom:"none" }}>
+            <div className="sa-sec-title">Informations de la boutique</div>
+            <button type="button" className="sa-link-btn" style={{ cursor:"pointer", border:"none", width:"100%", textAlign:"left" }} onClick={() => setView("edit")}>
+              <span style={{ fontSize:16 }}>✏️</span>
+              <div style={{ flex:1 }}>
+                <div style={{ fontSize:13, fontWeight:600 }}>Modifier les informations</div>
+                <div style={{ fontSize:11, color:"#98A2B3" }}>Nom, logo, cover, WhatsApp, horaires…</div>
+              </div>
+              <span style={{ fontSize:11, color:"#98A2B3" }}>→</span>
+            </button>
+            <button type="button" className="sa-link-btn" style={{ cursor:"pointer", border:"none", width:"100%", textAlign:"left", marginTop:10 }} onClick={() => setQrOpen(true)}>
+              <span style={{ fontSize:16 }}>🔳</span>
+              <div style={{ flex:1 }}>
+                <div style={{ fontSize:13, fontWeight:600 }}>Partager le QR code</div>
+                <div style={{ fontSize:11, color:"#98A2B3" }}>Afficher, télécharger ou partager le QR de la boutique</div>
+              </div>
+              <span style={{ fontSize:11, color:"#98A2B3" }}>→</span>
+            </button>
+          </div>
+
+          <div className="sa-footer">
+            <button type="button" className="btn-secondary" onClick={onClose}>Fermer</button>
+          </div>
+        </div>
       </div>
-    </div>
+
+      {qrOpen && (
+        <div className="sa-overlay" onClick={() => setQrOpen(false)}>
+          <div className="sa-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 420 }}>
+            <div className="sa-header">
+              <div className="mb-shop-av" style={{ background: currentShop.color, width:40, height:40, fontSize:13 }}>
+                {currentShop.name.slice(0,2).toUpperCase()}
+              </div>
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ fontWeight:700, fontSize:15, color:"#1F2A24" }}>QR code de la boutique</div>
+                <div style={{ fontSize:11, color:"#98A2B3", marginTop:2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                  /shop/{currentShop.slug}
+                </div>
+              </div>
+              <button onClick={() => setQrOpen(false)} style={{ background:"none", border:"none", cursor:"pointer", color:"#98A2B3", fontSize:20, lineHeight:1, padding:4 }}>
+                ✕
+              </button>
+            </div>
+
+            <div className="sa-section" style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:14 }}>
+              {qrLoading && <div style={{ color:"#667085", fontSize:13 }}>Génération du QR code…</div>}
+              {qrError && <div className="sa-err" style={{ width:"100%" }}>{qrError}</div>}
+              {qrDataUrl && !qrLoading && (
+                <>
+                  <div style={{ width:260, height:260, borderRadius:18, padding:14, background:"#fff", border:"1px solid #E8ECEA", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                    <img src={qrDataUrl} alt={`QR code de ${currentShop.name}`} style={{ width:"100%", height:"100%", objectFit:"contain" }} />
+                  </div>
+                  <div style={{ textAlign:"center" }}>
+                    <div style={{ fontWeight:700, color:"#1F2A24", fontSize:14 }}>{currentShop.name}</div>
+                    <div style={{ fontSize:12, color:"#667085", marginTop:4 }}>
+                      Partagez ce QR code pour ouvrir la boutique directement.
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div className="sa-footer" style={{ justifyContent:"space-between" }}>
+              <button type="button" className="btn-secondary" onClick={handleShareQrCode}>Partager</button>
+              <div style={{ display:"flex", gap:10 }}>
+                <button type="button" className="btn-secondary" onClick={handleDownloadQr} disabled={!qrDataUrl}>Télécharger</button>
+                <button type="button" className="btn-primary" onClick={() => setQrOpen(false)}>Fermer</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
