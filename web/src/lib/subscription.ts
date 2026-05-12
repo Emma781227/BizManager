@@ -37,7 +37,7 @@ export async function ensureDefaultPlans() {
           maxShops: plan.maxShops,
           maxProducts: plan.maxProducts,
           priceMonthly: plan.priceMonthly,
-          features: plan.features,
+          features: [...plan.features],
           isActive: true,
         },
         create: {
@@ -46,7 +46,7 @@ export async function ensureDefaultPlans() {
           maxShops: plan.maxShops,
           maxProducts: plan.maxProducts,
           priceMonthly: plan.priceMonthly,
-          features: plan.features,
+          features: [...plan.features],
           isActive: true,
         },
       }),
