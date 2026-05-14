@@ -228,7 +228,7 @@ export default function DashboardPage() {
         <div className="db-ctx">
           <div style={{ display:"flex", alignItems:"center", gap:10 }}>
             <span style={{ fontSize:12, fontWeight:600, color:"#98A2B3", textTransform:"uppercase", letterSpacing:"0.05em" }}>Boutique active</span>
-            <div style={{ display:"flex", alignItems:"center", gap:8, background:"#fff", border:"1.5px solid #E8ECEA", borderRadius:10, padding:"6px 14px" }}>
+            <div style={{ display:"flex", alignItems:"center", gap:100, background:"#fff", border:"1.5px solid #E8ECEA", borderRadius:10, padding:"6px 14px" }}>
               <div style={{ width:8, height:8, borderRadius:"50%", background:"#0A8F45" }} />
               <select value={activeId} onChange={e => setActiveId(e.target.value)}
                 style={{ border:"none", outline:"none", fontSize:14, fontWeight:600, color:"#1F2A24", background:"transparent", cursor:"pointer" }}>

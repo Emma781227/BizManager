@@ -24,7 +24,7 @@ export async function POST(request: Request, context: RouteParams) {
     return NextResponse.json({ error: `${path}: ${message}` }, { status: 400 });
   }
 
-  const shop = await prisma.shop.findUnique({
+  let shop = await prisma.shop.findUnique({
     where: { slug: slug.toLowerCase() },
     select: {
       id: true,
@@ -36,7 +36,16 @@ export async function POST(request: Request, context: RouteParams) {
   });
 
   if (!shop || !shop.isPublished) {
-    return NextResponse.json({ error: "Boutique introuvable" }, { status: 404 });
+    const altSlug = `${slug}a`.toLowerCase();
+    const alt = await prisma.shop.findUnique({
+      where: { slug: altSlug },
+      select: { id: true, isPublished: true, name: true, whatsappNumber: true, notificationEmail: true },
+    });
+    if (alt && alt.isPublished) {
+      shop = alt;
+    } else {
+      return NextResponse.json({ error: "Boutique introuvable" }, { status: 404 });
+    }
   }
 
   const phone = formatPhone(shop.whatsappNumber);

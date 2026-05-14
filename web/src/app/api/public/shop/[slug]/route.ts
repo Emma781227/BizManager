@@ -8,7 +8,7 @@ type RouteParams = {
 export async function GET(_: Request, context: RouteParams) {
   const { slug } = await context.params;
 
-  const shop = await prisma.shop.findUnique({
+  let shop = await prisma.shop.findUnique({
     where: { slug: slug.toLowerCase() },
     select: {
       id: true,
@@ -27,7 +27,29 @@ export async function GET(_: Request, context: RouteParams) {
   });
 
   if (!shop || !shop.isPublished) {
-    return NextResponse.json({ error: "Boutique introuvable" }, { status: 404 });
+    const altSlug = `${slug}a`.toLowerCase();
+    const alt = await prisma.shop.findUnique({
+      where: { slug: altSlug },
+      select: {
+        id: true,
+        slug: true,
+        name: true,
+        logoUrl: true,
+        coverUrl: true,
+        description: true,
+        city: true,
+        whatsappNumber: true,
+        category: true,
+        address: true,
+        openingHours: true,
+        isPublished: true,
+      },
+    });
+    if (alt && alt.isPublished) {
+      shop = alt;
+    } else {
+      return NextResponse.json({ error: "Boutique introuvable" }, { status: 404 });
+    }
   }
 
   const productsCount = await prisma.product.count({

@@ -18,6 +18,19 @@ type SettingsShop = {
   coverUrl: string | null;
 };
 
+type SubscriptionQuota = {
+  plan: {
+    name: string;
+    displayName: string;
+    maxShops: number;
+    maxProducts: number;
+  };
+  usage: {
+    shops: number;
+    products: number;
+  };
+};
+
 const COLORS = ["#0A8F45", "#3B82F6", "#F08A24", "#8B5CF6", "#EC4899", "#14B8A6"];
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -53,13 +66,6 @@ const DAYS_LIST = [
   { code:"VEN", label:"Ven" },
   { code:"SAM", label:"Sam" },
   { code:"DIM", label:"Dim" },
-];
-
-const ACTIVITY = [
-  { label:"Chiffre d'affaires total", value:"5 820 000 FCFA", trend:"+18,6%" },
-  { label:"Commandes total",          value:"342",             trend:"+12,4%" },
-  { label:"Nouveaux clients",         value:"128",             trend:"+9,7%"  },
-  { label:"Produits ajoutés",         value:"24",              trend:"+14,2%" },
 ];
 
 const TIPS = [
@@ -934,15 +940,19 @@ export default function ShopsPage() {
   const [createOpen, setCreateOpen]   = useState(false);
   const [shops, setShops]             = useState<SettingsShop[]>([]);
   const [loading, setLoading]         = useState(true);
+  const [quota, setQuota]             = useState<SubscriptionQuota | null>(null);
   const [actionsShop, setActionsShop] = useState<SettingsShop | null>(null);
 
   useEffect(() => {
-    fetch("/api/shop?all=1")
-      .then(r => r.json())
-      .then(d => {
-        const list: SettingsShop[] = (d.data ?? []).map(toSettingsShop);
+    Promise.all([
+      fetch("/api/shop?all=1").then(r => r.json()),
+      fetch("/api/subscription").then(r => r.json()),
+    ])
+      .then(([shopsData, quotaData]) => {
+        const list: SettingsShop[] = (shopsData.data ?? []).map(toSettingsShop);
         setShops(list);
         if (list.length > 0) setActiveId(list[0].id);
+        if (quotaData?.plan) setQuota(quotaData as SubscriptionQuota);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -973,6 +983,13 @@ export default function ShopsPage() {
   const totalProducts = shops.reduce((s, sh) => s + sh.products, 0);
   const totalOrders   = shops.reduce((s, sh) => s + sh.orders,   0);
   const totalClients  = shops.reduce((s, sh) => s + sh.clients,  0);
+  const publishedShops = shops.filter(s => s.isPublished).length;
+  const activityCards = [
+    { label:"Boutiques publiées", value:String(publishedShops), note:`sur ${shops.length} boutique${shops.length !== 1 ? "s" : ""}` },
+    { label:"Produits total",     value:String(totalProducts),  note:"sur toutes vos boutiques" },
+    { label:"Commandes total",    value:String(totalOrders),    note:"sur toutes vos boutiques" },
+    { label:"Clients total",      value:String(totalClients),   note:"sur toutes vos boutiques" },
+  ];
 
   return (
     <>
@@ -1004,7 +1021,9 @@ export default function ShopsPage() {
           </div>
           <div style={{ display:"flex", alignItems:"center", gap:10 }}>
             <span className="badge badge-biz" style={{ padding:"5px 12px", fontSize:12 }}>Plan Business</span>
-            <span style={{ fontSize:12, color:"#667085", fontWeight:500 }}>{shops.length} / 3 boutiques utilisées</span>
+            <span style={{ fontSize:12, color:"#667085", fontWeight:500 }}>
+              {quota ? `${quota.plan.displayName} · ${quota.usage.shops} / ${quota.plan.maxShops === -1 ? "∞" : quota.plan.maxShops} boutiques utilisées` : `${shops.length} boutiques utilisées`}
+            </span>
           </div>
           <button className="btn-primary" style={{ marginLeft:"auto" }} onClick={() => setCreateOpen(true)}>
             + Créer une boutique
@@ -1020,7 +1039,7 @@ export default function ShopsPage() {
         {/* KPI row */}
         <div className="mb-kpi">
           {[
-            { icon:"🏪", l:"Total boutiques",  v:`${shops.length} / 3`, s:"Utilisées",               i:"Limite selon votre plan Business" },
+            { icon:"🏪", l:"Total boutiques",  v: quota ? `${quota.usage.shops} / ${quota.plan.maxShops === -1 ? "∞" : quota.plan.maxShops}` : String(shops.length), s:"Utilisées", i: quota ? `Limite selon votre plan ${quota.plan.displayName}` : "" },
             { icon:"📦", l:"Total produits",   v:String(totalProducts), s:"Sur toutes vos boutiques", i:"" },
             { icon:"🛒", l:"Total commandes",  v:String(totalOrders),   s:"Sur toutes vos boutiques", i:"" },
             { icon:"👥", l:"Total clients",    v:String(totalClients),  s:"Sur toutes vos boutiques", i:"" },
@@ -1122,19 +1141,23 @@ export default function ShopsPage() {
             <div className="mb-card">
               <div style={{ fontWeight:700, color:"#1F2A24", fontSize:15, marginBottom:14 }}>Utilisation de votre plan</div>
               <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:12 }}>
-                <span className="badge badge-biz" style={{ padding:"5px 14px", fontSize:12 }}>Plan Business</span>
-                <span style={{ fontSize:12, color:"#667085" }}>Jusqu'à 3 boutiques</span>
+                <span className="badge badge-biz" style={{ padding:"5px 14px", fontSize:12 }}>Plan {quota?.plan.displayName ?? "Business"}</span>
+                <span style={{ fontSize:12, color:"#667085" }}>
+                  Jusqu'à {quota ? (quota.plan.maxShops === -1 ? "∞" : quota.plan.maxShops) : 3} boutiques
+                </span>
               </div>
               <div style={{ display:"flex", alignItems:"baseline", gap:6, marginBottom:2 }}>
-                <span style={{ fontSize:38, fontWeight:800, color:"#1F2A24", letterSpacing:"-1px" }}>{shops.length}</span>
-                <span style={{ fontSize:22, color:"#98A2B3" }}>/ 3</span>
+                <span style={{ fontSize:38, fontWeight:800, color:"#1F2A24", letterSpacing:"-1px" }}>{quota ? quota.usage.shops : shops.length}</span>
+                <span style={{ fontSize:22, color:"#98A2B3" }}>/ {quota ? (quota.plan.maxShops === -1 ? "∞" : quota.plan.maxShops) : 3}</span>
                 <span style={{ fontSize:13, color:"#667085", marginLeft:8 }}>boutiques utilisées</span>
               </div>
               <div className="mb-prog">
-                <div className="mb-prog-bar" style={{ width:`${Math.round((shops.length / 3) * 100)}%` }} />
+                <div className="mb-prog-bar" style={{ width:`${quota && quota.plan.maxShops > 0 ? Math.min(100, Math.round((quota.usage.shops / quota.plan.maxShops) * 100)) : Math.round((shops.length / 3) * 100)}%` }} />
               </div>
               <div style={{ fontSize:11, color:"#98A2B3", marginBottom:16 }}>
-                {Math.round((shops.length / 3) * 100)}% du quota utilisé · {3 - shops.length} boutique{3 - shops.length !== 1 ? "s" : ""} restante{3 - shops.length !== 1 ? "s" : ""}
+                {quota && quota.plan.maxShops !== -1
+                  ? `${Math.round((quota.usage.shops / quota.plan.maxShops) * 100)}% du quota utilisé · ${Math.max(0, quota.plan.maxShops - quota.usage.shops)} boutique${Math.max(0, quota.plan.maxShops - quota.usage.shops) !== 1 ? "s" : ""} restante${Math.max(0, quota.plan.maxShops - quota.usage.shops) !== 1 ? "s" : ""}`
+                  : `${shops.length} boutique${shops.length !== 1 ? "s" : ""} active${shops.length !== 1 ? "s" : ""}`}
               </div>
               <div style={{ background:"#EAF7EF", border:"1px solid #C8E6D5", borderRadius:12, padding:"14px 16px" }}>
                 <div style={{ display:"flex", gap:10, alignItems:"flex-start" }}>
@@ -1163,14 +1186,13 @@ export default function ShopsPage() {
                   <option value="90d">90 derniers jours</option>
                 </select>
               </div>
-              {ACTIVITY.map(a => (
+              {activityCards.map(a => (
                 <div key={a.label} className="mb-act-row">
                   <div style={{ flex:1 }}>
                     <div style={{ fontSize:11, color:"#98A2B3" }}>{a.label}</div>
                     <div style={{ fontWeight:700, color:"#1F2A24", fontSize:14 }}>{a.value}</div>
+                    <div style={{ fontSize:11, color:"#667085", marginTop:2 }}>{a.note}</div>
                   </div>
-                  <span style={{ fontSize:11, fontWeight:600, color:"#0A8F45",
-                    background:"#DDF6E7", padding:"3px 8px", borderRadius:20 }}>{a.trend}</span>
                 </div>
               ))}
             </div>

@@ -287,9 +287,9 @@ export default function CreateShopModal({ open, onClose, onCreated }: CreateShop
                   <input className="sm-input" placeholder="Ex. : Mon Aventure" value={name} onChange={e => setName(e.target.value)} />
                 </div>
 
-                {/* Slug */}
+                {/* URL publique */}
                 <div>
-                  <label className="sm-label">Slug public <span style={{color:"#EF4444"}}>*</span></label>
+                  <label className="sm-label">URL de la boutique <span style={{color:"#EF4444"}}>*</span></label>
                   <div style={{position:"relative"}}>
                     <input className="sm-input"
                       placeholder="Ex. : mon-aventure"
@@ -304,7 +304,7 @@ export default function CreateShopModal({ open, onClose, onCreated }: CreateShop
                     </span>
                   </div>
                   <div style={{fontSize:12, color:"#667085", marginTop:4}}>
-                    Aperçu : <strong style={{color:"#0A8F45"}}>{slug || "mon-aventure"}</strong>.bizmanager.shop
+                    URL publique : <strong style={{color:"#0A8F45"}}>{slug || "mon-aventure"}</strong>.bizmanager.shop
                   </div>
                 </div>
 

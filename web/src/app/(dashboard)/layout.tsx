@@ -5,7 +5,7 @@ import MerchantNav from "./MerchantNav";
 
 const links = [
   { href: "/dashboard", label: "Tableau de bord", short: "DB" },
-  { href: "/shops",     label: "Mes boutiques",   short: "🏪" },
+  { href: "/shops",     label: "Mes boutiques",   short: "MB" },
   { href: "/products",  label: "Produits",         short: "PR" },
   { href: "/orders",    label: "Commandes",        short: "CO" },
   { href: "/customers", label: "Clients",          short: "CL" },
@@ -47,19 +47,7 @@ export default async function DashboardLayout({
 
         <MerchantNav links={navLinks} />
 
-        <div className="sidebar-promo">
-          <div className="promo-icon">
-            <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-          </div>
-          <h3 className="promo-title">Développez votre activité</h3>
-          <p className="promo-text">Découvrez nos plans premium pour booster vos ventes</p>
-          <a href="#plans" className="promo-button">Découvrir les plans</a>
-        </div>
-
         <div className="sidebar-footer">
-          <p>Suivi des ventes, commandes et clients en temps réel.</p>
           <form className="sidebar-logout" action="/api/auth/logout" method="post">
             <button type="submit">Déconnexion</button>
           </form>

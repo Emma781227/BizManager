@@ -22,9 +22,16 @@ type MockProduct = {
 };
 
 type QuotaInfo = {
-  plan: { name: string; displayName: string; maxProducts: number; priceMonthly: number };
+  plan: { name: string; displayName: string; maxShops: number; maxProducts: number; priceMonthly: number };
   usage: { shops: number; products: number };
   nextPlan: { name: string; displayName: string; priceMonthly: number } | null;
+};
+
+type CatalogSlice = {
+  label: string;
+  count: number;
+  pct: number;
+  color: string;
 };
 
 // ─── API → display conversion ──────────────────────────────────────────────────
@@ -49,14 +56,6 @@ function apiToDisplay(p: ApiProduct): MockProduct {
     imageUrl:  (p as { imageUrl?: string | null }).imageUrl ?? null,
   };
 }
-
-const DONUT_DATA = [
-  { label:"Accessoires", pct:34, color:"#0A8F45" },
-  { label:"Chaussures",  pct:22, color:"#3BB870" },
-  { label:"Vêtements",   pct:19, color:"#7DD4A8" },
-  { label:"Beauté",      pct:15, color:"#F08A24" },
-  { label:"Parfums",     pct:10, color:"#98A2B3" },
-];
 
 const TIPS = [
   { icon:"📸", t:"Optimisation photos",  d:"Des photos HD augmentent les conversions de 40%." },
@@ -236,30 +235,44 @@ function SyncBadge({ s }: { s: MockProduct["sync"] }) {
 }
 
 // ─── Mini Donut ───────────────────────────────────────────────────────────────
-function DonutChart() {
+function DonutChart({ data, total }: { data: CatalogSlice[]; total: number }) {
   const r = 44; const cx = 52; const cy = 52; const circ = 2 * Math.PI * r;
   let offset = 0;
-  const slices = DONUT_DATA.map(d => {
+  const slices = data.map(d => {
     const dash = (d.pct / 100) * circ;
     const s = { dash, gap: circ - dash, offset };
     offset += dash;
     return s;
   });
+
+  if (total === 0) {
+    return (
+      <div className="pr-donut-wrap" style={{ justifyContent:"center" }}>
+        <div style={{ width:104, height:104, borderRadius:"50%", border:"14px solid #E8ECEA", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+          <span style={{ fontSize:11, color:"#98A2B3", textAlign:"center", lineHeight:1.3 }}>Aucun<br />produit</span>
+        </div>
+        <div className="pr-donut-legend">
+          <div style={{ fontSize:12, color:"#667085" }}>Ajoutez des produits pour voir la répartition par catégorie.</div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="pr-donut-wrap">
       <svg width="104" height="104" viewBox="0 0 104 104" style={{ flexShrink: 0 }}>
-        {DONUT_DATA.map((d, i) => (
+        {data.map((d, i) => (
           <circle key={d.label} cx={cx} cy={cy} r={r} fill="none"
             stroke={d.color} strokeWidth="14"
             strokeDasharray={`${slices[i].dash} ${slices[i].gap}`}
             strokeDashoffset={-slices[i].offset}
             style={{ transform: "rotate(-90deg)", transformOrigin: "52px 52px" }} />
         ))}
-        <text x="52" y="48" textAnchor="middle" fontSize="12" fill="#1F2A24" fontWeight="700">78</text>
+        <text x="52" y="48" textAnchor="middle" fontSize="12" fill="#1F2A24" fontWeight="700">{total}</text>
         <text x="52" y="62" textAnchor="middle" fontSize="10" fill="#98A2B3">produits</text>
       </svg>
       <div className="pr-donut-legend">
-        {DONUT_DATA.map(d => (
+        {data.map(d => (
           <div key={d.label} className="pr-donut-item">
             <span className="pr-dot" style={{ background: d.color }} />
             <span style={{ flex: 1 }}>{d.label}</span>
@@ -1162,8 +1175,58 @@ export default function ProductsPage() {
 
   const activeShop = realShops.find(s => s.id === activeShopId) ?? realShops[0] ?? null;
   const atProductLimit = quota !== null && quota.plan.maxProducts !== -1 && quota.usage.products >= quota.plan.maxProducts;
+  const planMaxShops = quota ? ((quota.plan as QuotaInfo["plan"]).maxShops ?? 3) : 3;
+  const usedShops = quota ? quota.usage.shops : realShops.length;
+  const usedShopText = quota ? `${usedShops} / ${planMaxShops === -1 ? "∞" : planMaxShops} boutiques utilisées` : `${usedShops} boutiques utilisées`;
 
   const shopColors = ["#0A8F45","#3B82F6","#F08A24","#8B5CF6","#EC4899","#14B8A6"];
+
+  const catalogDistribution = useMemo<CatalogSlice[]>(() => {
+    const counts = new Map<string, number>();
+    for (const product of products) {
+      const label = (product.category || "Sans catégorie").trim() || "Sans catégorie";
+      counts.set(label, (counts.get(label) ?? 0) + 1);
+    }
+
+    const total = products.length;
+    const slices = [...counts.entries()]
+      .map(([label, count], index) => ({
+        label,
+        count,
+        pct: total > 0 ? Math.round((count / total) * 100) : 0,
+        color: shopColors[index % shopColors.length],
+      }))
+      .sort((a, b) => b.count - a.count);
+
+    if (slices.length <= 5) return slices;
+
+    const top = slices.slice(0, 4);
+    const restCount = slices.slice(4).reduce((sum, slice) => sum + slice.count, 0);
+    return [
+      ...top,
+      {
+        label: "Autres",
+        count: restCount,
+        pct: total > 0 ? Math.round((restCount / total) * 100) : 0,
+        color: "#98A2B3",
+      },
+    ];
+  }, [products]);
+
+  // Calculate catalog alerts based on real products data
+  const catalogAlerts = useMemo(() => {
+    const ruptures = products.filter(p => p.stock === 0).length;
+    const stockFaible = products.filter(p => p.stock > 0 && p.stock <= 5).length;
+    const nonSync = products.filter(p => p.sync !== "ok").length;
+    const sansCategorie = products.filter(p => !p.category || p.category.trim() === "").length;
+    
+    return [
+      { icon:"🔴", label:`${ruptures} produit${ruptures !== 1 ? "s" : ""} en rupture`,             color:"#EF4444" },
+      { icon:"🟠", label:`${stockFaible} produit${stockFaible !== 1 ? "s" : ""} avec stock faible`,      color:"#F08A24" },
+      { icon:"🔄", label:`${nonSync} produit${nonSync !== 1 ? "s" : ""} non synchronisé${nonSync !== 1 ? "s" : ""}`,       color:"#667085" },
+      { icon:"🏷️", label:`${sansCategorie} produit${sansCategorie !== 1 ? "s" : ""} sans catégorie`,        color:"#98A2B3" },
+    ];
+  }, [products]);
 
   // Fetch real shops on mount
   useEffect(() => {
@@ -1270,7 +1333,9 @@ export default function ProductsPage() {
               Plan {quota?.plan.displayName ?? "—"}
             </span>
             <div>
-              <div style={{ fontSize:12, color:"#1F2A24", fontWeight:500 }}>2 / 3 boutiques utilisées</div>
+              <div style={{ fontSize:12, color:"#1F2A24", fontWeight:500 }}>
+                {usedShopText}
+              </div>
               <div style={{ fontSize:11, color: atProductLimit ? "#EF4444" : "#98A2B3", fontWeight: atProductLimit ? 600 : 400 }}>
                 {quota
                   ? `${quota.usage.products} / ${quota.plan.maxProducts === -1 ? "∞" : quota.plan.maxProducts} produits`
@@ -1344,9 +1409,11 @@ export default function ProductsPage() {
           </div>
           <div style={{ minWidth:160 }}>
             <div style={{ fontSize:12, color:"#667085", fontWeight:500 }}>Quota boutiques</div>
-            <div style={{ fontWeight:700, color:"#1F2A24", margin:"4px 0 2px" }}>2 / 3</div>
+            <div style={{ fontWeight:700, color:"#1F2A24", margin:"4px 0 2px" }}>
+              {usedShops} / {planMaxShops === -1 ? "∞" : planMaxShops}
+            </div>
             <div className="quota-bar" style={{ width:120 }}>
-              <div className="quota-fill" style={{ width:"66%" }} />
+              <div className="quota-fill" style={{ width:`${planMaxShops > 0 ? Math.min(100, Math.round((usedShops / planMaxShops) * 100)) : 0}%` }} />
             </div>
           </div>
         </div>
@@ -1600,12 +1667,7 @@ export default function ProductsPage() {
             {/* Alertes catalogue */}
             <div className="pr-card">
               <div style={{ fontSize:13, fontWeight:700, color:"#1F2A24", marginBottom:10 }}>Alertes catalogue</div>
-              {[
-                { icon:"🔴", label:"3 produits en rupture",             color:"#EF4444" },
-                { icon:"🟠", label:"8 produits avec stock faible",      color:"#F08A24" },
-                { icon:"🔄", label:"2 produits non synchronisés",       color:"#667085" },
-                { icon:"🏷️", label:"5 produits sans catégorie",        color:"#98A2B3" },
-              ].map(a => (
+              {catalogAlerts.map(a => (
                 <div key={a.label} className="pr-alert-row">
                   <span style={{ fontSize:16 }}>{a.icon}</span>
                   <span style={{ color: a.color, fontWeight:500, fontSize:12 }}>{a.label}</span>
@@ -1616,7 +1678,7 @@ export default function ProductsPage() {
             {/* Répartition catalogue */}
             <div className="pr-card">
               <div style={{ fontSize:13, fontWeight:700, color:"#1F2A24", marginBottom:12 }}>Répartition du catalogue</div>
-              <DonutChart />
+              <DonutChart data={catalogDistribution} total={products.length} />
             </div>
 
           </div>
