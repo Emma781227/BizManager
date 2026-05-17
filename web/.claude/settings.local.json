@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Skill(update-config)"
+    ]
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "agent",
+            "prompt": "Check which files changed this session by running: git diff HEAD --name-only (and also git diff --cached --name-only). If the changed files include any of the following — files in src/app/ (pages or API routes), prisma/schema.prisma, package.json, or files in src/lib/ — then update CLAUDE.md at C:\\Users\\Emma\\Desktop\\Commerce\\web\\CLAUDE.md to reflect the current project state. Only update sections that are actually out of date: routes table, database models, lib functions, dependencies. Do NOT update if only minor changes were made (bug fixes, style tweaks, text content). Do NOT rewrite the whole file — only patch the relevant sections.",
+            "timeout": 120,
+            "statusMessage": "Mise à jour de CLAUDE.md..."
+          }
+        ]
+      }
+    ]
+  }
+}

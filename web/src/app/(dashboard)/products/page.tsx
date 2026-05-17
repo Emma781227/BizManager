@@ -1,7 +1,9 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
+import type React from "react";
 import { useActiveShop } from "@/hooks/useActiveShop";
 import CreateShopModal from "../shops/CreateShopModal";
+import { Camera, Package, Tag, Search, Info, Image, Film, Lock, Check, Pencil, Copy, Eye, Trash2, ChevronLeft, ChevronRight, Store, AlertCircle, AlertTriangle, RefreshCw, Upload, Download, BarChart2, User, ChevronDown, MessageCircle, BookOpen, X, Loader2, Shirt, Sparkles, ShoppingBag } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Shop = {
@@ -57,11 +59,11 @@ function apiToDisplay(p: ApiProduct): MockProduct {
   };
 }
 
-const TIPS = [
-  { icon:"📸", t:"Optimisation photos",  d:"Des photos HD augmentent les conversions de 40%." },
-  { icon:"📦", t:"Gestion des stocks",   d:"Activez les alertes stock pour éviter les ruptures." },
-  { icon:"🏷️", t:"Catégories claires",  d:"Des catégories bien définies améliorent la navigation." },
-  { icon:"🔍", t:"SEO produit",          d:"Remplissez les méta-données pour être mieux référencé." },
+const TIPS: { icon: React.ReactNode; t: string; d: string }[] = [
+  { icon:<Camera size={16} color="#0A8F45" />, t:"Optimisation photos",  d:"Des photos HD augmentent les conversions de 40%." },
+  { icon:<Package size={16} color="#0A8F45" />, t:"Gestion des stocks",   d:"Activez les alertes stock pour éviter les ruptures." },
+  { icon:<Tag size={16} color="#0A8F45" />, t:"Catégories claires",  d:"Des catégories bien définies améliorent la navigation." },
+  { icon:<Search size={16} color="#0A8F45" />, t:"SEO produit",          d:"Remplissez les méta-données pour être mieux référencé." },
 ];
 
 // ─── CSS ──────────────────────────────────────────────────────────────────────
@@ -219,6 +221,21 @@ const CSS = `
   .pr-ctx-r { margin-left:0; }
   .pr-wrap  { padding:14px 12px; }
 }
+
+@keyframes spin { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
+.spin { animation:spin .8s linear infinite; display:inline-flex; }
+
+/* ── Toast notification ── */
+@keyframes toast-in  { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+@keyframes toast-out { from { opacity:1; transform:translateY(0); }   to { opacity:0; transform:translateY(16px); } }
+.toast-wrap { position:fixed; bottom:28px; right:28px; z-index:9999;
+              display:flex; align-items:center; gap:10px;
+              background:#0A8F45; color:#fff; font-size:13px; font-weight:600;
+              padding:12px 18px; border-radius:12px;
+              box-shadow:0 6px 24px rgba(10,143,69,0.30);
+              animation:toast-in .25s ease forwards; }
+.toast-wrap.hiding { animation:toast-out .25s ease forwards; }
+.toast-icon { font-size:16px; flex-shrink:0; }
 `;
 
 // ─── Badge helpers ─────────────────────────────────────────────────────────────
@@ -284,10 +301,17 @@ function DonutChart({ data, total }: { data: CatalogSlice[]; total: number }) {
   );
 }
 
-// ─── PRODUCT EMOJI ────────────────────────────────────────────────────────────
-const EMOJIS: Record<string, string> = {
-  "Accessoires":"🎒","Chaussures":"👟","Vêtements":"👗","Beauté":"✨","Parfums":"🌸",
-};
+// ─── PRODUCT ICON ─────────────────────────────────────────────────────────────
+function ProductIcon({ category }: { category: string }) {
+  const icons: Record<string, React.ReactNode> = {
+    "Accessoires": <ShoppingBag size={20} color="#98A2B3" />,
+    "Chaussures":  <Package size={20} color="#98A2B3" />,
+    "Vêtements":   <Shirt size={20} color="#98A2B3" />,
+    "Beauté":      <Sparkles size={20} color="#98A2B3" />,
+    "Parfums":     <Sparkles size={20} color="#98A2B3" />,
+  };
+  return <>{icons[category] ?? <Package size={20} color="#98A2B3" />}</>;
+}
 
 // ─── SKU generator ───────────────────────────────────────────────────────────
 function generateSku(name: string): string {
@@ -423,7 +447,7 @@ function AddProductModal({ open, onClose, shopId, shopName, categories, onCreate
           <button onClick={handleClose}
             style={{ background:"none", border:"1.5px solid #E8ECEA", borderRadius:8, width:32, height:32,
                      display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer",
-                     color:"#667085", fontSize:16, flexShrink:0 }}>✕</button>
+                     color:"#667085", fontSize:16, flexShrink:0 }}><X size={16} /></button>
         </div>
 
         <div className="pm-body">
@@ -431,7 +455,7 @@ function AddProductModal({ open, onClose, shopId, shopName, categories, onCreate
           {/* Info banner */}
           <div style={{ display:"flex", alignItems:"center", gap:10, background:"#EAF7EF",
                         border:"1px solid #C2E8D0", borderRadius:12, padding:"11px 16px" }}>
-            <span style={{ fontSize:16, flexShrink:0 }}>ℹ️</span>
+            <span style={{ flexShrink:0, color:"#0A8F45" }}><Info size={16} /></span>
             <span style={{ fontSize:13, color:"#1F2A24" }}>
               Ce produit sera rattaché à la boutique active&nbsp;
               <strong style={{ color:"#0A8F45" }}>{shopName}</strong>.
@@ -454,8 +478,8 @@ function AddProductModal({ open, onClose, shopId, shopName, categories, onCreate
                 ) : (
                   <>
                     <div style={{ display:"flex", gap:8 }}>
-                      <span style={{ fontSize:24 }}>🖼️</span>
-                      <span style={{ fontSize:24 }}>🎬</span>
+                      <span style={{ color:"#98A2B3" }}><Image size={24} /></span>
+                      <span style={{ color:"#98A2B3" }}><Film size={24} /></span>
                     </div>
                     <span style={{ fontSize:13, fontWeight:600, color:"#0A8F45", background:"#fff",
                                    border:"1.5px solid #C2E8D0", borderRadius:8, padding:"5px 16px", marginTop:4 }}>
@@ -510,7 +534,7 @@ function AddProductModal({ open, onClose, shopId, shopName, categories, onCreate
                             border:"1.5px solid #E8ECEA", borderRadius:10, background:"#F8FAF9" }}>
                 <span style={{ fontSize:13, fontWeight:600, color:"#1F2A24", flex:1 }}>{shopName}</span>
                 <span className="badge badge-green" style={{ fontSize:10 }}>Active</span>
-                <span style={{ fontSize:14, color:"#98A2B3" }}>🔒</span>
+                <span style={{ color:"#98A2B3" }}><Lock size={13} /></span>
               </div>
               <p style={{ margin:"5px 0 0", fontSize:11, color:"#98A2B3" }}>
                 Le produit sera ajouté à la boutique active.
@@ -545,7 +569,8 @@ function AddProductModal({ open, onClose, shopId, shopName, categories, onCreate
                              cursor:"pointer", flexShrink:0 }}>OK</button>
                   <button onClick={() => { setShowNewCat(false); setNewCatInput(""); }}
                     style={{ height:34, padding:"0 10px", background:"none", border:"1px solid #E8ECEA",
-                             borderRadius:8, fontSize:12, color:"#667085", cursor:"pointer", flexShrink:0 }}>✕</button>
+                             borderRadius:8, fontSize:12, color:"#667085", cursor:"pointer", flexShrink:0,
+                             display:"flex", alignItems:"center", justifyContent:"center" }}><X size={16} /></button>
                 </div>
               )}
               <p style={{ margin:"5px 0 0", fontSize:11, color:"#98A2B3" }}>
@@ -561,7 +586,7 @@ function AddProductModal({ open, onClose, shopId, shopName, categories, onCreate
             <div>
               <label className="pm-label" style={{ display:"flex", alignItems:"center", gap:5 }}>
                 Référence produit (SKU)
-                <span title="Généré automatiquement à partir du nom" style={{ color:"#98A2B3", fontSize:13, cursor:"help" }}>ⓘ</span>
+                <span title="Généré automatiquement à partir du nom" style={{ color:"#98A2B3", fontSize:13, cursor:"help" }}><Info size={13} /></span>
               </label>
               <div style={{ position:"relative" }}>
                 <input className="pm-input" disabled
@@ -569,7 +594,7 @@ function AddProductModal({ open, onClose, shopId, shopName, categories, onCreate
                   style={{ background:"#F8FAF9", color: sku ? "#1F2A24" : "#C5CDD1",
                            fontFamily:"monospace", fontSize:12, paddingRight:32 }} />
                 <span style={{ position:"absolute", right:10, top:"50%", transform:"translateY(-50%)",
-                               fontSize:13, color:"#C5CDD1" }}>🔒</span>
+                               color:"#C5CDD1" }}><Lock size={13} /></span>
               </div>
               <p style={{ margin:"5px 0 0", fontSize:11, color:"#98A2B3" }}>
                 Généré automatiquement à partir du nom du produit.
@@ -655,7 +680,7 @@ function AddProductModal({ open, onClose, shopId, shopName, categories, onCreate
                 onClick={() => setTrackStock(p => !p)} />
               <span style={{ fontSize:12, color:"#1F2A24", fontWeight:500 }}>Suivi du stock</span>
               <span title="Désactiver pour les produits sans gestion de stock"
-                style={{ color:"#98A2B3", fontSize:13, cursor:"help" }}>ⓘ</span>
+                style={{ color:"#98A2B3", cursor:"help" }}><Info size={13} /></span>
             </div>
           </div>
 
@@ -703,7 +728,7 @@ function AddProductModal({ open, onClose, shopId, shopName, categories, onCreate
           {submitSuccess && (
             <div style={{ background:"#DDF6E7", border:"1px solid #A8E0BF", borderRadius:10,
                           padding:"10px 14px", fontSize:13, color:"#08763A", fontWeight:600 }}>
-              ✓ Produit créé avec succès !
+              <Check size={14} style={{ marginRight:4, verticalAlign:"middle" }} /> Produit créé avec succès !
             </div>
           )}
 
@@ -851,14 +876,14 @@ function EditProductModal({ open, onClose, shopId, shopName, categories, product
           <button onClick={handleClose}
             style={{ background:"none", border:"1.5px solid #E8ECEA", borderRadius:8, width:32, height:32,
                      display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer",
-                     color:"#667085", fontSize:16, flexShrink:0 }}>✕</button>
+                     color:"#667085", fontSize:16, flexShrink:0 }}><X size={16} /></button>
         </div>
 
         <div className="pm-body">
 
           <div style={{ display:"flex", alignItems:"center", gap:10, background:"#EAF7EF",
                         border:"1px solid #C2E8D0", borderRadius:12, padding:"11px 16px" }}>
-            <span style={{ fontSize:16, flexShrink:0 }}>✏️</span>
+            <span style={{ flexShrink:0, color:"#0A8F45" }}><Pencil size={16} /></span>
             <span style={{ fontSize:13, color:"#1F2A24" }}>
               Modification du produit&nbsp;<strong style={{ color:"#0A8F45" }}>{product?.name}</strong>
               &nbsp;— boutique&nbsp;<strong style={{ color:"#0A8F45" }}>{shopName}</strong>.
@@ -876,8 +901,8 @@ function EditProductModal({ open, onClose, shopId, shopName, categories, product
                 ) : (
                   <>
                     <div style={{ display:"flex", gap:8 }}>
-                      <span style={{ fontSize:24 }}>🖼️</span>
-                      <span style={{ fontSize:24 }}>🎬</span>
+                      <span style={{ color:"#98A2B3" }}><Image size={24} /></span>
+                      <span style={{ color:"#98A2B3" }}><Film size={24} /></span>
                     </div>
                     <span style={{ fontSize:13, fontWeight:600, color:"#0A8F45", background:"#fff",
                                    border:"1.5px solid #C2E8D0", borderRadius:8, padding:"5px 16px", marginTop:4 }}>
@@ -924,7 +949,7 @@ function EditProductModal({ open, onClose, shopId, shopName, categories, product
                             border:"1.5px solid #E8ECEA", borderRadius:10, background:"#F8FAF9" }}>
                 <span style={{ fontSize:13, fontWeight:600, color:"#1F2A24", flex:1 }}>{shopName}</span>
                 <span className="badge badge-green" style={{ fontSize:10 }}>Active</span>
-                <span style={{ fontSize:14, color:"#98A2B3" }}>🔒</span>
+                <span style={{ color:"#98A2B3" }}><Lock size={13} /></span>
               </div>
             </div>
             <div>
@@ -951,7 +976,8 @@ function EditProductModal({ open, onClose, shopId, shopName, categories, product
                              border:"none", borderRadius:8, fontSize:12, fontWeight:700, cursor:"pointer", flexShrink:0 }}>OK</button>
                   <button onClick={() => { setShowNewCat(false); setNewCatInput(""); }}
                     style={{ height:34, padding:"0 10px", background:"none", border:"1px solid #E8ECEA",
-                             borderRadius:8, fontSize:12, color:"#667085", cursor:"pointer", flexShrink:0 }}>✕</button>
+                             borderRadius:8, fontSize:12, color:"#667085", cursor:"pointer", flexShrink:0,
+                             display:"flex", alignItems:"center", justifyContent:"center" }}><X size={16} /></button>
                 </div>
               )}
             </div>
@@ -961,12 +987,12 @@ function EditProductModal({ open, onClose, shopId, shopName, categories, product
             <div>
               <label className="pm-label" style={{ display:"flex", alignItems:"center", gap:5 }}>
                 Référence (SKU)
-                <span title="Généré à partir du nom" style={{ color:"#98A2B3", fontSize:13, cursor:"help" }}>ⓘ</span>
+                <span title="Généré à partir du nom" style={{ color:"#98A2B3", cursor:"help" }}><Info size={13} /></span>
               </label>
               <div style={{ position:"relative" }}>
                 <input className="pm-input" disabled value={sku || product?.sku || "—"}
                   style={{ background:"#F8FAF9", color:"#1F2A24", fontFamily:"monospace", fontSize:12, paddingRight:32 }} />
-                <span style={{ position:"absolute", right:10, top:"50%", transform:"translateY(-50%)", fontSize:13, color:"#C5CDD1" }}>🔒</span>
+                <span style={{ position:"absolute", right:10, top:"50%", transform:"translateY(-50%)", color:"#C5CDD1" }}><Lock size={13} /></span>
               </div>
             </div>
             <div>
@@ -1021,7 +1047,7 @@ function EditProductModal({ open, onClose, shopId, shopName, categories, product
             <div style={{ display:"flex", alignItems:"center", gap:8 }}>
               <button className={`pm-toggle${trackStock ? " on" : ""}`} onClick={() => setTrackStock(p => !p)} />
               <span style={{ fontSize:12, color:"#1F2A24", fontWeight:500 }}>Suivi du stock</span>
-              <span title="Désactiver pour les produits sans gestion de stock" style={{ color:"#98A2B3", fontSize:13, cursor:"help" }}>ⓘ</span>
+              <span title="Désactiver pour les produits sans gestion de stock" style={{ color:"#98A2B3", cursor:"help" }}><Info size={13} /></span>
             </div>
           </div>
 
@@ -1059,7 +1085,7 @@ function EditProductModal({ open, onClose, shopId, shopName, categories, product
           {submitSuccess && (
             <div style={{ background:"#DDF6E7", border:"1px solid #A8E0BF", borderRadius:10,
                           padding:"10px 14px", fontSize:13, color:"#08763A", fontWeight:600 }}>
-              ✓ Produit modifié avec succès !
+              <Check size={14} style={{ marginRight:4, verticalAlign:"middle" }} /> Produit modifié avec succès !
             </div>
           )}
 
@@ -1121,7 +1147,7 @@ function DeleteConfirmModal({ product, shopId, onClose, onDeleted }: DeleteConfi
                     boxShadow:"0 12px 40px rgba(16,24,40,0.12)" }}
            onClick={e => e.stopPropagation()}>
         <div style={{ textAlign:"center", marginBottom:20 }}>
-          <div style={{ fontSize:44, marginBottom:10 }}>🗑️</div>
+          <div style={{ color:"#EF4444", marginBottom:10 }}><Trash2 size={44} /></div>
           <h2 style={{ fontSize:20, fontWeight:800, color:"#1F2A24", margin:0 }}>Supprimer le produit ?</h2>
           <p style={{ fontSize:14, color:"#667085", marginTop:8, marginBottom:0, lineHeight:1.5 }}>
             Cette action est irréversible. Le produit&nbsp;
@@ -1172,6 +1198,13 @@ export default function ProductsPage() {
   const [editProduct, setEditProduct]   = useState<MockProduct | null>(null);
   const [deleteProduct, setDeleteProduct] = useState<MockProduct | null>(null);
   const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ msg: string; hiding: boolean } | null>(null);
+
+  function showToast(msg: string) {
+    setToast({ msg, hiding: false });
+    setTimeout(() => setToast(t => t ? { ...t, hiding: true } : null), 2700);
+    setTimeout(() => setToast(null), 3000);
+  }
 
   const activeShop = realShops.find(s => s.id === activeShopId) ?? realShops[0] ?? null;
   const atProductLimit = quota !== null && quota.plan.maxProducts !== -1 && quota.usage.products >= quota.plan.maxProducts;
@@ -1221,10 +1254,10 @@ export default function ProductsPage() {
     const sansCategorie = products.filter(p => !p.category || p.category.trim() === "").length;
     
     return [
-      { icon:"🔴", label:`${ruptures} produit${ruptures !== 1 ? "s" : ""} en rupture`,             color:"#EF4444" },
-      { icon:"🟠", label:`${stockFaible} produit${stockFaible !== 1 ? "s" : ""} avec stock faible`,      color:"#F08A24" },
-      { icon:"🔄", label:`${nonSync} produit${nonSync !== 1 ? "s" : ""} non synchronisé${nonSync !== 1 ? "s" : ""}`,       color:"#667085" },
-      { icon:"🏷️", label:`${sansCategorie} produit${sansCategorie !== 1 ? "s" : ""} sans catégorie`,        color:"#98A2B3" },
+      { icon:<AlertCircle size={14} />, label:`${ruptures} produit${ruptures !== 1 ? "s" : ""} en rupture`,             color:"#EF4444" },
+      { icon:<AlertTriangle size={14} />, label:`${stockFaible} produit${stockFaible !== 1 ? "s" : ""} avec stock faible`,      color:"#F08A24" },
+      { icon:<RefreshCw size={14} />, label:`${nonSync} produit${nonSync !== 1 ? "s" : ""} non synchronisé${nonSync !== 1 ? "s" : ""}`,       color:"#667085" },
+      { icon:<Tag size={14} />, label:`${sansCategorie} produit${sansCategorie !== 1 ? "s" : ""} sans catégorie`,        color:"#98A2B3" },
     ];
   }, [products]);
 
@@ -1345,7 +1378,7 @@ export default function ProductsPage() {
           </div>
 
           <div className="pr-ctx-r">
-            <button className="btn-secondary btn-sm">⬆ Importer un catalogue</button>
+            <button className="btn-secondary btn-sm" style={{ display:"flex", alignItems:"center", gap:5 }}><Upload size={12} /> Importer un catalogue</button>
             <button className="btn-primary  btn-sm" onClick={() => setShowCreateShop(true)}>+ Créer une boutique</button>
           </div>
         </div>
@@ -1364,17 +1397,17 @@ export default function ProductsPage() {
 
         {/* ── KPI row ── */}
         <div className="pr-kpi">
-          {[
-            { label:"Produits actifs", val:String(products.filter(p=>p.status==="active").length), sub:"produits",  icon:"📦", color:"#DDF6E7", tc:"#0A8F45" },
-            { label:"Stock faible",    val:String(products.filter(p=>p.status==="low").length),    sub:"produits",  icon:"⚠️", color:"#FFF1E5", tc:"#F08A24" },
-            { label:"En rupture",      val:String(products.filter(p=>p.status==="out").length),    sub:"produits",  icon:"🔴", color:"#FDE8E8", tc:"#EF4444" },
-            { label:"Total catalogue", val:String(products.length),                                sub:"produits",  icon:"💰", color:"#EAF7EF", tc:"#0A8F45" },
-          ].map(k => (
+          {([
+            { label:"Produits actifs", val:String(products.filter(p=>p.status==="active").length), sub:"produits",  icon:<Package size={16} color="#0A8F45" />, color:"#DDF6E7", tc:"#0A8F45" },
+            { label:"Stock faible",    val:String(products.filter(p=>p.status==="low").length),    sub:"produits",  icon:<AlertTriangle size={16} color="#F08A24" />, color:"#FFF1E5", tc:"#F08A24" },
+            { label:"En rupture",      val:String(products.filter(p=>p.status==="out").length),    sub:"produits",  icon:<AlertCircle size={16} color="#EF4444" />, color:"#FDE8E8", tc:"#EF4444" },
+            { label:"Total catalogue", val:String(products.length),                                sub:"produits",  icon:<BarChart2 size={16} color="#0A8F45" />, color:"#EAF7EF", tc:"#0A8F45" },
+          ] as { label:string; val:string; sub:string; icon:React.ReactNode; color:string; tc:string }[]).map(k => (
             <div key={k.label} style={{ background:"#fff", border:"1px solid #E8ECEA", borderRadius:16,
               padding:"16px 18px", boxShadow:"0 2px 10px rgba(16,24,40,.04)" }}>
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
                 <span style={{ fontSize:13, color:"#667085", fontWeight:500 }}>{k.label}</span>
-                <span style={{ fontSize:20, background:k.color, padding:"5px 7px", borderRadius:10 }}>{k.icon}</span>
+                <span style={{ background:k.color, padding:"5px 7px", borderRadius:10, display:"flex", alignItems:"center", justifyContent:"center" }}>{k.icon}</span>
               </div>
               <div style={{ fontSize:26, fontWeight:800, color:"#1F2A24", margin:"8px 0 4px", letterSpacing:"-0.5px" }}>{k.val}</div>
               <div style={{ fontSize:11, color:k.tc, fontWeight:500 }}>{k.sub}</div>
@@ -1385,7 +1418,7 @@ export default function ProductsPage() {
 
         {/* ── Info card ── */}
         <div className="pr-info">
-          <div style={{ fontSize:28 }}>🏪</div>
+          <div style={{ color:"#0A8F45" }}><Store size={28} /></div>
           <div style={{ flex:1, minWidth:220 }}>
             <div style={{ fontWeight:700, color:"#1F2A24", fontSize:14 }}>
               Tous les produits affichés ici appartiennent à la boutique active&nbsp;
@@ -1435,9 +1468,9 @@ export default function ProductsPage() {
                 </div>
               </div>
               <div className="pr-tacts">
-                <button className="btn-secondary btn-sm">⬆ Importer</button>
-                <button className="btn-secondary btn-sm">⬇ Exporter</button>
-                <button className="btn-secondary btn-sm">🔄 Synchroniser</button>
+                <button className="btn-secondary btn-sm" style={{ display:"flex", alignItems:"center", gap:5 }}><Upload size={12} /> Importer</button>
+                <button className="btn-secondary btn-sm" style={{ display:"flex", alignItems:"center", gap:5 }}><Download size={12} /> Exporter</button>
+                <button className="btn-secondary btn-sm" style={{ display:"flex", alignItems:"center", gap:5 }}><RefreshCw size={12} /> Synchroniser</button>
                 <button
                   className="btn-primary btn-sm"
                   style={atProductLimit ? { opacity: 0.45, cursor: "not-allowed" } : undefined}
@@ -1450,7 +1483,7 @@ export default function ProductsPage() {
 
             {/* filters */}
             <div className="pr-ftrow">
-              <input className="inp" placeholder="🔍 Rechercher un produit ou SKU…" style={{ flex:1, minWidth:160 }}
+              <input className="inp" placeholder="Rechercher un produit ou SKU…" style={{ flex:1, minWidth:160 }}
                 value={search} onChange={e => setSearch(e.target.value)} />
               <select className="sel" value={catFilter} onChange={e => setCatFilter(e.target.value)}>
                 <option value="all">Catégories</option>
@@ -1476,7 +1509,7 @@ export default function ProductsPage() {
                 <option value="stock">Stock ↑</option>
               </select>
               <div className="inp" style={{ display:"flex", alignItems:"center", gap:6, color:"#98A2B3", fontSize:12, cursor:"default", minWidth:130 }}>
-                🔒 {activeShop?.name ?? "—"}
+                <Lock size={12} /> {activeShop?.name ?? "—"}
               </div>
             </div>
 
@@ -1505,7 +1538,7 @@ export default function ProductsPage() {
                           <div className="pr-prod-av" style={{ padding: p.imageUrl ? 0 : undefined, overflow:"hidden" }}>
                             {p.imageUrl
                               ? <img src={p.imageUrl} alt={p.name} style={{ width:"100%", height:"100%", objectFit:"cover", borderRadius:10 }} />
-                              : (EMOJIS[p.category] ?? "📦")}
+                              : <ProductIcon category={p.category ?? ""} />}
                           </div>
                           <div>
                             <div style={{ fontWeight:600, fontSize:13 }}>{p.name}</div>
@@ -1529,14 +1562,14 @@ export default function ProductsPage() {
                       <td style={{ fontSize:11, color:"#98A2B3" }}>{p.updatedAt}</td>
                       <td>
                         <div className="pr-act-btns">
-                          <button className="pr-act-btn" title="Éditer" onClick={() => setEditProduct(p)}>✏️</button>
+                          <button className="pr-act-btn" title="Éditer" style={{ display:"flex", alignItems:"center", justifyContent:"center" }} onClick={() => setEditProduct(p)}><Pencil size={13} /></button>
                           <button className="pr-act-btn" title="Dupliquer"
                             onClick={() => handleDuplicate(p)}
-                            style={duplicatingId === p.id ? { opacity:0.5 } : undefined}>
-                            {duplicatingId === p.id ? "⏳" : "📋"}
+                            style={{ display:"flex", alignItems:"center", justifyContent:"center", ...(duplicatingId === p.id ? { opacity:0.5 } : {}) }}>
+                            {duplicatingId === p.id ? <Loader2 size={13} className="spin" /> : <Copy size={13} />}
                           </button>
-                          <button className="pr-act-btn" title="Voir">👁️</button>
-                          <button className="pr-act-btn" title="Supprimer" style={{ color:"#EF4444" }} onClick={() => setDeleteProduct(p)}>🗑️</button>
+                          <button className="pr-act-btn" title="Voir" style={{ display:"flex", alignItems:"center", justifyContent:"center" }}><Eye size={13} /></button>
+                          <button className="pr-act-btn" title="Supprimer" style={{ color:"#EF4444", display:"flex", alignItems:"center", justifyContent:"center" }} onClick={() => setDeleteProduct(p)}><Trash2 size={13} /></button>
                         </div>
                       </td>
                     </tr>
@@ -1573,7 +1606,7 @@ export default function ProductsPage() {
               <div style={{ fontSize:13, fontWeight:700, color:"#1F2A24", marginBottom:12 }}>Boutique active</div>
               <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:12 }}>
                 <div style={{ width:44, height:44, borderRadius:12, background:"#EAF7EF",
-                  display:"flex", alignItems:"center", justifyContent:"center", fontSize:20 }}>🏪</div>
+                  display:"flex", alignItems:"center", justifyContent:"center", color:"#0A8F45" }}><Store size={20} /></div>
                 <div>
                   <div style={{ fontWeight:700, fontSize:15, color:"#1F2A24" }}>{activeShop?.name ?? "—"}</div>
                   <span className={activeShop?.isPublished ? "badge badge-green" : "badge badge-gray"} style={{ fontSize:10 }}>
@@ -1639,22 +1672,22 @@ export default function ProductsPage() {
             <div className="pr-card">
               <div style={{ fontSize:13, fontWeight:700, color:"#1F2A24", marginBottom:12 }}>Architecture du catalogue</div>
               <div style={{ textAlign:"center", padding:"8px 0" }}>
-                {[
-                  { icon:"👤", label:"Marchand", sub:"Marie A." },
-                  { icon:"🏪", label:"Boutiques", sub:"3 boutiques" },
-                  { icon:"📦", label:"Produits",  sub:"148 produits" },
-                ].map((r, i, arr) => (
+                {([
+                  { icon:<User size={18} color="#0A8F45" />, label:"Marchand", sub:"Marie A." },
+                  { icon:<Store size={18} color="#0A8F45" />, label:"Boutiques", sub:"3 boutiques" },
+                  { icon:<Package size={18} color="#0A8F45" />, label:"Produits",  sub:"148 produits" },
+                ] as { icon: React.ReactNode; label: string; sub: string }[]).map((r, i, arr) => (
                   <div key={r.label}>
                     <div style={{ display:"flex", alignItems:"center", gap:10, justifyContent:"center",
                       background:"#F8FAF9", borderRadius:12, padding:"8px 16px", fontSize:13 }}>
-                      <span style={{ fontSize:18 }}>{r.icon}</span>
+                      <span style={{ display:"flex" }}>{r.icon}</span>
                       <div style={{ textAlign:"left" }}>
                         <div style={{ fontWeight:600, color:"#1F2A24" }}>{r.label}</div>
                         <div style={{ fontSize:11, color:"#98A2B3" }}>{r.sub}</div>
                       </div>
                     </div>
                     {i < arr.length - 1 && (
-                      <div style={{ fontSize:18, color:"#0A8F45", margin:"4px 0" }}>↓</div>
+                      <div style={{ display:"flex", justifyContent:"center", color:"#0A8F45", margin:"4px 0" }}><ChevronDown size={18} /></div>
                     )}
                   </div>
                 ))}
@@ -1669,7 +1702,7 @@ export default function ProductsPage() {
               <div style={{ fontSize:13, fontWeight:700, color:"#1F2A24", marginBottom:10 }}>Alertes catalogue</div>
               {catalogAlerts.map(a => (
                 <div key={a.label} className="pr-alert-row">
-                  <span style={{ fontSize:16 }}>{a.icon}</span>
+                  <span style={{ display:"flex", color: a.color }}>{a.icon}</span>
                   <span style={{ color: a.color, fontWeight:500, fontSize:12 }}>{a.label}</span>
                 </div>
               ))}
@@ -1692,7 +1725,7 @@ export default function ProductsPage() {
               {TIPS.map(t => (
                 <div key={t.t} style={{ display:"flex", gap:10, padding:"8px 10px", background:"#F8FAF9",
                   borderRadius:10, alignItems:"flex-start" }}>
-                  <span style={{ fontSize:18, flexShrink:0 }}>{t.icon}</span>
+                  <span style={{ flexShrink:0, display:"flex", marginTop:2 }}>{t.icon}</span>
                   <div>
                     <div style={{ fontWeight:600, fontSize:13, color:"#1F2A24" }}>{t.t}</div>
                     <div style={{ fontSize:11, color:"#98A2B3", marginTop:2 }}>{t.d}</div>
@@ -1705,18 +1738,18 @@ export default function ProductsPage() {
           <div className="pr-card">
             <div style={{ fontSize:13, fontWeight:700, color:"#1F2A24", marginBottom:12 }}>Support & Ressources</div>
             <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-              {[
-                { icon:"💬", label:"Contacter le support",  href:"mailto:support@bizmanager.app" },
-                { icon:"📚", label:"Documentation",          href:"#docs" },
-                { icon:"📥", label:"Aide import catalogue",  href:"#import" },
-              ].map(r => (
+              {([
+                { icon:<MessageCircle size={16} color="#667085" />, label:"Contacter le support",  href:"mailto:support@bizmanager.app" },
+                { icon:<BookOpen size={16} color="#667085" />, label:"Documentation",          href:"#docs" },
+                { icon:<Download size={16} color="#667085" />, label:"Aide import catalogue",  href:"#import" },
+              ] as { icon: React.ReactNode; label: string; href: string }[]).map(r => (
                 <a key={r.label} href={r.href}
                   style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 12px",
                     background:"#F8FAF9", borderRadius:10, textDecoration:"none",
                     color:"#1F2A24", fontSize:13, fontWeight:500, transition:"background .15s" }}
                   onMouseEnter={e => (e.currentTarget.style.background="#EAF7EF")}
                   onMouseLeave={e => (e.currentTarget.style.background="#F8FAF9")}>
-                  <span style={{ fontSize:18 }}>{r.icon}</span>
+                  <span style={{ display:"flex" }}>{r.icon}</span>
                   {r.label}
                   <span style={{ marginLeft:"auto", color:"#98A2B3" }}>→</span>
                 </a>
@@ -1748,7 +1781,7 @@ export default function ProductsPage() {
         shopId={activeShopId || null}
         shopName={activeShop?.name ?? ""}
         categories={apiCategories}
-        onCreated={() => { setShowAddProduct(false); refreshProducts(); }}
+        onCreated={() => { setShowAddProduct(false); refreshProducts(); showToast("Produit créé avec succès !"); }}
       />
 
       <EditProductModal
@@ -1781,7 +1814,7 @@ export default function ProductsPage() {
           >
             {/* Header */}
             <div style={{ textAlign:"center", marginBottom:20 }}>
-              <div style={{ fontSize:40, marginBottom:8 }}>🔒</div>
+              <div style={{ color:"#1F2A24", marginBottom:8, display:"flex", justifyContent:"center" }}><Lock size={40} /></div>
               <h2 style={{ fontSize:20, fontWeight:800, color:"#1F2A24", margin:0 }}>Quota atteint</h2>
               <p style={{ fontSize:14, color:"#667085", marginTop:6, marginBottom:0 }}>
                 Vous avez atteint la limite de produits de votre plan.
@@ -1855,6 +1888,13 @@ export default function ProductsPage() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {toast && (
+        <div className={`toast-wrap${toast.hiding ? " hiding" : ""}`}>
+          <span className="toast-icon">✓</span>
+          {toast.msg}
         </div>
       )}
     </>
