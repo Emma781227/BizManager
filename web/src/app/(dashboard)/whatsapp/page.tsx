@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { Check, DollarSign, ArrowUpRight, Copy, CheckCircle, FileText, Eye, RotateCcw, Lightbulb, Zap, ClipboardList, Info, X } from "lucide-react";
 
 const WA_CSS = `
 @keyframes wa-spin { to { transform: rotate(360deg); } }
@@ -61,12 +62,12 @@ const PAY_STATUS_LABELS: Record<string, string> = {
   unpaid: "Non payée", partial: "Partiel", paid: "Payée", refunded: "Remboursée",
 };
 
-const HISTORY = [
-  { icon: "✓",  text: "Confirmation envoyée — #WA-1287",      time: "Aujourd'hui, 10:27" },
-  { icon: "💰", text: "Rappel paiement envoyé — #WA-1285",     time: "Aujourd'hui, 09:14" },
-  { icon: "↗",  text: "Commande ouverte dans WhatsApp — #WA-1283", time: "Hier, 17:42" },
-  { icon: "📋", text: "Modèle \"Commande prête\" utilisé — #WA-1280", time: "Hier, 14:05" },
-  { icon: "✅", text: "Commande #WA-1278 confirmée",           time: "Il y a 2 jours" },
+const HISTORY: { icon: React.ReactNode; text: string; time: string }[] = [
+  { icon: <Check size={12} color="#0A8F45" />,       text: "Confirmation envoyée — #WA-1287",           time: "Aujourd'hui, 10:27" },
+  { icon: <DollarSign size={12} color="#F08A24" />,  text: "Rappel paiement envoyé — #WA-1285",         time: "Aujourd'hui, 09:14" },
+  { icon: <ArrowUpRight size={12} color="#3B82F6" />, text: "Commande ouverte dans WhatsApp — #WA-1283", time: "Hier, 17:42" },
+  { icon: <Copy size={12} color="#667085" />,        text: "Modèle \"Commande prête\" utilisé — #WA-1280", time: "Hier, 14:05" },
+  { icon: <CheckCircle size={12} color="#0A8F45" />, text: "Commande #WA-1278 confirmée",               time: "Il y a 2 jours" },
 ];
 
 const INITIAL_TEMPLATES: Template[] = [
@@ -399,7 +400,7 @@ export default function WhatsAppPage() {
             <div className="wa-modal" onClick={(e) => e.stopPropagation()}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
                 <h2 style={{ fontSize: 16, fontWeight: 700, color: "#1F2A24", margin: 0 }}>Nouveau message WhatsApp</h2>
-                <button onClick={() => setNewMsgOpen(false)} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#98A2B3", lineHeight: 1 }}>×</button>
+                <button onClick={() => setNewMsgOpen(false)} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#98A2B3", lineHeight: 1, display: "flex", alignItems: "center" }}><X size={16} /></button>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                 <div>
@@ -452,7 +453,7 @@ export default function WhatsAppPage() {
             <div className="wa-modal" onClick={(e) => e.stopPropagation()}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
                 <h2 style={{ fontSize: 16, fontWeight: 700, color: "#1F2A24", margin: 0 }}>Créer un modèle</h2>
-                <button onClick={() => setCreateTplOpen(false)} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#98A2B3" }}>×</button>
+                <button onClick={() => setCreateTplOpen(false)} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#98A2B3", display: "flex", alignItems: "center" }}><X size={16} /></button>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                 <div>
@@ -499,7 +500,7 @@ export default function WhatsAppPage() {
             <div className="wa-modal" onClick={(e) => e.stopPropagation()}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
                 <h2 style={{ fontSize: 16, fontWeight: 700, color: "#1F2A24", margin: 0 }}>Configurer les relances automatiques</h2>
-                <button onClick={() => setConfigRelanceOpen(false)} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#98A2B3" }}>×</button>
+                <button onClick={() => setConfigRelanceOpen(false)} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#98A2B3", display: "flex", alignItems: "center" }}><X size={16} /></button>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                 <div>
@@ -559,13 +560,13 @@ export default function WhatsAppPage() {
                   <button onClick={() => { setTplAllOpen(false); setCreateTplOpen(true); }} style={{ ...btnSecondary, width: "auto", padding: "7px 14px", fontSize: 12 }}>
                     + Créer un modèle
                   </button>
-                  <button onClick={() => setTplAllOpen(false)} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#98A2B3" }}>×</button>
+                  <button onClick={() => setTplAllOpen(false)} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#98A2B3", display: "flex", alignItems: "center" }}><X size={16} /></button>
                 </div>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {templates.map((tpl, i) => (
                   <div key={i} style={{ display: "flex", gap: 12, padding: "12px 0", borderBottom: i < templates.length - 1 ? "1px solid #E8ECEA" : "none", alignItems: "flex-start" }}>
-                    <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#EAF7EF", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}>📝</div>
+                    <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#EAF7EF", display: "flex", alignItems: "center", justifyContent: "center", color: "#0A8F45", flexShrink: 0 }}><FileText size={14} /></div>
                     <div style={{ flex: 1 }}>
                       <p style={{ fontSize: 13, fontWeight: 700, color: "#1F2A24", margin: "0 0 3px" }}>{tpl.label}</p>
                       <p style={{ fontSize: 12, color: "#667085", margin: 0, whiteSpace: "pre-wrap" }}>{tpl.body}</p>
@@ -587,7 +588,7 @@ export default function WhatsAppPage() {
             <div className="wa-modal wa-modal-lg" onClick={(e) => e.stopPropagation()}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
                 <h2 style={{ fontSize: 16, fontWeight: 700, color: "#1F2A24", margin: 0 }}>Clients à relancer ({relanceOrders.length})</h2>
-                <button onClick={() => setRelAllOpen(false)} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#98A2B3" }}>×</button>
+                <button onClick={() => setRelAllOpen(false)} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#98A2B3", display: "flex", alignItems: "center" }}><X size={16} /></button>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {relanceOrders.map((order) => {
@@ -606,7 +607,7 @@ export default function WhatsAppPage() {
                       </div>
                       <span style={{ fontSize: 12, color: "#1F2A24", fontWeight: 600 }}>{formatAmount(order.totalAmount)}</span>
                       {isRelanced ? (
-                        <span style={{ fontSize: 11, color: "#0A8F45", fontWeight: 600, background: "#DDF6E7", borderRadius: 20, padding: "3px 10px" }}>Relancé ✓</span>
+                        <span style={{ fontSize: 11, color: "#0A8F45", fontWeight: 600, background: "#DDF6E7", borderRadius: 20, padding: "3px 10px", display: "inline-flex", alignItems: "center", gap: 3 }}>Relancé <Check size={11} style={{ marginLeft: 3, verticalAlign: "middle" }} /></span>
                       ) : (
                         <button onClick={() => { handleRelancer(order); }} style={{ background: "#DDF6E7", color: "#0A8F45", fontSize: 11, borderRadius: 8, padding: "5px 10px", border: "none", cursor: "pointer", fontWeight: 600 }}>
                           Relancer
@@ -673,7 +674,7 @@ export default function WhatsAppPage() {
 
         {/* ── C — Bandeau info ──────────────────────────────── */}
         <div style={{ background: "#EAF7EF", border: "1.5px solid #C3E6D3", borderRadius: 12, padding: "10px 16px", marginBottom: 16, display: "flex", gap: 10, alignItems: "center" }}>
-          <span style={{ width: 24, height: 24, borderRadius: "50%", background: "#DDF6E7", display: "flex", alignItems: "center", justifyContent: "center", color: "#0A8F45", fontWeight: 700, fontSize: 14, flexShrink: 0 }}>ℹ</span>
+          <span style={{ width: 24, height: 24, borderRadius: "50%", background: "#DDF6E7", display: "flex", alignItems: "center", justifyContent: "center", color: "#0A8F45", flexShrink: 0 }}><Info size={14} /></span>
           <p style={{ fontSize: 13, color: "#1F2A24", margin: 0 }}>
             Les commandes WhatsApp sont enregistrées dans BizManager avant l&apos;ouverture de la conversation.
           </p>
@@ -758,7 +759,7 @@ export default function WhatsAppPage() {
                             <td style={{ padding: "10px 10px" }}>
                               <div style={{ fontWeight: 700, color: "#1F2A24", fontSize: 13 }}>{shortRef(order.id)}</div>
                               <div style={{ fontSize: 11, color: "#98A2B3" }}>{order.customer.fullName}</div>
-                              {isRelanced && <div style={{ fontSize: 10, color: "#0A8F45", fontWeight: 600 }}>Relancé ✓</div>}
+                              {isRelanced && <div style={{ fontSize: 10, color: "#0A8F45", fontWeight: 600, display: "flex", alignItems: "center", gap: 2 }}>Relancé <Check size={11} style={{ marginLeft: 3, verticalAlign: "middle" }} /></div>}
                             </td>
                             <td style={{ padding: "10px 10px" }}>
                               <div style={{ fontWeight: 600, color: "#1F2A24" }}>{order.customer.fullName}</div>
@@ -787,16 +788,16 @@ export default function WhatsAppPage() {
                                 }} style={{ borderRadius: 7, padding: "5px 7px", border: "1.5px solid #E8ECEA", background: "#DDF6E7", color: "#0A8F45", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>WA</button>
                                 {/* Copier référence */}
                                 <button title="Copier la référence" onClick={(e) => { e.stopPropagation(); handleCopyRef(order.id); }}
-                                  style={{ borderRadius: 7, padding: "5px 7px", border: "1.5px solid #E8ECEA", background: "#F8FAF9", color: copyRefId === order.id ? "#0A8F45" : "#667085", cursor: "pointer", fontSize: 11 }}>
-                                  {copyRefId === order.id ? "✓" : "⎘"}
+                                  style={{ borderRadius: 7, padding: "5px 7px", border: "1.5px solid #E8ECEA", background: "#F8FAF9", color: copyRefId === order.id ? "#0A8F45" : "#667085", cursor: "pointer", fontSize: 11, display: "flex", alignItems: "center" }}>
+                                  {copyRefId === order.id ? <Check size={12} /> : "⎘"}
                                 </button>
                                 {/* Voir détail */}
                                 <button title="Voir le détail" onClick={(e) => { e.stopPropagation(); setSelectedOrder(order); }}
-                                  style={{ borderRadius: 7, padding: "5px 7px", border: "1.5px solid #E8ECEA", background: "#F8FAF9", color: "#667085", cursor: "pointer", fontSize: 11 }}>👁</button>
+                                  style={{ borderRadius: 7, padding: "5px 7px", border: "1.5px solid #E8ECEA", background: "#F8FAF9", color: "#667085", cursor: "pointer", fontSize: 11, display: "flex", alignItems: "center" }}><Eye size={13} /></button>
                                 {/* Relancer */}
                                 <button title="Relancer le client" onClick={(e) => { e.stopPropagation(); handleRelancer(order); }}
-                                  style={{ borderRadius: 7, padding: "5px 7px", border: "1.5px solid #E8ECEA", background: isRelanced ? "#DDF6E7" : "#F8FAF9", color: isRelanced ? "#0A8F45" : "#667085", cursor: "pointer", fontSize: 11 }}>
-                                  {isRelanced ? "✓" : "↺"}
+                                  style={{ borderRadius: 7, padding: "5px 7px", border: "1.5px solid #E8ECEA", background: isRelanced ? "#DDF6E7" : "#F8FAF9", color: isRelanced ? "#0A8F45" : "#667085", cursor: "pointer", fontSize: 11, display: "flex", alignItems: "center" }}>
+                                  {isRelanced ? <Check size={12} /> : <RotateCcw size={12} />}
                                 </button>
                               </div>
                             </td>
@@ -862,8 +863,8 @@ export default function WhatsAppPage() {
                               Relancer
                             </button>
                             <button onClick={() => handleMarkRelanced(order.id)} title="Marquer comme relancé"
-                              style={{ background: "#F8FAF9", color: "#98A2B3", fontSize: 11, borderRadius: 8, padding: "4px 7px", border: "1.5px solid #E8ECEA", cursor: "pointer" }}>
-                              ✓
+                              style={{ background: "#F8FAF9", color: "#98A2B3", fontSize: 11, borderRadius: 8, padding: "4px 7px", border: "1.5px solid #E8ECEA", cursor: "pointer", display: "flex", alignItems: "center" }}>
+                              <Check size={12} />
                             </button>
                           </div>
                         </div>
@@ -912,7 +913,7 @@ export default function WhatsAppPage() {
               </div>
               {!selectedOrder ? (
                 <div style={{ minHeight: 160, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 10 }}>
-                  <span style={{ fontSize: 36 }}>📋</span>
+                  <span style={{ color: "#98A2B3" }}><ClipboardList size={36} /></span>
                   <p style={{ fontSize: 13, color: "#98A2B3", textAlign: "center", margin: 0 }}>Cliquez sur une commande dans le tableau</p>
                 </div>
               ) : (
@@ -953,8 +954,8 @@ export default function WhatsAppPage() {
                       ) : "Ouvrir WhatsApp ↗"}
                     </button>
                     <button onClick={handleCopy}
-                      style={{ width: "100%", background: "#F8FAF9", border: "1.5px solid #E8ECEA", color: copyOk ? "#0A8F45" : "#1F2A24", height: 40, borderRadius: 10, fontSize: 13, cursor: "pointer", fontWeight: copyOk ? 600 : 400 }}>
-                      {copyOk ? "Copié ✓" : "Copier le message"}
+                      style={{ width: "100%", background: "#F8FAF9", border: "1.5px solid #E8ECEA", color: copyOk ? "#0A8F45" : "#1F2A24", height: 40, borderRadius: 10, fontSize: 13, cursor: "pointer", fontWeight: copyOk ? 600 : 400, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                      {copyOk ? <><Check size={13} /> Copié</> : "Copier le message"}
                     </button>
                   </div>
                 </div>
@@ -971,7 +972,7 @@ export default function WhatsAppPage() {
                 {templates.slice(0, 5).map((tpl, i) => (
                   <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, paddingTop: 8, paddingBottom: 8, borderBottom: i < Math.min(templates.length, 5) - 1 ? "1px solid #E8ECEA" : "none" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 9, minWidth: 0 }}>
-                      <div style={{ width: 24, height: 24, borderRadius: "50%", background: "#EAF7EF", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, flexShrink: 0 }}>📝</div>
+                      <div style={{ width: 24, height: 24, borderRadius: "50%", background: "#EAF7EF", display: "flex", alignItems: "center", justifyContent: "center", color: "#0A8F45", flexShrink: 0 }}><FileText size={12} /></div>
                       <div style={{ minWidth: 0 }}>
                         <p style={{ fontSize: 12, fontWeight: 600, color: "#1F2A24", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{tpl.label}</p>
                         <p style={{ fontSize: 11, color: "#98A2B3", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{tpl.preview}</p>
@@ -1015,9 +1016,9 @@ export default function WhatsAppPage() {
             <div style={{ background: "#fff", border: "1.5px solid #E8ECEA", borderRadius: 18, padding: 18, boxShadow: "0 2px 10px rgba(16,24,40,0.04)" }}>
               <p style={{ fontSize: 14, fontWeight: 700, color: "#1F2A24", margin: "0 0 10px" }}>Conseils</p>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                <p style={{ fontSize: 12, color: "#667085", margin: 0 }}>💡 Relancez les commandes non confirmées sous 2h</p>
-                <p style={{ fontSize: 12, color: "#667085", margin: 0 }}>⚡ Utilisez les modèles pour gagner du temps</p>
-                <p style={{ fontSize: 12, color: "#667085", margin: 0 }}>📋 Suivez les commandes créées avant l&apos;ouverture de WhatsApp</p>
+                <p style={{ fontSize: 12, color: "#667085", margin: 0, display: "flex", alignItems: "center", gap: 6 }}><Lightbulb size={13} color="#F08A24" /> Relancez les commandes non confirmées sous 2h</p>
+                <p style={{ fontSize: 12, color: "#667085", margin: 0, display: "flex", alignItems: "center", gap: 6 }}><Zap size={13} color="#3B82F6" /> Utilisez les modèles pour gagner du temps</p>
+                <p style={{ fontSize: 12, color: "#667085", margin: 0, display: "flex", alignItems: "center", gap: 6 }}><ClipboardList size={13} color="#667085" /> Suivez les commandes créées avant l&apos;ouverture de WhatsApp</p>
               </div>
             </div>
           </div>

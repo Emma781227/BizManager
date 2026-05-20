@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import QRCode from "qrcode";
 import CreateShopModal from "../shops/CreateShopModal";
+import { BarChart2, Package, Rocket, Store, ShoppingCart, Users, Tag, AlertTriangle, Link, Pencil, QrCode, Clock, Crown, Info } from "lucide-react";
 
 type SettingsShop = {
   id: string; name: string; slug: string; isPublished: boolean;
@@ -69,9 +70,9 @@ const DAYS_LIST = [
 ];
 
 const TIPS = [
-  { icon:"📊", t:"Analysez chaque boutique",  d:"Suivez les performances individuelles pour mieux décider.",              link:"Voir les performances", href:"/dashboard" },
-  { icon:"📦", t:"Optimisez votre catalogue", d:"Maintenez vos produits à jour et adaptez vos stocks à la demande.",     link:"Gérer les produits",    href:"/products"  },
-  { icon:"🚀", t:"Développez vos ventes",     d:"Utilisez WhatsApp et votre boutique en ligne pour booster vos ventes.", link:"Découvrir les outils",  href:"/whatsapp"  },
+  { icon:<BarChart2 size={16} color="#0A8F45" />, t:"Analysez chaque boutique",  d:"Suivez les performances individuelles pour mieux décider.",              link:"Voir les performances", href:"/dashboard" },
+  { icon:<Package size={16} color="#0A8F45" />, t:"Optimisez votre catalogue", d:"Maintenez vos produits à jour et adaptez vos stocks à la demande.",     link:"Gérer les produits",    href:"/products"  },
+  { icon:<Rocket size={16} color="#0A8F45" />, t:"Développez vos ventes",     d:"Utilisez WhatsApp et votre boutique en ligne pour booster vos ventes.", link:"Découvrir les outils",  href:"/whatsapp"  },
 ];
 
 const CSS = `
@@ -667,7 +668,7 @@ function ShopActionsModal({
                     aria-label="Changer le logo">
                     {logoUrl
                       ? <img src={logoUrl} alt="Logo" />
-                      : <span style={{ fontSize:28 }}>🏷️</span>
+                      : <Tag size={28} color="#98A2B3" />
                     }
                     <div className="se-logo-overlay">
                       <span style={{ color:"#fff", fontSize:11, fontWeight:600 }}>Changer</span>
@@ -740,7 +741,7 @@ function ShopActionsModal({
                 </div>
                 {editOpenDays.length > 0 && editOpenTime && editCloseTime ? (
                   <div style={{ fontSize:12, color:"#0A8F45", background:"#EAF7EF", borderRadius:8, padding:"6px 10px", display:"inline-flex", alignItems:"center", gap:6 }}>
-                    🕐 {editOpenDays.join(", ")} · <strong>{editOpenTime}</strong> – <strong>{editCloseTime}</strong>
+                    <Clock size={13} style={{marginRight:4,verticalAlign:"middle"}} />{editOpenDays.join(", ")} · <strong>{editOpenTime}</strong> – <strong>{editCloseTime}</strong>
                   </div>
                 ) : (
                   <div style={{ fontSize:11, color:"#98A2B3" }}>Sélectionnez les jours et les horaires.</div>
@@ -820,7 +821,7 @@ function ShopActionsModal({
             </div>
             {publishErr && <div className="sa-err">{publishErr}</div>}
             <div className="sa-info-note">
-              <span style={{ flexShrink:0 }}>⚠️</span>
+              <span style={{ flexShrink:0, color:"#F08A24" }}><AlertTriangle size={16} /></span>
               <span>Une boutique dépubliée reste comptabilisée dans votre quota de plan.</span>
             </div>
           </div>
@@ -846,7 +847,7 @@ function ShopActionsModal({
           <div className="sa-section">
             <div className="sa-sec-title">Accès rapide</div>
             <a href={`/shop/${currentShop.slug}`} target="_blank" rel="noreferrer" className={`sa-link-btn${published ? "" : " disabled"}`}>
-              <span style={{ fontSize:16 }}>🔗</span>
+              <span style={{ color:"#667085" }}><Link size={16} /></span>
               <div style={{ flex:1 }}>
                 <div style={{ fontSize:13, fontWeight:600 }}>Voir la boutique publique</div>
                 <div style={{ fontSize:11, color:"#98A2B3" }}>/shop/{currentShop.slug}</div>
@@ -859,7 +860,7 @@ function ShopActionsModal({
           <div className="sa-section" style={{ borderBottom:"none" }}>
             <div className="sa-sec-title">Informations de la boutique</div>
             <button type="button" className="sa-link-btn" style={{ cursor:"pointer", border:"none", width:"100%", textAlign:"left" }} onClick={() => setView("edit")}>
-              <span style={{ fontSize:16 }}>✏️</span>
+              <span style={{ color:"#667085" }}><Pencil size={16} /></span>
               <div style={{ flex:1 }}>
                 <div style={{ fontSize:13, fontWeight:600 }}>Modifier les informations</div>
                 <div style={{ fontSize:11, color:"#98A2B3" }}>Nom, logo, cover, WhatsApp, horaires…</div>
@@ -867,7 +868,7 @@ function ShopActionsModal({
               <span style={{ fontSize:11, color:"#98A2B3" }}>→</span>
             </button>
             <button type="button" className="sa-link-btn" style={{ cursor:"pointer", border:"none", width:"100%", textAlign:"left", marginTop:10 }} onClick={() => setQrOpen(true)}>
-              <span style={{ fontSize:16 }}>🔳</span>
+              <span style={{ color:"#667085" }}><QrCode size={16} /></span>
               <div style={{ flex:1 }}>
                 <div style={{ fontSize:13, fontWeight:600 }}>Partager le QR code</div>
                 <div style={{ fontSize:11, color:"#98A2B3" }}>Afficher, télécharger ou partager le QR de la boutique</div>
@@ -1039,16 +1040,16 @@ export default function ShopsPage() {
         {/* KPI row */}
         <div className="mb-kpi">
           {[
-            { icon:"🏪", l:"Total boutiques",  v: quota ? `${quota.usage.shops} / ${quota.plan.maxShops === -1 ? "∞" : quota.plan.maxShops}` : String(shops.length), s:"Utilisées", i: quota ? `Limite selon votre plan ${quota.plan.displayName}` : "" },
-            { icon:"📦", l:"Total produits",   v:String(totalProducts), s:"Sur toutes vos boutiques", i:"" },
-            { icon:"🛒", l:"Total commandes",  v:String(totalOrders),   s:"Sur toutes vos boutiques", i:"" },
-            { icon:"👥", l:"Total clients",    v:String(totalClients),  s:"Sur toutes vos boutiques", i:"" },
+            { icon:<Store size={16} color="#0A8F45" />, l:"Total boutiques",  v: quota ? `${quota.usage.shops} / ${quota.plan.maxShops === -1 ? "∞" : quota.plan.maxShops}` : String(shops.length), s:"Utilisées", i: quota ? `Limite selon votre plan ${quota.plan.displayName}` : "" },
+            { icon:<Package size={16} color="#0A8F45" />, l:"Total produits",   v:String(totalProducts), s:"Sur toutes vos boutiques", i:"" },
+            { icon:<ShoppingCart size={16} color="#0A8F45" />, l:"Total commandes",  v:String(totalOrders),   s:"Sur toutes vos boutiques", i:"" },
+            { icon:<Users size={16} color="#0A8F45" />, l:"Total clients",    v:String(totalClients),  s:"Sur toutes vos boutiques", i:"" },
           ].map(k => (
             <div key={k.l} style={{ background:"#fff", border:"1px solid #E8ECEA", borderRadius:16,
               padding:"16px 18px", boxShadow:"0 2px 10px rgba(16,24,40,.04)" }}>
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:8 }}>
                 <span style={{ fontSize:13, color:"#667085", fontWeight:500 }}>{k.l}</span>
-                <span style={{ fontSize:20 }}>{k.icon}</span>
+                <span>{k.icon}</span>
               </div>
               <div style={{ fontSize:26, fontWeight:800, color:"#1F2A24", letterSpacing:"-0.5px" }}>{k.v}</div>
               <div style={{ fontSize:11, color:"#0A8F45", fontWeight:500, marginTop:3 }}>{k.s}</div>
@@ -1161,7 +1162,7 @@ export default function ShopsPage() {
               </div>
               <div style={{ background:"#EAF7EF", border:"1px solid #C8E6D5", borderRadius:12, padding:"14px 16px" }}>
                 <div style={{ display:"flex", gap:10, alignItems:"flex-start" }}>
-                  <span style={{ fontSize:20 }}>👑</span>
+                  <span style={{ color:"#F08A24" }}><Crown size={20} /></span>
                   <div>
                     <div style={{ fontWeight:700, color:"#1F2A24", fontSize:13, marginBottom:4 }}>Passez au plan Premium</div>
                     <div style={{ fontSize:12, color:"#667085", marginBottom:10 }}>
@@ -1206,7 +1207,7 @@ export default function ShopsPage() {
           <div className="mb-tips">
             {TIPS.map(t => (
               <div key={t.t} style={{ background:"#F8FAF9", borderRadius:12, padding:"16px 18px", border:"1px solid #F0F2F1" }}>
-                <div style={{ fontSize:24, marginBottom:8 }}>{t.icon}</div>
+                <div style={{ marginBottom:8 }}>{t.icon}</div>
                 <div style={{ fontWeight:700, color:"#1F2A24", fontSize:13, marginBottom:6 }}>{t.t}</div>
                 <div style={{ fontSize:12, color:"#667085", marginBottom:12, lineHeight:"1.6" }}>{t.d}</div>
                 <a href={t.href} style={{ fontSize:12, fontWeight:600, color:"#0A8F45", textDecoration:"none" }}>
