@@ -1,5 +1,6 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import { AlertTriangle, Construction } from "lucide-react";
 
 type OverviewPayload = {
   shopsCount: number;
@@ -329,12 +330,12 @@ export default function AdminDashboardClient() {
 
       {/* KPI Cards */}
       <div className="adm-kpi-grid">
-        {[
-          { label: "Boutiques actives", value: activeCount, color: "#0A8F45", bg: "#DDF6E7", icon: "✓", sub: `sur ${totalShops} total` },
-          { label: "Suspendues", value: 0, color: "#F08A24", bg: "#FFF1E5", icon: "⚠", sub: "Aucune suspension" },
-          { label: "Inactives", value: inactiveCount, color: "#3B82F6", bg: "#E8F0FF", icon: "○", sub: "Non publiées" },
-          { label: "Fermées", value: 0, color: "#EF4444", bg: "#FDE8E8", icon: "✕", sub: "Aucune fermeture" },
-        ].map((card) => (
+        {([
+          { label: "Boutiques actives", value: activeCount, color: "#0A8F45", bg: "#DDF6E7", icon: "✓" as React.ReactNode, sub: `sur ${totalShops} total` },
+          { label: "Suspendues", value: 0, color: "#F08A24", bg: "#FFF1E5", icon: <AlertTriangle size={16} />, sub: "Aucune suspension" },
+          { label: "Inactives", value: inactiveCount, color: "#3B82F6", bg: "#E8F0FF", icon: "○" as React.ReactNode, sub: "Non publiées" },
+          { label: "Fermées", value: 0, color: "#EF4444", bg: "#FDE8E8", icon: "✕" as React.ReactNode, sub: "Aucune fermeture" },
+        ] as { label: string; value: number; color: string; bg: string; icon: React.ReactNode; sub: string }[]).map((card) => (
           <div
             key={card.label}
             style={{ background: "#fff", border: "1.5px solid #E8ECEA", borderRadius: 14, padding: "18px 16px", position: "relative", overflow: "hidden" }}
@@ -391,7 +392,7 @@ export default function AdminDashboardClient() {
 
       {activeTab !== "boutiques" ? (
         <div style={{ background: "#fff", border: "1.5px solid #E8ECEA", borderRadius: 14, padding: "48px 24px", textAlign: "center" }}>
-          <p style={{ fontSize: 32, margin: "0 0 12px" }}>🚧</p>
+          <div style={{ color: "#F08A24", marginBottom: 12 }}><Construction size={32} /></div>
           <p style={{ fontSize: 16, fontWeight: 600, color: "#1F2A24", margin: "0 0 6px" }}>Bientôt disponible</p>
           <p style={{ fontSize: 14, color: "#667085", margin: 0 }}>Cette section est en cours de développement.</p>
         </div>
@@ -599,7 +600,7 @@ export default function AdminDashboardClient() {
                   )}
                   {(overview?.stockLowCount ?? 0) > 0 && (
                     <div style={{ display: "flex", gap: 9, padding: "9px 11px", background: "#FFF1E5", borderRadius: 9 }}>
-                      <span style={{ color: "#F08A24", fontWeight: 700, fontSize: 13, flexShrink: 0 }}>⚠</span>
+                      <span style={{ color: "#F08A24", flexShrink: 0, display: "flex", alignItems: "center" }}><AlertTriangle size={13} /></span>
                       <div>
                         <p style={{ fontSize: 12, fontWeight: 600, color: "#1F2A24", margin: 0 }}>{overview?.stockLowCount} produit{(overview?.stockLowCount ?? 0) > 1 ? "s" : ""} stock faible</p>
                         <p style={{ fontSize: 11, color: "#667085", margin: "2px 0 0" }}>Toutes boutiques</p>

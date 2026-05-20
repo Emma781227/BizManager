@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { MessageCircle, Globe, PenLine, ShoppingCart, Clock, CheckCircle, TrendingUp, Bell, RefreshCw, X, Check, Store } from "lucide-react";
 import { useActiveShop } from "@/hooks/useActiveShop";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -51,7 +52,11 @@ const PAY_BADGE: Record<ApiPaymentStatus, string> = {
   unpaid:"badge-red", partial:"badge-orange", paid:"badge-green", refunded:"badge-gray",
 };
 const CHANNEL_LABELS: Record<ApiChannel, string> = { whatsapp:"WhatsApp", online:"En ligne", manual:"Manuel" };
-const CHANNEL_ICONS:  Record<ApiChannel, string> = { whatsapp:"💬", online:"🌐", manual:"✍️" };
+const CHANNEL_ICONS: Record<ApiChannel, React.ReactNode> = {
+  whatsapp: <MessageCircle size={16} color="#25D366" />,
+  online:   <Globe size={16} color="#3B82F6" />,
+  manual:   <PenLine size={16} color="#667085" />,
+};
 const PAY_METHOD_LABELS: Record<ApiPaymentMethod, string> = {
   cash:"Espèces", mobile_money:"Mobile Money", bank_transfer:"Virement", cod:"Contre remboursement",
 };
@@ -338,7 +343,7 @@ function NewOrderModal({
       <div className="or-modal-box">
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
           <h2 style={{ fontSize:17, fontWeight:700, color:"#1F2A24", margin:0 }}>Nouvelle commande</h2>
-          <button onClick={onClose} style={{ border:"none", background:"none", cursor:"pointer", fontSize:22, color:"#98A2B3", lineHeight:1 }}>×</button>
+          <button onClick={onClose} style={{ border:"none", background:"none", cursor:"pointer", color:"#98A2B3", lineHeight:1, display:"flex", alignItems:"center" }}><X size={16} /></button>
         </div>
         <div style={{ padding:"8px 12px", background:"#EAF7EF", borderRadius:8, fontSize:12, color:"#08763A", marginBottom:16 }}>
           Boutique : <strong>{shopName}</strong>
@@ -356,7 +361,7 @@ function NewOrderModal({
                 {lookupState === "searching" ? "…" : "Vérifier"}
               </button>
             </div>
-            {lookupState === "found" && <div style={{ fontSize:11, color:"#0A8F45", marginTop:3 }}>✓ Client existant trouvé</div>}
+            {lookupState === "found" && <div style={{ fontSize:11, color:"#0A8F45", marginTop:3, display:"flex", alignItems:"center" }}><Check size={12} style={{ marginRight:3 }} /> Client existant trouvé</div>}
             {lookupState === "new"   && <div style={{ fontSize:11, color:"#F08A24", marginTop:3 }}>Nouveau client — sera créé automatiquement</div>}
           </div>
 
@@ -392,7 +397,7 @@ function NewOrderModal({
                       {(item.unitPrice * item.qty).toLocaleString("fr-FR")} FCFA
                     </span>
                     <button onClick={() => setItems(items.filter(i => i.productId !== item.productId))}
-                      style={{ border:"none", background:"none", color:"#EF4444", cursor:"pointer", fontSize:18, lineHeight:1, padding:0 }}>×</button>
+                      style={{ border:"none", background:"none", color:"#EF4444", cursor:"pointer", lineHeight:1, padding:0, display:"flex", alignItems:"center" }}><X size={14} /></button>
                   </div>
                 ))}
                 <div style={{ padding:"8px 12px", background:"#F8FAF9", fontWeight:700, fontSize:13, textAlign:"right" }}>
@@ -572,7 +577,7 @@ export default function OrdersPage() {
         {newBadge > 0 && (
           <div style={{ background:"#EAF7EF", border:"1px solid #0A8F45", borderRadius:10,
             padding:"10px 16px", marginBottom:16, display:"flex", alignItems:"center", gap:10, fontSize:13 }}>
-            <span style={{ fontSize:18 }}>🔔</span>
+            <Bell size={18} color="#0A8F45" />
             <span style={{ fontWeight:700, color:"#0A8F45" }}>
               {newBadge} nouvelle{newBadge > 1 ? "s" : ""} commande{newBadge > 1 ? "s" : ""} reçue{newBadge > 1 ? "s" : ""} !
             </span>
@@ -580,8 +585,8 @@ export default function OrdersPage() {
               onClick={() => { setNewBadge(0); fetchOrders(activeShopId); }}>
               Voir maintenant
             </button>
-            <button style={{ border:"none", background:"none", color:"#98A2B3", cursor:"pointer", fontSize:20 }}
-              onClick={() => setNewBadge(0)}>×</button>
+            <button style={{ border:"none", background:"none", color:"#98A2B3", cursor:"pointer", display:"flex", alignItems:"center" }}
+              onClick={() => setNewBadge(0)}><X size={16} /></button>
           </div>
         )}
 
@@ -601,8 +606,9 @@ export default function OrdersPage() {
             <span style={{ color:"#98A2B3" }}> · {orders.length} commande{orders.length !== 1 ? "s" : ""}</span>
           </div>
           <div className="or-ctx-r">
-            <button className="btn-secondary" onClick={() => fetchOrders(activeShopId)} disabled={ordersLoading}>
-              {ordersLoading ? "…" : "🔄 Actualiser"}
+            <button className="btn-secondary" onClick={() => fetchOrders(activeShopId)} disabled={ordersLoading}
+              style={{ display:"flex", alignItems:"center", gap:5 }}>
+              {ordersLoading ? "…" : <><RefreshCw size={12} /> Actualiser</>}
             </button>
           </div>
         </div>
@@ -618,16 +624,16 @@ export default function OrdersPage() {
         {/* KPIs */}
         <div className="or-kpi">
           {[
-            { icon:"🛒", l:"Total commandes",       v: String(orders.length),                              tc:"#0A8F45" },
-            { icon:"⏳", l:"Nouvelles / En attente", v: String(pendingCount),                               tc:"#F08A24" },
-            { icon:"✅", l:"Livrées",                v: String(deliveredCount),                             tc:"#0A8F45" },
-            { icon:"💰", l:"Chiffre d'affaires",     v: revenue.toLocaleString("fr-FR") + " FCFA",         tc:"#0A8F45" },
-          ].map(k => (
-            <div key={k.l} style={{ background:"#fff", border:"1px solid #E8ECEA", borderRadius:16,
+            { icon:<ShoppingCart size={16} color="#0A8F45" />, l:"Total commandes",       v: String(orders.length),                              tc:"#0A8F45" },
+            { icon:<Clock size={16} color="#F08A24" />,        l:"Nouvelles / En attente", v: String(pendingCount),                               tc:"#F08A24" },
+            { icon:<CheckCircle size={16} color="#0A8F45" />,  l:"Livrées",                v: String(deliveredCount),                             tc:"#0A8F45" },
+            { icon:<TrendingUp size={16} color="#0A8F45" />,   l:"Chiffre d'affaires",     v: revenue.toLocaleString("fr-FR") + " FCFA",         tc:"#0A8F45" },
+          ].map((k, idx) => (
+            <div key={idx} style={{ background:"#fff", border:"1px solid #E8ECEA", borderRadius:16,
               padding:"16px 18px", boxShadow:"0 2px 10px rgba(16,24,40,.04)" }}>
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:6 }}>
                 <span style={{ fontSize:13, color:"#667085", fontWeight:500 }}>{k.l}</span>
-                <span style={{ fontSize:18 }}>{k.icon}</span>
+                <span style={{ display:"flex", alignItems:"center" }}>{k.icon}</span>
               </div>
               <div style={{ fontSize:22, fontWeight:800, color:"#1F2A24", letterSpacing:"-0.5px" }}>{k.v}</div>
               {activeShop && <div style={{ fontSize:10, color:"#98A2B3", marginTop:4 }}>{activeShop.name}</div>}
@@ -653,7 +659,7 @@ export default function OrdersPage() {
               </div>
               <div className="or-tacts">
                 <button className="btn-primary" onClick={() => setNewOrderOpen(true)}>+ Nouvelle commande</button>
-                <button className="btn-secondary" onClick={() => fetchOrders(activeShopId)}>{ordersLoading ? "…" : "🔄"}</button>
+                <button className="btn-secondary" onClick={() => fetchOrders(activeShopId)}>{ordersLoading ? "…" : <RefreshCw size={14} />}</button>
               </div>
             </div>
 
@@ -787,7 +793,7 @@ export default function OrdersPage() {
                 <>
                   <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:12 }}>
                     <div style={{ width:42, height:42, borderRadius:12, background:"#EAF7EF",
-                      display:"flex", alignItems:"center", justifyContent:"center", fontSize:18 }}>🏪</div>
+                      display:"flex", alignItems:"center", justifyContent:"center" }}><Store size={20} color="#0A8F45" /></div>
                     <div>
                       <div style={{ fontWeight:700, fontSize:14, color:"#1F2A24" }}>{activeShop.name}</div>
                       <span className={activeShop.isPublished ? "badge badge-green" : "badge badge-gray"} style={{ fontSize:10 }}>

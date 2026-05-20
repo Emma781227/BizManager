@@ -4,10 +4,9 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getSessionFromRequest } from "@/lib/auth";
 import { productSchema } from "@/lib/validators";
+import { uploadMedia } from "@/lib/cloudinary";
 
 export const runtime = "nodejs";
-
-const MAX_MEDIA_SIZE = 20 * 1024 * 1024;
 
 function normalizeCategory(value: string): string {
   return value.trim().replace(/\s+/g, " ");
@@ -61,18 +60,7 @@ function parseIntegerInput(value: FormDataEntryValue | null): number {
 }
 
 async function saveProductMedia(file: File): Promise<string> {
-  if (!file.type.startsWith("image/") && !file.type.startsWith("video/")) {
-    throw new Error("Le fichier doit etre une image ou une video");
-  }
-
-  if (file.size > MAX_MEDIA_SIZE) {
-    throw new Error("Media trop volumineux (max 20 MB)");
-  }
-
-  const buffer = Buffer.from(await file.arrayBuffer());
-  const base64 = buffer.toString("base64");
-
-  return `data:${file.type};base64,${base64}`;
+  return uploadMedia(file);
 }
 
 function parseImageVariantsInput(value: FormDataEntryValue | null): string[] {

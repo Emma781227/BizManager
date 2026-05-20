@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
+import { MessageCircle, Globe, PenLine, Package, Store } from "lucide-react";
 import { useActiveShop } from "@/hooks/useActiveShop";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -38,7 +39,11 @@ const QUICK_ACTIONS = [
   { icon:"⚙️", label:"Paramètres boutique", href:"/settings" },
 ];
 
-const CHANNEL_ICONS: Record<string, string> = { whatsapp:"💬", online:"🌐", manual:"✍️" };
+const CHANNEL_ICONS: Record<string, React.ReactNode> = {
+  whatsapp: <MessageCircle size={16} color="#25D366" />,
+  online:   <Globe size={16} color="#3B82F6" />,
+  manual:   <PenLine size={16} color="#667085" />,
+};
 
 // ─── CSS ──────────────────────────────────────────────────────────────────────
 const DB_CSS = `
@@ -228,7 +233,7 @@ export default function DashboardPage() {
         <div className="db-ctx">
           <div style={{ display:"flex", alignItems:"center", gap:10 }}>
             <span style={{ fontSize:12, fontWeight:600, color:"#98A2B3", textTransform:"uppercase", letterSpacing:"0.05em" }}>Boutique active</span>
-            <div style={{ display:"flex", alignItems:"center", gap:8, background:"#fff", border:"1.5px solid #E8ECEA", borderRadius:10, padding:"6px 14px" }}>
+            <div style={{ display:"flex", alignItems:"center", gap:100, background:"#fff", border:"1.5px solid #E8ECEA", borderRadius:10, padding:"6px 14px" }}>
               <div style={{ width:8, height:8, borderRadius:"50%", background:"#0A8F45" }} />
               <select value={activeId} onChange={e => setActiveId(e.target.value)}
                 style={{ border:"none", outline:"none", fontSize:14, fontWeight:600, color:"#1F2A24", background:"transparent", cursor:"pointer" }}>
@@ -286,7 +291,7 @@ export default function DashboardPage() {
         {/* ── Plan / quota ── */}
         {sub && (
           <div style={{ ...card, padding:"18px 24px", marginBottom:18, display:"flex", alignItems:"center", gap:20, flexWrap:"wrap" }}>
-            <div style={{ width:40, height:40, borderRadius:"50%", background:"#EAF7EF", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0 }}>🏪</div>
+            <div style={{ width:40, height:40, borderRadius:"50%", background:"#EAF7EF", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}><Store size={20} color="#0A8F45" /></div>
             <div style={{ flex:1, minWidth:200 }}>
               <p style={{ fontSize:14, fontWeight:700, color:"#1F2A24", margin:"0 0 2px" }}>
                 Plan {sub.plan.displayName} — jusqu&apos;à {planMaxShops} boutique{planMaxShops > 1 ? "s" : ""}
@@ -474,7 +479,7 @@ export default function DashboardPage() {
                             {STATUS_LABELS[o.status] ?? o.status}
                           </span>
                         </td>
-                        <td style={{ padding:"8px 10px", fontSize:16 }}>{CHANNEL_ICONS[o.channel] ?? "📦"}</td>
+                        <td style={{ padding:"8px 10px" }}>{CHANNEL_ICONS[o.channel] ?? <Package size={16} color="#98A2B3" />}</td>
                       </tr>
                     );
                   })}
@@ -520,7 +525,7 @@ export default function DashboardPage() {
                 <a href="/settings" style={{ display:"flex", alignItems:"center", gap:14, padding:"12px 14px", borderRadius:12, background:"#F8FAF9", border:"1.5px solid #E8ECEA", textDecoration:"none" }}
                   onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "#EAF7EF"; }}
                   onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "#F8FAF9"; }}>
-                  <div style={{ width:38, height:38, borderRadius:10, background:"#FDE8E8", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0 }}>🏪</div>
+                  <div style={{ width:38, height:38, borderRadius:10, background:"#FDE8E8", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}><Store size={18} color="#EF4444" /></div>
                   <div style={{ flex:1, minWidth:0 }}>
                     <p style={{ fontSize:13, fontWeight:600, color:"#1F2A24", margin:0 }}>{unpublishedShops.length} boutique{unpublishedShops.length > 1 ? "s" : ""} non publiée{unpublishedShops.length > 1 ? "s" : ""}</p>
                     <p style={{ fontSize:11, color:"#98A2B3", margin:"2px 0 0" }}>

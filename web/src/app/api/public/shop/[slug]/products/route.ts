@@ -29,7 +29,7 @@ export async function GET(request: Request, context: RouteParams) {
   const hasMinPrice = Number.isFinite(parsedMinPrice) && parsedMinPrice >= 0;
   const hasMaxPrice = Number.isFinite(parsedMaxPrice) && parsedMaxPrice >= 0;
 
-  const shop = await prisma.shop.findUnique({
+  let shop = await prisma.shop.findUnique({
     where: { slug: slug.toLowerCase() },
     select: {
       id: true,
@@ -38,7 +38,16 @@ export async function GET(request: Request, context: RouteParams) {
   });
 
   if (!shop || !shop.isPublished) {
-    return NextResponse.json({ error: "Boutique introuvable" }, { status: 404 });
+    const altSlug = `${slug}a`.toLowerCase();
+    const alt = await prisma.shop.findUnique({
+      where: { slug: altSlug },
+      select: { id: true, isPublished: true },
+    });
+    if (alt && alt.isPublished) {
+      shop = alt;
+    } else {
+      return NextResponse.json({ error: "Boutique introuvable" }, { status: 404 });
+    }
   }
 
   const stockFilter =

@@ -1,5 +1,6 @@
 "use client";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
+import { AlertTriangle, Info, Image, Tag, Clock } from "lucide-react";
 
 // ─── CSS ──────────────────────────────────────────────────────────────────────
 const CSS = `
@@ -64,11 +65,11 @@ const COUNTRY_CODES = [
 
 const COUNTRIES = ["Cameroun","Côte d'Ivoire","Sénégal","Guinée","Bénin","Burkina Faso","Togo","Gabon","Congo","RD Congo","Mali","Niger","Madagascar","France","Autre"];
 
-const PAYMENT_OPTIONS = [
-  { id:"ORANGE_MONEY",     label:"Orange Money",      icon:"🟠", bg:"#FFF4EC", border:"#FF8C00" },
-  { id:"MTN_MOBILE_MONEY", label:"MTN Mobile Money",  icon:"🟡", bg:"#FFFBEA", border:"#FFD700" },
-  { id:"CASH",             label:"Espèces",           icon:"💵", bg:"#EAF7EF", border:"#0A8F45" },
-  { id:"BANK_TRANSFER",    label:"Virement bancaire", icon:"🏦", bg:"#EFF8FF", border:"#175CD3" },
+const PAYMENT_OPTIONS: { id:string; label:string; icon:React.ReactNode; bg:string; border:string }[] = [
+  { id:"ORANGE_MONEY",     label:"Orange Money",      icon:<span style={{width:14,height:14,borderRadius:"50%",background:"#FF8C00",display:"inline-block",flexShrink:0}} />, bg:"#FFF4EC", border:"#FF8C00" },
+  { id:"MTN_MOBILE_MONEY", label:"MTN Mobile Money",  icon:<span style={{width:14,height:14,borderRadius:"50%",background:"#FFD700",display:"inline-block",flexShrink:0}} />, bg:"#FFFBEA", border:"#FFD700" },
+  { id:"CASH",             label:"Espèces",           icon:<span style={{width:14,height:14,borderRadius:"50%",background:"#0A8F45",display:"inline-block",flexShrink:0}} />, bg:"#EAF7EF", border:"#0A8F45" },
+  { id:"BANK_TRANSFER",    label:"Virement bancaire", icon:<span style={{width:14,height:14,borderRadius:"50%",background:"#175CD3",display:"inline-block",flexShrink:0}} />, bg:"#EFF8FF", border:"#175CD3" },
 ];
 
 const DAYS = [
@@ -228,7 +229,9 @@ export default function CreateShopModal({ open, onClose, onCreated }: CreateShop
             {/* Quota banner */}
             {quota && (
               <div className={`sm-quota-banner${quota.usage.shops >= quota.plan.maxShops ? " warn" : ""}`}>
-                <span style={{fontSize:18}}>{quota.usage.shops >= quota.plan.maxShops ? "⚠️" : "ℹ️"}</span>
+                <span style={{color: quota.usage.shops >= quota.plan.maxShops ? "#F08A24" : "#0A8F45"}}>
+                  {quota.usage.shops >= quota.plan.maxShops ? <AlertTriangle size={18} /> : <Info size={18} />}
+                </span>
                 <div style={{flex:1, minWidth:0}}>
                   <div style={{fontSize:13, fontWeight:600, color:"#1F2A24"}}>
                     Plan {quota.plan.displayName} : vous utilisez {quota.usage.shops} / {quota.plan.maxShops} boutique{quota.plan.maxShops > 1 ? "s" : ""}.
@@ -257,7 +260,7 @@ export default function CreateShopModal({ open, onClose, onCreated }: CreateShop
                   <img src={coverPreview} alt="cover" style={{width:"100%",height:"100%",objectFit:"cover"}} />
                 ) : (
                   <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:8}}>
-                    <span style={{fontSize:32}}>🖼️</span>
+                    <span style={{color:"#98A2B3"}}><Image size={32} /></span>
                     <span style={{fontSize:13, fontWeight:600, color:"#0A8F45", background:"#fff", border:"1.5px solid #C2E8D0", borderRadius:8, padding:"6px 20px"}}>Téléverser une image</span>
                     <span style={{fontSize:11, color:"#98A2B3"}}>PNG, JPG, WEBP • Max. 5 Mo • Recommandé : 1920 × 600 px</span>
                   </div>
@@ -287,9 +290,9 @@ export default function CreateShopModal({ open, onClose, onCreated }: CreateShop
                   <input className="sm-input" placeholder="Ex. : Mon Aventure" value={name} onChange={e => setName(e.target.value)} />
                 </div>
 
-                {/* Slug */}
+                {/* URL publique */}
                 <div>
-                  <label className="sm-label">Slug public <span style={{color:"#EF4444"}}>*</span></label>
+                  <label className="sm-label">URL de la boutique <span style={{color:"#EF4444"}}>*</span></label>
                   <div style={{position:"relative"}}>
                     <input className="sm-input"
                       placeholder="Ex. : mon-aventure"
@@ -304,7 +307,7 @@ export default function CreateShopModal({ open, onClose, onCreated }: CreateShop
                     </span>
                   </div>
                   <div style={{fontSize:12, color:"#667085", marginTop:4}}>
-                    Aperçu : <strong style={{color:"#0A8F45"}}>{slug || "mon-aventure"}</strong>.bizmanager.shop
+                    URL publique : <strong style={{color:"#0A8F45"}}>{slug || "mon-aventure"}</strong>.bizmanager.shop
                   </div>
                 </div>
 
@@ -362,7 +365,7 @@ export default function CreateShopModal({ open, onClose, onCreated }: CreateShop
                     <img src={logoPreview} alt="logo" style={{width:"100%",height:"100%",objectFit:"cover"}} />
                   ) : (
                     <>
-                      <span style={{fontSize:28}}>🏷️</span>
+                      <span style={{color:"#98A2B3"}}><Tag size={28} /></span>
                       <span style={{fontSize:11, fontWeight:600, color:"#0A8F45", textAlign:"center"}}>Téléverser un logo</span>
                       <span style={{fontSize:10, color:"#98A2B3", textAlign:"center", lineHeight:1.3}}>Format carré</span>
                       <span style={{fontSize:9, color:"#C5CDD1"}}>PNG · JPG · WEBP · 2 Mo</span>
@@ -416,7 +419,7 @@ export default function CreateShopModal({ open, onClose, onCreated }: CreateShop
               </div>
               {openDays.length > 0 && openTime && closeTime && (
                 <div style={{fontSize:12, color:"#0A8F45", background:"#EAF7EF", borderRadius:8, padding:"6px 10px", marginTop:10, display:"inline-flex", alignItems:"center", gap:6}}>
-                  🕐 {openDays.join(", ")} · {openTime} – {closeTime}
+                  <Clock size={13} style={{marginRight:4,verticalAlign:"middle"}} />{openDays.join(", ")} · {openTime} – {closeTime}
                 </div>
               )}
             </div>
@@ -440,7 +443,7 @@ export default function CreateShopModal({ open, onClose, onCreated }: CreateShop
                     className={`sm-pay-card${payMethods.includes(p.id) ? " selected" : ""}`}
                     style={payMethods.includes(p.id) ? {borderColor:p.border, background:p.bg} : undefined}
                     onClick={() => setPayMethods(prev => prev.includes(p.id) ? prev.filter(x=>x!==p.id) : [...prev, p.id])}>
-                    <span style={{fontSize:28}}>{p.icon}</span>
+                    <span style={{display:"flex",alignItems:"center",justifyContent:"center",height:28}}>{p.icon}</span>
                     <span style={{fontSize:12,fontWeight:600,color:"#1F2A24",textAlign:"center",lineHeight:1.3}}>{p.label}</span>
                     <div style={{width:18,height:18,borderRadius:5,border:`2px solid ${payMethods.includes(p.id) ? p.border : "#E8ECEA"}`,
                       background:payMethods.includes(p.id) ? p.border : "#fff",display:"flex",alignItems:"center",justifyContent:"center"}}>

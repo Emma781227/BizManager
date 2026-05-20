@@ -4,10 +4,9 @@ import { prisma } from "@/lib/prisma";
 import { getSessionFromRequest } from "@/lib/auth";
 import { productSchema } from "@/lib/validators";
 import { resolveShop, checkProductQuota } from "@/lib/shop";
+import { uploadMedia } from "@/lib/cloudinary";
 
 export const runtime = "nodejs";
-
-const MAX_MEDIA_SIZE = 20 * 1024 * 1024;
 
 function normalizeCategory(value: string) {
   return value.trim().replace(/\s+/g, " ");
@@ -39,10 +38,8 @@ function parseImageVariantsInput(value: FormDataEntryValue | null): string[] {
   } catch { /* fallback */ }
   return value.split(",").map(v => v.trim()).filter(Boolean);
 }
-async function saveProductMedia(file: File) {
-  if (!file.type.startsWith("image/") && !file.type.startsWith("video/")) throw new Error("Le fichier doit etre une image ou une video");
-  if (file.size > MAX_MEDIA_SIZE) throw new Error("Media trop volumineux (max 20 MB)");
-  return `data:${file.type};base64,${Buffer.from(await file.arrayBuffer()).toString("base64")}`;
+async function saveProductMedia(file: File): Promise<string> {
+  return uploadMedia(file);
 }
 
 // GET /api/products?shopId=xxx&q=...&category=...&stock=...

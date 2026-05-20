@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useActiveShop } from "@/hooks/useActiveShop";
 import CreateShopModal from "./CreateShopModal";
+import { Store, Star, Globe, Package, ShoppingCart, Users, Tag, Check } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type ApiShop = {
@@ -91,14 +92,14 @@ export default function ShopsPage() {
         {/* KPI row */}
         <div className="bs-kpi-row">
           {[
-            { label:"Boutiques", val:shops.length, icon:"🏪", note: quota ? `${quota.usage.shops} / ${quota.plan.maxShops} max` : "" },
-            { label:"Plan actif", val: quota?.plan.displayName ?? "—", icon:"⭐", note: quota ? `${quota.plan.priceMonthly > 0 ? quota.plan.priceMonthly.toLocaleString("fr-FR")+" FCFA/mois" : "Gratuit"}` : "" },
-            { label:"Boutiques publiées", val: shops.filter(s=>s.isPublished).length, icon:"🌐", note:"accessibles au public" },
+            { label:"Boutiques", val:shops.length, icon:<Store size={16} color="#0A8F45" />, note: quota ? `${quota.usage.shops} / ${quota.plan.maxShops} max` : "" },
+            { label:"Plan actif", val: quota?.plan.displayName ?? "—", icon:<Star size={16} color="#F08A24" />, note: quota ? `${quota.plan.priceMonthly > 0 ? quota.plan.priceMonthly.toLocaleString("fr-FR")+" FCFA/mois" : "Gratuit"}` : "" },
+            { label:"Boutiques publiées", val: shops.filter(s=>s.isPublished).length, icon:<Globe size={16} color="#3B82F6" />, note:"accessibles au public" },
           ].map(k => (
             <div key={k.label} className="bs-kpi">
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
                 <span style={{fontSize:12,color:"#667085",fontWeight:500}}>{k.label}</span>
-                <span style={{fontSize:20}}>{k.icon}</span>
+                <span>{k.icon}</span>
               </div>
               <div style={{fontSize:22,fontWeight:800,color:"#1F2A24"}}>{k.val}</div>
               <div style={{fontSize:11,color:"#98A2B3",marginTop:4}}>{k.note}</div>
@@ -114,7 +115,7 @@ export default function ShopsPage() {
         {/* Empty state */}
         {!loading && shops.length === 0 && (
           <div style={{textAlign:"center",padding:"40px 20px",background:"#fff",borderRadius:18,border:"1px solid #E8ECEA"}}>
-            <div style={{fontSize:48,marginBottom:12}}>🏪</div>
+            <div style={{color:"#0A8F45",marginBottom:12}}><Store size={48} /></div>
             <div style={{fontSize:16,fontWeight:700,color:"#1F2A24",marginBottom:8}}>Aucune boutique pour l&apos;instant</div>
             <p style={{fontSize:14,color:"#667085",marginBottom:20}}>Créez votre première boutique pour commencer à vendre.</p>
             <button onClick={() => setShowCreate(true)}
@@ -141,12 +142,12 @@ export default function ShopsPage() {
                 {shop.coverUrl ? (
                   <img src={shop.coverUrl} alt={shop.name} className="bs-cover" />
                 ) : (
-                  <div className="bs-cover-placeholder">🏪</div>
+                  <div className="bs-cover-placeholder" style={{display:"flex",alignItems:"center",justifyContent:"center",color:"#98A2B3"}}><Store size={32} /></div>
                 )}
                 <div className="bs-card-body">
                   <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
                     <div className="bs-logo">
-                      {shop.logoUrl ? <img src={shop.logoUrl} alt="logo" style={{width:"100%",height:"100%",objectFit:"cover"}} /> : "🏷️"}
+                      {shop.logoUrl ? <img src={shop.logoUrl} alt="logo" style={{width:"100%",height:"100%",objectFit:"cover"}} /> : <Tag size={20} color="#98A2B3" />}
                     </div>
                     <div style={{flex:1,minWidth:0}}>
                       <div style={{fontWeight:700,fontSize:14,color:"#1F2A24",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{shop.name}</div>
@@ -160,11 +161,11 @@ export default function ShopsPage() {
                   </div>
 
                   <div style={{display:"flex",gap:8,fontSize:12,color:"#667085",borderTop:"1px solid #F4F6F5",paddingTop:10,marginBottom:10}}>
-                    <span>📦 {shop._count.products} produits</span>
+                    <span style={{display:"flex",alignItems:"center",gap:4}}><Package size={12} /> {shop._count.products} produits</span>
                     <span>·</span>
-                    <span>🛒 {shop._count.orders} commandes</span>
+                    <span style={{display:"flex",alignItems:"center",gap:4}}><ShoppingCart size={12} /> {shop._count.orders} commandes</span>
                     <span>·</span>
-                    <span>👤 {shop._count.customers} clients</span>
+                    <span style={{display:"flex",alignItems:"center",gap:4}}><Users size={12} /> {shop._count.customers} clients</span>
                   </div>
 
                   {/* Footer row */}
@@ -181,7 +182,7 @@ export default function ShopsPage() {
 
                   {activeShopId === shop.id && (
                     <div style={{marginTop:8,fontSize:11,fontWeight:700,color:"#0A8F45",textAlign:"center",background:"#EAF7EF",borderRadius:6,padding:"4px 0"}}>
-                      ✓ Boutique active dans le dashboard
+                      <Check size={12} style={{marginRight:4}} /> Boutique active dans le dashboard
                     </div>
                   )}
                   {!shop.isPublished && (
