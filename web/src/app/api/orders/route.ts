@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getSessionFromRequest } from "@/lib/auth";
 import { orderSchema } from "@/lib/validators";
 import { resolveShop } from "@/lib/shop";
+import { sendNewOrderNotification } from "@/lib/notifications";
 
 const allowedStatuses = ["pending","new","confirmed","in_progress","ready","delivered","cancelled"] as const;
 type AllowedOrderStatus = (typeof allowedStatuses)[number];
@@ -123,6 +124,21 @@ export async function POST(request: NextRequest) {
         },
       },
     });
+  });
+
+  void sendNewOrderNotification({
+    shopName:      shop.name,
+    merchantEmail: shop.notificationEmail ?? null,
+    orderId:       order.id,
+    customerName:  order.customer.fullName,
+    customerPhone: order.customer.phone,
+    items: order.items.map(i => ({
+      productName: i.product?.name ?? "Produit",
+      quantity:    i.quantity,
+      unitPrice:   Number(i.unitPrice),
+      lineTotal:   Number(i.lineTotal),
+    })),
+    totalAmount: Number(order.totalAmount ?? totalAmount),
   });
 
   return NextResponse.json({ data: order }, { status: 201 });

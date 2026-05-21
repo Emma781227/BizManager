@@ -1,6 +1,8 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useActiveShop } from "@/hooks/useActiveShop";
+import { Users, RefreshCw, ChevronUp, ChevronDown, Store, UserPlus, X } from "lucide-react";
 
 type Customer = {
   id: string;
@@ -12,236 +14,510 @@ type Customer = {
   createdAt: string;
 };
 
-type ApiResponse<T> = {
-  data?: T;
-  error?: string;
+type ApiShop = {
+  id: string;
+  name: string;
+  slug: string;
+  isPublished: boolean;
+  _count: { orders: number; products: number; customers: number };
 };
 
+type SortField = "name" | "date" | "phone";
+type SortDir   = "asc" | "desc";
+
+const CSS = `
+.cu-wrap  { padding:24px 28px; max-width:1280px; margin:0 auto; background:#F8FAF9; min-height:100vh; }
+.cu-ctx   { display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:16px; }
+.cu-ctx-r { margin-left:auto; display:flex; gap:8px; }
+.cu-kpi   { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:16px; }
+.cu-main  { display:grid; grid-template-columns:1fr 340px; gap:18px; }
+.cu-tcard { background:#fff; border:1px solid #E8ECEA; border-radius:18px;
+            box-shadow:0 2px 10px rgba(16,24,40,.04); overflow:hidden; }
+.cu-tbar  { display:flex; align-items:center; gap:10px; padding:16px 20px;
+            border-bottom:1px solid #E8ECEA; flex-wrap:wrap; }
+.cu-tacts { display:flex; gap:8px; margin-left:auto; }
+.cu-ftrow { display:flex; gap:8px; padding:12px 20px; border-bottom:1px solid #E8ECEA; flex-wrap:wrap; }
+.cu-table { width:100%; border-collapse:collapse; font-size:13px; }
+.cu-table th { padding:9px 12px; text-align:left; color:#667085; font-weight:500;
+               border-bottom:1px solid #E8ECEA; background:#FAFBFA; white-space:nowrap; cursor:pointer; user-select:none; }
+.cu-table th:hover { color:#1F2A24; }
+.cu-table td { padding:10px 12px; border-bottom:1px solid #F4F6F5; color:#1F2A24; vertical-align:middle; }
+.cu-table tr:hover td { background:#FAFBFA; }
+.cu-table tr:last-child td { border-bottom:none; }
+.cu-card  { background:#fff; border:1px solid #E8ECEA; border-radius:18px;
+            padding:18px 20px; box-shadow:0 2px 10px rgba(16,24,40,.04); }
+.cu-form  { display:flex; flex-direction:column; gap:12px; }
+.cu-field { display:flex; flex-direction:column; gap:5px; }
+.cu-label { font-size:12px; font-weight:600; color:#1F2A24; }
+.cu-inp   { height:36px; padding:0 11px; border:1px solid #E8ECEA; border-radius:10px;
+            font-size:13px; color:#1F2A24; background:#fff; outline:none; width:100%; box-sizing:border-box; }
+.cu-inp:focus { border-color:#0A8F45; box-shadow:0 0 0 3px rgba(10,143,69,.08); }
+.cu-ta    { padding:8px 11px; border:1px solid #E8ECEA; border-radius:10px;
+            font-size:13px; color:#1F2A24; background:#fff; outline:none; width:100%; box-sizing:border-box;
+            resize:vertical; font-family:inherit; }
+.cu-ta:focus { border-color:#0A8F45; box-shadow:0 0 0 3px rgba(10,143,69,.08); }
+.inp  { height:36px; padding:0 11px; border:1px solid #E8ECEA; border-radius:10px;
+        font-size:13px; color:#1F2A24; background:#fff; outline:none; }
+.inp:focus { border-color:#0A8F45; }
+.sel  { height:36px; padding:0 9px; border:1px solid #E8ECEA; border-radius:10px;
+        font-size:12px; color:#1F2A24; background:#fff; cursor:pointer; outline:none; }
+.btn-primary   { height:34px; padding:0 14px; background:#0A8F45; color:#fff; border:none;
+                 border-radius:10px; font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap; }
+.btn-primary:hover { background:#08763A; }
+.btn-primary:disabled { opacity:.5; cursor:not-allowed; }
+.btn-secondary { height:34px; padding:0 12px; background:#fff; color:#1F2A24;
+                 border:1px solid #E8ECEA; border-radius:10px; font-size:12px; cursor:pointer; white-space:nowrap; }
+.btn-secondary:hover { background:#F8FAF9; }
+@media(max-width:1100px){ .cu-kpi{grid-template-columns:repeat(2,1fr);} .cu-main{grid-template-columns:1fr;} }
+@media(max-width:700px){ .cu-kpi{grid-template-columns:1fr 1fr;} .cu-wrap{padding:14px 12px;}
+  .cu-ctx{flex-direction:column;align-items:flex-start;} .cu-ctx-r{margin-left:0;} }
+`;
+
+function SortIcon({ field, sortField, sortDir }: { field: SortField; sortField: SortField; sortDir: SortDir }) {
+  if (field !== sortField) return <ChevronDown size={12} style={{ opacity: 0.3, marginLeft: 3, verticalAlign: "middle" }} />;
+  return sortDir === "asc"
+    ? <ChevronUp size={12} style={{ color: "#0A8F45", marginLeft: 3, verticalAlign: "middle" }} />
+    : <ChevronDown size={12} style={{ color: "#0A8F45", marginLeft: 3, verticalAlign: "middle" }} />;
+}
+
 export default function CustomersPage() {
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [query, setQuery] = useState("");
-  const [searchValue, setSearchValue] = useState("");
+  const [activeShopId, setActiveShopId] = useActiveShop("");
+  const [shops, setShops]               = useState<ApiShop[]>([]);
+  const [customers, setCustomers]       = useState<Customer[]>([]);
+  const [loading, setLoading]           = useState(false);
+  const [search, setSearch]             = useState("");
+  const [sortField, setSortField]       = useState<SortField>("date");
+  const [sortDir, setSortDir]           = useState<SortDir>("desc");
+  const [formOpen, setFormOpen]         = useState(false);
+  const [submitting, setSubmitting]     = useState(false);
+  const [formErr, setFormErr]           = useState<string | null>(null);
+
   const [fullName, setFullName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [email, setEmail] = useState("");
-  const [address, setAddress] = useState("");
-  const [notes, setNotes] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const [phone, setPhone]       = useState("");
+  const [email, setEmail]       = useState("");
+  const [address, setAddress]   = useState("");
+  const [notes, setNotes]       = useState("");
+
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const activeShop  = shops.find(s => s.id === activeShopId) ?? null;
 
   useEffect(() => {
-    void loadCustomers(query);
-  }, [query]);
+    fetch("/api/shop?all=1")
+      .then(r => r.json())
+      .then(data => {
+        const list: ApiShop[] = Array.isArray(data.data) ? data.data : [];
+        setShops(list);
+        const stored = typeof window !== "undefined" ? (localStorage.getItem("biz_active_shop_id") ?? "") : "";
+        if (list.length > 0 && !list.find(s => s.id === stored)) {
+          setActiveShopId(list[0].id);
+        }
+      })
+      .catch(() => {});
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  async function loadCustomers(currentQuery: string) {
+  useEffect(() => {
+    if (!activeShopId) return;
+    fetchCustomers(activeShopId, search);
+  }, [activeShopId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!activeShopId) return;
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      fetchCustomers(activeShopId, search);
+    }, 280);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [search, activeShopId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function fetchCustomers(shopId: string, q: string) {
+    if (!shopId) return;
     setLoading(true);
-    setError(null);
-
-    const params = new URLSearchParams();
-    if (currentQuery.trim()) {
-      params.set("q", currentQuery.trim());
-    }
-
     try {
-      const response = await fetch(`/api/customers?${params.toString()}`, {
-        cache: "no-store",
-      });
-      const json = (await response.json()) as ApiResponse<Customer[]>;
+      const params = new URLSearchParams({ shopId });
+      if (q.trim()) params.set("q", q.trim());
+      const res  = await fetch(`/api/customers?${params.toString()}`);
+      const data = await res.json();
+      if (Array.isArray(data.data)) setCustomers(data.data);
+    } catch {}
+    setLoading(false);
+  }
 
-      if (!response.ok || !json.data) {
-        setCustomers([]);
-        setError(json.error ?? "Impossible de charger les clients.");
-        return;
-      }
-
-      setCustomers(json.data);
-    } catch {
-      setCustomers([]);
-      setError("Erreur reseau pendant le chargement des clients.");
-    } finally {
-      setLoading(false);
+  function toggleSort(field: SortField) {
+    if (field === sortField) {
+      setSortDir(d => d === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDir("asc");
     }
   }
 
-  async function handleCreateCustomer(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setSubmitting(true);
-    setError(null);
-    setSuccess(null);
+  const filtered = useMemo(() => {
+    const list = [...customers];
+    list.sort((a, b) => {
+      let cmp = 0;
+      if (sortField === "name")  cmp = a.fullName.localeCompare(b.fullName, "fr");
+      if (sortField === "phone") cmp = a.phone.localeCompare(b.phone);
+      if (sortField === "date")  cmp = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+    return list;
+  }, [customers, sortField, sortDir]);
 
-    const payload = {
-      fullName,
-      phone,
-      email: email || undefined,
-      address: address || undefined,
-      notes: notes || undefined,
-    };
+  function resetForm() {
+    setFullName(""); setPhone(""); setEmail(""); setAddress(""); setNotes("");
+    setFormErr(null);
+  }
 
+  async function handleCreate() {
+    if (fullName.trim().length < 2) { setFormErr("Nom trop court (2 caractères minimum)."); return; }
+    if (phone.trim().length < 8)    { setFormErr("Numéro trop court (8 caractères minimum)."); return; }
+    setSubmitting(true); setFormErr(null);
     try {
-      const response = await fetch("/api/customers", {
+      const params = new URLSearchParams({ shopId: activeShopId });
+      const res = await fetch(`/api/customers?${params.toString()}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          fullName: fullName.trim(),
+          phone:    phone.trim(),
+          email:    email.trim() || undefined,
+          address:  address.trim() || undefined,
+          notes:    notes.trim() || undefined,
+        }),
       });
-      const json = (await response.json()) as ApiResponse<Customer>;
-
-      if (!response.ok || !json.data) {
-        setError(json.error ?? "Impossible de creer le client.");
-        return;
-      }
-
-      setSuccess("Client cree avec succes.");
-      setFullName("");
-      setPhone("");
-      setEmail("");
-      setAddress("");
-      setNotes("");
-      await loadCustomers(query);
-    } catch {
-      setError("Erreur reseau pendant la creation du client.");
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Erreur serveur");
+      resetForm();
+      setFormOpen(false);
+      fetchCustomers(activeShopId, search);
+    } catch (e) {
+      setFormErr((e as Error).message);
     } finally {
       setSubmitting(false);
     }
   }
 
-  function handleSearchSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setQuery(searchValue);
-  }
-
   return (
-    <main className="grid gap-2.5 p-3 sm:gap-3.5 sm:p-4 lg:gap-4 lg:p-5">
-      <section className="rounded-2xl border border-slate-200 bg-[radial-gradient(circle_at_8%_16%,rgba(34,136,102,0.09)_0%,transparent_46%),linear-gradient(145deg,#ffffff_0%,#f8fbf9_100%)] p-4 sm:p-5">
-        <h1 className="mb-2 text-2xl font-bold leading-tight text-slate-900 sm:text-2.5xl">Clients</h1>
-        <p className="mb-4 max-w-2xl text-sm text-slate-600 sm:text-base">Centralise ta base clients pour accelerer les commandes.</p>
+    <>
+      <style>{CSS}</style>
+      <div className="cu-wrap">
 
-        <div className="mt-3 grid gap-2 grid-cols-2 sm:gap-2.5 lg:grid-cols-4">
-          <article className="rounded-lg border border-slate-200 bg-slate-50 p-2.5 sm:p-3">
-            <span className="block text-xs font-semibold text-slate-600 sm:text-sm">Clients trouves</span>
-            <strong className="text-base font-bold text-slate-900 sm:text-lg">{customers.length}</strong>
-          </article>
-          <article className="rounded-lg border border-slate-200 bg-slate-50 p-2.5 sm:p-3">
-            <span className="block text-xs font-semibold text-slate-600 sm:text-sm">Recherche active</span>
-            <strong className="text-base font-bold text-slate-900 sm:text-lg">{query.trim() ? "Oui" : "Non"}</strong>
-          </article>
-          <article className="rounded-lg border border-slate-200 bg-slate-50 p-2.5 sm:p-3">
-            <span className="block text-xs font-semibold text-slate-600 sm:text-sm">Creation</span>
-            <strong className="text-base font-bold text-slate-900 sm:text-lg">{submitting ? "En cours" : "Disponible"}</strong>
-          </article>
-          <article className="rounded-lg border border-slate-200 bg-slate-50 p-2.5 sm:p-3">
-            <span className="block text-xs font-semibold text-slate-600 sm:text-sm">Etat</span>
-            <strong className="text-base font-bold text-slate-900 sm:text-lg">{loading ? "Chargement" : "Pret"}</strong>
-          </article>
-        </div>
-      </section>
-
-      <section className="rounded-2xl border border-slate-200 bg-gradient-to-b from-white to-slate-50 p-4 sm:p-5">
-        <h2 className="mb-3 text-xl font-bold text-slate-900 sm:text-2xl">Nouveau client</h2>
-        <form className="mt-3 grid gap-2 grid-cols-1 sm:grid-cols-[repeat(auto-fit,minmax(220px,1fr))] lg:grid-cols-[repeat(auto-fit,minmax(250px,1fr))] lg:gap-3" onSubmit={handleCreateCustomer}>
-          <label className="grid gap-1">
-            <span className="text-xs font-semibold text-slate-700 sm:text-sm">Nom complet</span>
-            <input
-              value={fullName}
-              onChange={(event) => setFullName(event.target.value)}
-              minLength={2}
-              required
-              className="rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm transition-colors focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100 sm:px-3 sm:py-2.5 sm:text-base"
-            />
-          </label>
-          <label className="grid gap-1">
-            <span className="text-xs font-semibold text-slate-700 sm:text-sm">Telephone</span>
-            <input
-              value={phone}
-              onChange={(event) => setPhone(event.target.value)}
-              minLength={8}
-              required
-              className="rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm transition-colors focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100 sm:px-3 sm:py-2.5 sm:text-base"
-            />
-          </label>
-          <label className="grid gap-1">
-            <span className="text-xs font-semibold text-slate-700 sm:text-sm">Email</span>
-            <input
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              placeholder="Optionnel"
-              className="rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm transition-colors focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100 sm:px-3 sm:py-2.5 sm:text-base"
-            />
-          </label>
-          <label className="grid gap-1">
-            <span className="text-xs font-semibold text-slate-700 sm:text-sm">Adresse</span>
-            <input
-              value={address}
-              onChange={(event) => setAddress(event.target.value)}
-              placeholder="Optionnel"
-              className="rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm transition-colors focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100 sm:px-3 sm:py-2.5 sm:text-base"
-            />
-          </label>
-          <label className="col-span-full grid gap-1">
-            <span className="text-xs font-semibold text-slate-700 sm:text-sm">Notes</span>
-            <textarea
-              rows={3}
-              value={notes}
-              onChange={(event) => setNotes(event.target.value)}
-              placeholder="Optionnel"
-              className="rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm transition-colors focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100 sm:px-3 sm:py-2.5 sm:text-base"
-            />
-          </label>
-          <button type="submit" disabled={submitting} className="col-span-full rounded-lg border border-emerald-600 bg-gradient-to-b from-emerald-600 to-emerald-700 px-3 py-2 font-bold text-white transition-colors hover:from-emerald-700 hover:to-emerald-800 disabled:opacity-65 sm:col-span-1 sm:px-4 sm:py-2.5">
-            {submitting ? "Creation..." : "Creer le client"}
-          </button>
-        </form>
-        {success ? <p className="mt-3 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700 sm:py-2.5 sm:text-base">{success}</p> : null}
-      </section>
-
-      <section className="rounded-2xl border border-slate-200 bg-gradient-to-b from-white to-slate-50 p-4 sm:p-5">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-xl font-bold text-slate-900 sm:text-2xl">Base clients</h2>
-          <form className="flex flex-wrap gap-2 sm:gap-2.5" onSubmit={handleSearchSubmit}>
-            <input
-              value={searchValue}
-              onChange={(event) => setSearchValue(event.target.value)}
-              placeholder="Rechercher nom, telephone, email"
-              className="rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm transition-colors focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100 sm:px-3 sm:py-2.5 sm:text-base"
-            />
-            <button type="submit" className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-slate-100 px-3 py-2 font-semibold text-slate-900 transition-colors hover:bg-slate-200 sm:px-4 sm:py-2.5">
-              Rechercher
-            </button>
-          </form>
-        </div>
-
-        {loading ? <p className="py-4 text-center text-sm text-slate-600">Chargement...</p> : null}
-        {!loading && customers.length === 0 ? <p className="py-4 text-center text-sm text-slate-600">Aucun client trouve.</p> : null}
-
-        {customers.length > 0 ? (
-          <div className="mt-3 overflow-x-auto rounded-lg border border-slate-200">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="border-b border-slate-200 bg-slate-50">
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-slate-700 sm:py-2.5 sm:px-4 sm:text-sm">Nom</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-slate-700 sm:py-2.5 sm:px-4 sm:text-sm">Telephone</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-slate-700 sm:py-2.5 sm:px-4 sm:text-sm">Email</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-slate-700 sm:py-2.5 sm:px-4 sm:text-sm">Adresse</th>
-                </tr>
-              </thead>
-              <tbody>
-                {customers.map((customer) => (
-                  <tr key={customer.id} className="border-b border-slate-100 hover:bg-slate-50">
-                    <td className="px-3 py-2 text-xs text-slate-900 sm:py-2.5 sm:px-4 sm:text-sm">{customer.fullName}</td>
-                    <td className="px-3 py-2 text-xs text-slate-900 sm:py-2.5 sm:px-4 sm:text-sm">{customer.phone}</td>
-                    <td className="px-3 py-2 text-xs text-slate-900 sm:py-2.5 sm:px-4 sm:text-sm">{customer.email ?? "-"}</td>
-                    <td className="px-3 py-2 text-xs text-slate-900 sm:py-2.5 sm:px-4 sm:text-sm">{customer.address ?? "-"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        {/* Context bar */}
+        <div className="cu-ctx">
+          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+            <span style={{ fontSize:12, color:"#667085", fontWeight:500 }}>Boutique active</span>
+            <select
+              className="sel"
+              style={{ fontWeight:700, color:"#0A8F45", borderColor:"#0A8F45", minWidth:155 }}
+              value={activeShopId}
+              onChange={e => setActiveShopId(e.target.value)}>
+              {shops.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
           </div>
-        ) : null}
+          <div style={{ fontSize:12, color:"#98A2B3" }}>
+            {customers.length} client{customers.length !== 1 ? "s" : ""}
+          </div>
+          <div className="cu-ctx-r">
+            <button
+              className="btn-secondary"
+              style={{ display:"flex", alignItems:"center", gap:5 }}
+              onClick={() => fetchCustomers(activeShopId, search)}
+              disabled={loading}>
+              {loading ? "…" : <><RefreshCw size={12} /> Actualiser</>}
+            </button>
+          </div>
+        </div>
 
-        {error ? <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 sm:py-2.5 sm:text-base">{error}</p> : null}
-      </section>
-    </main>
+        {/* Title */}
+        <div style={{ marginBottom:16 }}>
+          <h1 style={{ fontSize:22, fontWeight:700, color:"#1F2A24", margin:"0 0 4px" }}>Clients</h1>
+          <p style={{ margin:0, color:"#667085", fontSize:14 }}>
+            Base clients de <strong style={{ color:"#0A8F45" }}>{activeShop?.name ?? "votre boutique"}</strong>
+          </p>
+        </div>
+
+        {/* KPIs */}
+        <div className="cu-kpi">
+          {[
+            { icon:<Users size={16} color="#0A8F45" />,   l:"Total clients",       v: String(customers.length) },
+            { icon:<Users size={16} color="#3B82F6" />,   l:"Résultats affichés",  v: String(filtered.length) },
+            { icon:<Store size={16} color="#F08A24" />,   l:"Boutique",            v: activeShop?.name ?? "—" },
+            { icon:<Users size={16} color="#8B5CF6" />,   l:"Avec email",          v: String(customers.filter(c => c.email).length) },
+          ].map((k, i) => (
+            <div key={i} style={{ background:"#fff", border:"1px solid #E8ECEA", borderRadius:16,
+              padding:"16px 18px", boxShadow:"0 2px 10px rgba(16,24,40,.04)" }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:6 }}>
+                <span style={{ fontSize:13, color:"#667085", fontWeight:500 }}>{k.l}</span>
+                {k.icon}
+              </div>
+              <div style={{ fontSize:20, fontWeight:800, color:"#1F2A24", letterSpacing:"-0.5px",
+                overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{k.v}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Main 2-col */}
+        <div className="cu-main">
+
+          {/* Table */}
+          <div className="cu-tcard">
+            <div className="cu-tbar">
+              <div>
+                <div style={{ fontWeight:700, color:"#1F2A24", fontSize:15 }}>Base clients</div>
+                <div style={{ fontSize:11, color:"#98A2B3", marginTop:2 }}>
+                  {filtered.length} sur {customers.length}
+                </div>
+              </div>
+              <div className="cu-tacts">
+                <button
+                  className="btn-primary"
+                  style={{ display:"flex", alignItems:"center", gap:5 }}
+                  onClick={() => { setFormOpen(true); setFormErr(null); }}
+                  disabled={!activeShopId}>
+                  <UserPlus size={13} /> Nouveau client
+                </button>
+              </div>
+            </div>
+
+            {/* Filters */}
+            <div className="cu-ftrow">
+              <input
+                className="inp"
+                placeholder="🔍 Nom, téléphone, email…"
+                style={{ flex:1, minWidth:140 }}
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+              />
+              <select
+                className="sel"
+                value={`${sortField}-${sortDir}`}
+                onChange={e => {
+                  const [f, d] = e.target.value.split("-") as [SortField, SortDir];
+                  setSortField(f); setSortDir(d);
+                }}>
+                <option value="date-desc">Plus récents</option>
+                <option value="date-asc">Plus anciens</option>
+                <option value="name-asc">Nom A → Z</option>
+                <option value="name-desc">Nom Z → A</option>
+                <option value="phone-asc">Téléphone ↑</option>
+              </select>
+              {search && (
+                <button
+                  className="btn-secondary"
+                  style={{ display:"flex", alignItems:"center", gap:4 }}
+                  onClick={() => setSearch("")}>
+                  <X size={12} /> Effacer
+                </button>
+              )}
+            </div>
+
+            {/* Table */}
+            {loading ? (
+              <div style={{ textAlign:"center", padding:40, color:"#98A2B3", fontSize:14 }}>
+                Chargement des clients…
+              </div>
+            ) : (
+              <div style={{ overflowX:"auto" }}>
+                <table className="cu-table">
+                  <thead>
+                    <tr>
+                      <th onClick={() => toggleSort("name")}>
+                        Nom <SortIcon field="name" sortField={sortField} sortDir={sortDir} />
+                      </th>
+                      <th onClick={() => toggleSort("phone")}>
+                        Téléphone <SortIcon field="phone" sortField={sortField} sortDir={sortDir} />
+                      </th>
+                      <th>Email</th>
+                      <th>Adresse</th>
+                      <th onClick={() => toggleSort("date")}>
+                        Inscrit le <SortIcon field="date" sortField={sortField} sortDir={sortDir} />
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filtered.map(c => (
+                      <tr key={c.id}>
+                        <td>
+                          <div style={{ fontWeight:600, fontSize:13 }}>{c.fullName}</div>
+                          {c.notes && (
+                            <div style={{ fontSize:11, color:"#98A2B3", marginTop:2, fontStyle:"italic" }}>
+                              {c.notes.slice(0, 60)}{c.notes.length > 60 ? "…" : ""}
+                            </div>
+                          )}
+                        </td>
+                        <td style={{ fontFamily:"monospace", fontSize:12 }}>{c.phone}</td>
+                        <td style={{ fontSize:12, color:"#667085" }}>{c.email ?? "—"}</td>
+                        <td style={{ fontSize:12, color:"#667085", maxWidth:180 }}>
+                          <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", display:"block" }}>
+                            {c.address ?? "—"}
+                          </span>
+                        </td>
+                        <td style={{ fontSize:11, color:"#98A2B3", whiteSpace:"nowrap" }}>
+                          {c.createdAt.slice(0, 10)}
+                        </td>
+                      </tr>
+                    ))}
+                    {filtered.length === 0 && (
+                      <tr>
+                        <td colSpan={5} style={{ textAlign:"center", padding:32, color:"#98A2B3" }}>
+                          {customers.length === 0
+                            ? "Aucun client pour cette boutique."
+                            : "Aucun client ne correspond à la recherche."}
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            <div style={{ padding:"11px 20px", borderTop:"1px solid #E8ECEA", fontSize:12, color:"#98A2B3" }}>
+              {filtered.length} client{filtered.length !== 1 ? "s" : ""} affiché{filtered.length !== 1 ? "s" : ""} sur {customers.length}
+            </div>
+          </div>
+
+          {/* Right sidebar */}
+          <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+
+            {/* Nouveau client form */}
+            <div className="cu-card">
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
+                <div style={{ fontWeight:700, color:"#1F2A24", fontSize:14 }}>
+                  {formOpen ? "Nouveau client" : "Ajouter un client"}
+                </div>
+                {!formOpen && (
+                  <button
+                    className="btn-primary"
+                    style={{ display:"flex", alignItems:"center", gap:4, height:30, fontSize:11 }}
+                    onClick={() => { setFormOpen(true); setFormErr(null); }}>
+                    <UserPlus size={12} /> Ajouter
+                  </button>
+                )}
+              </div>
+
+              {formOpen ? (
+                <div className="cu-form">
+                  <div className="cu-field">
+                    <label className="cu-label">Nom complet *</label>
+                    <input className="cu-inp" placeholder="Prénom Nom"
+                      value={fullName} onChange={e => setFullName(e.target.value)} />
+                  </div>
+                  <div className="cu-field">
+                    <label className="cu-label">Téléphone *</label>
+                    <input className="cu-inp" placeholder="+221771234567"
+                      value={phone} onChange={e => setPhone(e.target.value)} />
+                  </div>
+                  <div className="cu-field">
+                    <label className="cu-label">Email</label>
+                    <input className="cu-inp" type="email" placeholder="Optionnel"
+                      value={email} onChange={e => setEmail(e.target.value)} />
+                  </div>
+                  <div className="cu-field">
+                    <label className="cu-label">Adresse</label>
+                    <input className="cu-inp" placeholder="Optionnel"
+                      value={address} onChange={e => setAddress(e.target.value)} />
+                  </div>
+                  <div className="cu-field">
+                    <label className="cu-label">Notes</label>
+                    <textarea className="cu-ta" rows={2} placeholder="Optionnel"
+                      value={notes} onChange={e => setNotes(e.target.value)} />
+                  </div>
+                  {formErr && (
+                    <div style={{ padding:"8px 10px", background:"#FDE8E8", borderRadius:8,
+                      fontSize:12, color:"#D92D20" }}>{formErr}</div>
+                  )}
+                  <div style={{ display:"flex", gap:8 }}>
+                    <button className="btn-secondary" style={{ flex:1 }}
+                      onClick={() => { setFormOpen(false); resetForm(); }}>Annuler</button>
+                    <button className="btn-primary" style={{ flex:1 }}
+                      onClick={handleCreate} disabled={submitting}>
+                      {submitting ? "Création…" : "Créer"}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ fontSize:12, color:"#98A2B3", textAlign:"center", padding:"8px 0" }}>
+                  Cliquez sur Ajouter pour créer un nouveau client dans cette boutique.
+                </div>
+              )}
+            </div>
+
+            {/* Boutique info */}
+            <div className="cu-card">
+              <div style={{ fontWeight:700, color:"#1F2A24", fontSize:14, marginBottom:12 }}>Boutique active</div>
+              {activeShop ? (
+                <>
+                  <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:12 }}>
+                    <div style={{ width:40, height:40, borderRadius:12, background:"#EAF7EF",
+                      display:"flex", alignItems:"center", justifyContent:"center" }}>
+                      <Store size={18} color="#0A8F45" />
+                    </div>
+                    <div>
+                      <div style={{ fontWeight:700, fontSize:14, color:"#1F2A24" }}>{activeShop.name}</div>
+                      <span style={{ fontSize:10, padding:"2px 7px", borderRadius:10, fontWeight:600,
+                        background: activeShop.isPublished ? "#DDF6E7" : "#F2F4F7",
+                        color: activeShop.isPublished ? "#0A8F45" : "#667085" }}>
+                        {activeShop.isPublished ? "Publiée" : "Brouillon"}
+                      </span>
+                    </div>
+                  </div>
+                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6 }}>
+                    {[
+                      { l:"Clients",   v: activeShop._count.customers },
+                      { l:"Produits",  v: activeShop._count.products },
+                      { l:"Commandes", v: activeShop._count.orders },
+                      { l:"Avec email",v: customers.filter(c => c.email).length },
+                    ].map(r => (
+                      <div key={r.l} style={{ background:"#F8FAF9", borderRadius:8, padding:"7px 10px" }}>
+                        <div style={{ fontSize:15, fontWeight:700, color:"#1F2A24" }}>{r.v}</div>
+                        <div style={{ fontSize:10, color:"#98A2B3" }}>{r.l}</div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <div style={{ fontSize:12, color:"#98A2B3" }}>Chargement…</div>
+              )}
+            </div>
+
+            {/* Other shops */}
+            {shops.length > 1 && (
+              <div className="cu-card">
+                <div style={{ fontWeight:700, color:"#1F2A24", fontSize:14, marginBottom:10 }}>Mes boutiques</div>
+                {shops.map((s, i) => {
+                  const colors = ["#0A8F45","#3B82F6","#F08A24","#8B5CF6","#EC4899"];
+                  return (
+                    <div key={s.id}
+                      style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 10px",
+                        borderBottom: i < shops.length - 1 ? "1px solid #F4F6F5" : "none",
+                        borderRadius:8, cursor:"pointer",
+                        background: s.id === activeShopId ? "#EAF7EF" : "transparent" }}
+                      onClick={() => setActiveShopId(s.id)}>
+                      <div style={{ width:32, height:32, borderRadius:9, background:colors[i % colors.length],
+                        display:"flex", alignItems:"center", justifyContent:"center",
+                        fontWeight:700, fontSize:11, color:"#fff", flexShrink:0 }}>
+                        {s.name.slice(0,2).toUpperCase()}
+                      </div>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ fontWeight:600, fontSize:12, color:"#1F2A24",
+                          overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                          {s.name}
+                        </div>
+                        <div style={{ fontSize:10, color:"#98A2B3" }}>{s._count.customers} clients</div>
+                      </div>
+                      {s.id === activeShopId && (
+                        <span style={{ fontSize:9, background:"#0A8F45", color:"#fff",
+                          borderRadius:4, padding:"1px 5px", flexShrink:0 }}>Actif</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+          </div>
+        </div>
+      </div>
+    </>
   );
 }

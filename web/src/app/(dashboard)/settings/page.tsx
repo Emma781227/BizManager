@@ -17,7 +17,15 @@ type SettingsShop = {
   notificationEmail: string | null;
   logoUrl: string | null;
   coverUrl: string | null;
+  paymentMethods: string[];
 };
+
+const PAYMENT_OPTIONS = [
+  { id:"ORANGE_MONEY",     label:"Orange Money",      dot:"#FF8C00", bg:"#FFF4EC", border:"#FF8C00" },
+  { id:"MTN_MOBILE_MONEY", label:"MTN Mobile Money",  dot:"#FFD700", bg:"#FFFBEA", border:"#FFD700" },
+  { id:"CASH",             label:"Espèces",            dot:"#0A8F45", bg:"#EAF7EF", border:"#0A8F45" },
+  { id:"BANK_TRANSFER",    label:"Virement bancaire",  dot:"#175CD3", bg:"#EFF8FF", border:"#175CD3" },
+];
 
 type SubscriptionQuota = {
   plan: {
@@ -56,6 +64,7 @@ function toSettingsShop(sh: any, i: number): SettingsShop {
     notificationEmail: sh.notificationEmail ?? null,
     logoUrl:           sh.logoUrl           ?? null,
     coverUrl:          sh.coverUrl          ?? null,
+    paymentMethods:    Array.isArray(sh.paymentMethods) ? sh.paymentMethods : [],
   };
 }
 
@@ -191,6 +200,7 @@ function ShopActionsModal({
   const [editOpenDays,    setEditOpenDays]    = useState<string[]>([]);
   const [editOpenTime,    setEditOpenTime]    = useState("");
   const [editCloseTime,   setEditCloseTime]   = useState("");
+  const [editPayMethods,  setEditPayMethods]  = useState<string[]>([]);
   const [logoUrl,         setLogoUrl]         = useState<string | null>(null);
   const [coverUrl,        setCoverUrl]        = useState<string | null>(null);
   const [logoFile,        setLogoFile]        = useState<File | null>(null);
@@ -233,6 +243,7 @@ function ShopActionsModal({
         setEditOpenTime(m ? m[1] : "");
         setEditCloseTime(m ? m[2] : "");
       }
+      setEditPayMethods(Array.isArray(shop.paymentMethods) ? shop.paymentMethods : []);
       setLogoUrl(shop.logoUrl ?? null);
       setCoverUrl(shop.coverUrl ?? null);
       setLogoFile(null);
@@ -436,6 +447,7 @@ function ShopActionsModal({
         ? `${editOpenTime}-${editCloseTime}`
         : "";
       fd.append("openingHours", hoursStr);
+      fd.append("paymentMethods", JSON.stringify(editPayMethods));
       fd.append("notificationEmail", editNotifEmail.trim());
       fd.append("isPublished", String(shop.isPublished));
       if (logoFile) fd.append("logoFile", logoFile);
@@ -746,6 +758,36 @@ function ShopActionsModal({
                 ) : (
                   <div style={{ fontSize:11, color:"#98A2B3" }}>Sélectionnez les jours et les horaires.</div>
                 )}
+              </div>
+            </div>
+
+            {/* Moyens de paiement */}
+            <div className="se-section" style={{ marginBottom:0, marginTop:20 }}>
+              <div className="se-sec-ttl">Moyens de paiement acceptés</div>
+              <div style={{ display:"flex", gap:10, flexWrap:"wrap" }}>
+                {PAYMENT_OPTIONS.map(p => (
+                  <div key={p.id}
+                    onClick={() => setEditPayMethods(prev => prev.includes(p.id) ? prev.filter(x => x !== p.id) : [...prev, p.id])}
+                    style={{
+                      display:"flex", flexDirection:"column", alignItems:"center", gap:8,
+                      padding:"12px 10px",
+                      border:`2px solid ${editPayMethods.includes(p.id) ? p.border : "#E8ECEA"}`,
+                      borderRadius:12, cursor:"pointer",
+                      background: editPayMethods.includes(p.id) ? p.bg : "#fff",
+                      flex:1, minWidth:110, transition:"all .15s"
+                    }}>
+                    <span style={{ width:12, height:12, borderRadius:"50%", background:p.dot, display:"inline-block" }} />
+                    <span style={{ fontSize:12, fontWeight:600, color:"#1F2A24", textAlign:"center" }}>{p.label}</span>
+                    <div style={{
+                      width:16, height:16, borderRadius:4,
+                      border:`2px solid ${editPayMethods.includes(p.id) ? p.border : "#E8ECEA"}`,
+                      background: editPayMethods.includes(p.id) ? p.border : "#fff",
+                      display:"flex", alignItems:"center", justifyContent:"center"
+                    }}>
+                      {editPayMethods.includes(p.id) && <span style={{ color:"#fff", fontSize:10, fontWeight:800 }}>✓</span>}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 

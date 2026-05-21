@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
-import { MessageCircle, Globe, PenLine, Package, Store } from "lucide-react";
+import { MessageCircle, Globe, PenLine, Package, Store, Plus } from "lucide-react";
 import { useActiveShop } from "@/hooks/useActiveShop";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -146,6 +146,7 @@ export default function DashboardPage() {
   const [orders,    setOrders]    = useState<Order[]>([]);
   const [products,  setProducts]  = useState<Product[]>([]);
   const [loading,   setLoading]   = useState(true);
+  const [ready,     setReady]     = useState(false);
   const [period,    setPeriod]    = useState("30d");
 
   // Load shops + subscription once
@@ -161,9 +162,12 @@ export default function DashboardPage() {
         if (!stored || !list.find(s => s.id === stored)) {
           setActiveId(list[0].id);
         }
+      } else {
+        setLoading(false);
       }
       if (subData.plan) setSub(subData as Subscription);
-    }).catch(() => {});
+      setReady(true);
+    }).catch(() => { setLoading(false); setReady(true); });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Load shop data when active shop or period changes
@@ -210,7 +214,7 @@ export default function DashboardPage() {
   const quotaPct     = Math.min(100, Math.round((usedShops / planMaxShops) * 100));
 
   // ─── Loading ──────────────────────────────────────────────────────────────
-  if (loading && !kpi) {
+  if (!ready || (loading && !kpi)) {
     return (
       <>
         <style>{DB_CSS}</style>
@@ -218,6 +222,55 @@ export default function DashboardPage() {
           <div style={{ textAlign:"center", color:"#667085" }}>
             <div style={{ width:40, height:40, border:"3px solid #E8ECEA", borderTopColor:"#0A8F45", borderRadius:"50%", animation:"db-spin 0.8s linear infinite", margin:"0 auto 12px" }} />
             <p style={{ fontSize:14 }}>Chargement du tableau de bord…</p>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // ─── Empty state : aucune boutique ────────────────────────────────────────
+  if (ready && allShops.length === 0) {
+    return (
+      <>
+        <style>{DB_CSS}</style>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"center", minHeight:"calc(100vh - 8rem)", padding:"2rem" }}>
+          <div style={{ maxWidth:480, width:"100%", textAlign:"center", display:"grid", gap:"1.5rem" }}>
+            <div style={{ width:80, height:80, borderRadius:24, background:"linear-gradient(135deg, #EAF7EF 0%, #d1fae5 100%)", border:"2px solid #C3E6D3", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto" }}>
+              <Store size={36} color="#0A8F45" />
+            </div>
+            <div style={{ display:"grid", gap:"0.6rem" }}>
+              <h1 style={{ fontSize:22, fontWeight:800, color:"#1F2A24", margin:0, lineHeight:1.25 }}>
+                Créez votre première boutique
+              </h1>
+              <p style={{ fontSize:14, color:"#667085", margin:0, lineHeight:1.6 }}>
+                Le tableau de bord affiche les statistiques et l&apos;activité de votre boutique.
+                Vous devez en créer une pour commencer à vendre.
+              </p>
+            </div>
+            <div style={{ background:"#F8FAF9", border:"1px solid #E8ECEA", borderRadius:16, padding:"1rem 1.25rem", display:"grid", gap:"0.5rem", textAlign:"left" }}>
+              {[
+                { step:"1", text:"Créez votre boutique et personnalisez-la" },
+                { step:"2", text:"Ajoutez vos produits au catalogue" },
+                { step:"3", text:"Partagez le lien à vos clients" },
+              ].map(({ step, text }) => (
+                <div key={step} style={{ display:"flex", alignItems:"center", gap:"0.75rem" }}>
+                  <div style={{ width:24, height:24, borderRadius:"50%", background:"#0A8F45", color:"#fff", fontSize:11, fontWeight:800, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{step}</div>
+                  <span style={{ fontSize:13, color:"#3d4552" }}>{text}</span>
+                </div>
+              ))}
+            </div>
+            <a href="/shops"
+              style={{ display:"inline-flex", alignItems:"center", justifyContent:"center", gap:"0.5rem", background:"linear-gradient(180deg, #228866 0%, #1d7c5f 100%)", color:"#fff", borderRadius:14, padding:"0.85rem 1.5rem", fontSize:15, fontWeight:700, textDecoration:"none", boxShadow:"0 12px 24px rgba(29,124,95,0.2)", transition:"transform 0.15s ease" }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(0)"; }}>
+              <Plus size={18} />
+              Créer ma première boutique
+            </a>
+            {sub && (
+              <p style={{ fontSize:12, color:"#98A2B3", margin:0 }}>
+                Plan <strong style={{ color:"#0A8F45" }}>{sub.plan.displayName}</strong> — jusqu&apos;à {sub.plan.maxShops} boutique{sub.plan.maxShops > 1 ? "s" : ""}
+              </p>
+            )}
           </div>
         </div>
       </>

@@ -22,6 +22,7 @@ export async function GET(_: Request, context: RouteParams) {
       category: true,
       address: true,
       openingHours: true,
+      paymentMethods: true,
       isPublished: true,
     },
   });
@@ -42,6 +43,7 @@ export async function GET(_: Request, context: RouteParams) {
         category: true,
         address: true,
         openingHours: true,
+        paymentMethods: true,
         isPublished: true,
       },
     });
@@ -68,6 +70,7 @@ export async function GET(_: Request, context: RouteParams) {
       category: shop.category,
       address: shop.address,
       openingHours: shop.openingHours,
+      paymentMethods: shop.paymentMethods,
       productsCount,
     },
   });

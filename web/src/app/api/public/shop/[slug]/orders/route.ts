@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { sendNewOrderNotification, sendStockZeroNotifications, sendLowStockNotification, LOW_STOCK_THRESHOLD } from "@/lib/notifications";
 
 type RouteParams = {
   params: Promise<{ slug: string }>;
@@ -49,6 +50,7 @@ export async function POST(request: NextRequest, context: RouteParams) {
       name: true,
       isPublished: true,
       whatsappNumber: true,
+      notificationEmail: true,
     },
   });
 
@@ -56,7 +58,7 @@ export async function POST(request: NextRequest, context: RouteParams) {
     const altSlug = `${slug}a`.toLowerCase();
     const alt = await prisma.shop.findUnique({
       where: { slug: altSlug },
-      select: { id: true, name: true, isPublished: true, whatsappNumber: true },
+      select: { id: true, name: true, isPublished: true, whatsappNumber: true, notificationEmail: true },
     });
     if (alt && alt.isPublished) {
       shop = alt;
@@ -177,6 +179,49 @@ export async function POST(request: NextRequest, context: RouteParams) {
       });
 
       return createdOrder;
+    });
+
+    for (const item of items) {
+      const product = products.find(p => p.id === item.productId)!;
+      const remainingStock = product.stock - item.quantity;
+      if (remainingStock === 0) {
+        void sendStockZeroNotifications({
+          shopName:      shop.name,
+          productName:   product.name,
+          productId:     product.id,
+          merchantPhone: shop.whatsappNumber,
+          merchantEmail: shop.notificationEmail,
+        });
+      } else if (remainingStock <= LOW_STOCK_THRESHOLD) {
+        void sendLowStockNotification({
+          shopName:       shop.name,
+          merchantEmail:  shop.notificationEmail,
+          productName:    product.name,
+          productId:      product.id,
+          remainingStock,
+        });
+      }
+    }
+
+    void sendNewOrderNotification({
+      shopName:      shop.name,
+      merchantEmail: shop.notificationEmail,
+      orderId:       order.id,
+      customerName,
+      customerPhone,
+      address:       customerAddress ?? null,
+      note:          notes ?? null,
+      items: items.map(item => {
+        const product = products.find(p => p.id === item.productId)!;
+        const unitPrice = Number(product.unitPrice);
+        return {
+          productName: product.name,
+          quantity:    item.quantity,
+          unitPrice,
+          lineTotal:   unitPrice * item.quantity,
+        };
+      }),
+      totalAmount,
     });
 
     return NextResponse.json(

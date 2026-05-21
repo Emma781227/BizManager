@@ -43,10 +43,15 @@ body { margin: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Se
   .lp-pricing { grid-template-columns: 1fr; }
   .lp-footer-grid { grid-template-columns: 1fr; }
   .lp-features-grid { grid-template-columns: 1fr 1fr; }
+  .lp-hero-btns { flex-direction: column; }
+  .lp-hero-btns a { text-align: center; }
 }
 @media (max-width: 480px) {
   .lp-features-grid { grid-template-columns: 1fr; }
-  .lp-header-btns .lp-btn-secondary { display: none; }
+  .lp-header-inner { padding: 0 14px; height: 60px; }
+  .lp-header-btns { gap: 6px; }
+  .lp-header-btns a { padding: 8px 12px !important; font-size: 12px !important; border-radius: 8px !important; }
+  .lp-logo-text { display: none; }
 }
 `;
 
@@ -95,8 +100,8 @@ export default function HomePage() {
         <header className="lp-header">
           <div className="lp-header-inner">
             <a href="/" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
-              <div style={{ width: 36, height: 36, borderRadius: 10, background: "#0A8F45", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, fontSize: 16 }}>BM</div>
-              <span style={{ fontSize: 17, fontWeight: 700, color: "#1F2A24" }}>BizManager</span>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: "#0A8F45", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, fontSize: 16, flexShrink: 0 }}>BM</div>
+              <span className="lp-logo-text" style={{ fontSize: 17, fontWeight: 700, color: "#1F2A24" }}>BizManager</span>
             </a>
             <nav className="lp-nav">
               <a href="#features">Fonctionnalités</a>
@@ -126,7 +131,7 @@ export default function HomePage() {
                 <p style={{ fontSize: 19, color: "#667085", marginTop: 20, lineHeight: 1.6, marginBottom: 0 }}>
                   BizManager aide les commerçants à gérer produits, commandes, clients et paiements — tout depuis un seul endroit.
                 </p>
-                <div style={{ marginTop: 32, display: "flex", gap: 14, flexWrap: "wrap" }}>
+                <div className="lp-hero-btns" style={{ marginTop: 32, display: "flex", gap: 14, flexWrap: "wrap" }}>
                   <a href="/register" style={{ ...btnGreen, padding: "14px 28px", fontSize: 16 }}>
                     Créer ma boutique →
                   </a>

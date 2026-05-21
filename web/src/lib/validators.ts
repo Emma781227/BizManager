@@ -124,23 +124,11 @@ export const shopSchema = z.object({
     .optional(),
   logoUrl: z.preprocess(
     (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
-    z
-      .union([
-        z.string().url(),
-        z.string().regex(/^\/uploads\/shops\//),
-        z.string().regex(/^data:image\//),
-      ])
-      .optional(),
+    z.string().url("URL de logo invalide").optional(),
   ),
   coverUrl: z.preprocess(
     (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
-    z
-      .union([
-        z.string().url(),
-        z.string().regex(/^\/uploads\/shops\//),
-        z.string().regex(/^data:image\//),
-      ])
-      .optional(),
+    z.string().url("URL de couverture invalide").optional(),
   ),
   description: z.string().max(500).optional().or(z.literal("")),
   city: z.string().max(100).optional().or(z.literal("")),
@@ -158,9 +146,10 @@ export const shopSchema = z.object({
       z
         .string()
         .trim()
-        .regex(openingHoursRegex, "Horaires invalides (HH:mm-HH:mm)"),
+        .regex(openingHoursRegex, "Horaires invalides — format attendu : JOU,JOU|HH:mm-HH:mm ou HH:mm-HH:mm"),
     ])
     .optional(),
+  paymentMethods: z.array(z.string()).optional(),
   isPublished: z.boolean().optional(),
 });
 
@@ -177,7 +166,10 @@ export const createShopSchema = z.object({
   description:       z.string().max(1000).optional().or(z.literal("")),
   logoUrl:           z.string().optional().or(z.literal("")),
   coverUrl:          z.string().optional().or(z.literal("")),
-  openingHours:      z.string().optional().or(z.literal("")),
+  openingHours:      z.union([
+                       z.literal(""),
+                       z.string().trim().regex(openingHoursRegex, "Horaires invalides — format attendu : JOU,JOU|HH:mm-HH:mm ou HH:mm-HH:mm"),
+                     ]).optional(),
   paymentMethods:    z.array(z.string()).optional(),
   isPublished:       z.boolean().optional(),
 });
