@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
-import { MessageCircle, Globe, PenLine, Package, Store } from "lucide-react";
+import { MessageCircle, Globe, PenLine, Package, Store, Plus } from "lucide-react";
 import { useActiveShop } from "@/hooks/useActiveShop";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -10,7 +10,9 @@ type ApiShop = {
 };
 type KpiData = {
   period: string; shopId: string; shopName: string;
-  sales: number; ordersCount: number; customersCount: number;
+  sales: number; confirmedSales: number;
+  trend: { date: string; amount: number }[];
+  ordersCount: number; customersCount: number;
   statusCounts: Record<string, number>;
   channelCounts: Record<string, number>;
   topProducts: { productId: string; name: string; quantity: number; amount: number }[];
@@ -29,8 +31,6 @@ type Order = {
 type Product = { id: string; name: string; unitPrice: number | string; stock: number; isActive?: boolean; };
 
 // ─── Static ───────────────────────────────────────────────────────────────────
-const CHART_MONTHS = ["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Aoû","Sep","Oct","Nov","Déc"];
-const CHART_BASE   = [180,210,195,240,280,260,310,290,340,380,360,420];
 
 const QUICK_ACTIONS = [
   { icon:"📦", label:"Ajouter un produit",  href:"/products" },
@@ -88,19 +88,33 @@ function statusStyle(s: string) {
 }
 
 // ─── SVG Line Chart ───────────────────────────────────────────────────────────
-function LineChart({ sales }: { sales: number }) {
+function LineChart({ trend }: { trend: { date: string; amount: number }[] }) {
   const w = 480; const h = 100; const pad = 8;
-  const pts = CHART_BASE.map((v, i) => i === CHART_BASE.length - 1 ? Math.max(sales / 1000, v) : v);
+  const pts = trend.length > 1 ? trend.map(t => t.amount) : [0, 0];
   const max = Math.max(...pts) || 1;
+  const n = pts.length;
   const coords = pts.map((v, i) => {
-    const x = pad + (i / (pts.length - 1)) * (w - pad * 2);
+    const x = pad + (i / (n - 1)) * (w - pad * 2);
     const y = pad + (1 - v / max) * (h - pad * 2);
     return [x, y] as [number, number];
   });
   const line = coords.map(([x, y], i) => `${i === 0 ? "M" : "L"} ${x},${y}`).join(" ");
-  const area = `${line} L ${coords[coords.length - 1][0]},${h} L ${coords[0][0]},${h} Z`;
+  const area = `${line} L ${coords[n - 1][0]},${h} L ${coords[0][0]},${h} Z`;
+
+  const hasRealTrend = trend.length > 1;
+  const labelStep = Math.max(1, Math.floor(n / 6));
+  const labelIdxs = hasRealTrend
+    ? Array.from({ length: n }, (_, i) => i).filter(i => i % labelStep === 0)
+    : [];
+  if (hasRealTrend && labelIdxs[labelIdxs.length - 1] !== n - 1) labelIdxs.push(n - 1);
+
+  function fmtLabel(dateStr: string) {
+    const [, m, d] = dateStr.split("-");
+    return `${d}/${m}`;
+  }
+
   return (
-    <svg viewBox={`0 0 ${w} ${h}`} style={{ width:"100%", height:100 }} aria-hidden>
+    <svg viewBox={`0 0 ${w} ${h + 18}`} style={{ width:"100%", height:118 }} aria-hidden>
       <defs>
         <linearGradient id="db-lg" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#0A8F45" stopOpacity="0.18" />
@@ -109,7 +123,13 @@ function LineChart({ sales }: { sales: number }) {
       </defs>
       <path d={area} fill="url(#db-lg)" />
       <path d={line} fill="none" stroke="#0A8F45" strokeWidth="2.5" strokeLinejoin="round" />
-      <circle cx={coords[coords.length - 1][0]} cy={coords[coords.length - 1][1]} r="4" fill="#0A8F45" />
+      <circle cx={coords[n - 1][0]} cy={coords[n - 1][1]} r="4" fill="#0A8F45" />
+      {labelIdxs.map(i => (
+        <text key={i} x={coords[i][0]} y={h + 14} textAnchor="middle"
+          style={{ fontSize: 9, fill: "#98A2B3", fontFamily: "Arial,sans-serif" }}>
+          {fmtLabel(trend[i].date)}
+        </text>
+      ))}
     </svg>
   );
 }
@@ -146,6 +166,7 @@ export default function DashboardPage() {
   const [orders,    setOrders]    = useState<Order[]>([]);
   const [products,  setProducts]  = useState<Product[]>([]);
   const [loading,   setLoading]   = useState(true);
+  const [ready,     setReady]     = useState(false);
   const [period,    setPeriod]    = useState("30d");
 
   // Load shops + subscription once
@@ -161,9 +182,12 @@ export default function DashboardPage() {
         if (!stored || !list.find(s => s.id === stored)) {
           setActiveId(list[0].id);
         }
+      } else {
+        setLoading(false);
       }
       if (subData.plan) setSub(subData as Subscription);
-    }).catch(() => {});
+      setReady(true);
+    }).catch(() => { setLoading(false); setReady(true); });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Load shop data when active shop or period changes
@@ -210,7 +234,7 @@ export default function DashboardPage() {
   const quotaPct     = Math.min(100, Math.round((usedShops / planMaxShops) * 100));
 
   // ─── Loading ──────────────────────────────────────────────────────────────
-  if (loading && !kpi) {
+  if (!ready || (loading && !kpi)) {
     return (
       <>
         <style>{DB_CSS}</style>
@@ -218,6 +242,55 @@ export default function DashboardPage() {
           <div style={{ textAlign:"center", color:"#667085" }}>
             <div style={{ width:40, height:40, border:"3px solid #E8ECEA", borderTopColor:"#0A8F45", borderRadius:"50%", animation:"db-spin 0.8s linear infinite", margin:"0 auto 12px" }} />
             <p style={{ fontSize:14 }}>Chargement du tableau de bord…</p>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // ─── Empty state : aucune boutique ────────────────────────────────────────
+  if (ready && allShops.length === 0) {
+    return (
+      <>
+        <style>{DB_CSS}</style>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"center", minHeight:"calc(100vh - 8rem)", padding:"2rem" }}>
+          <div style={{ maxWidth:480, width:"100%", textAlign:"center", display:"grid", gap:"1.5rem" }}>
+            <div style={{ width:80, height:80, borderRadius:24, background:"linear-gradient(135deg, #EAF7EF 0%, #d1fae5 100%)", border:"2px solid #C3E6D3", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto" }}>
+              <Store size={36} color="#0A8F45" />
+            </div>
+            <div style={{ display:"grid", gap:"0.6rem" }}>
+              <h1 style={{ fontSize:22, fontWeight:800, color:"#1F2A24", margin:0, lineHeight:1.25 }}>
+                Créez votre première boutique
+              </h1>
+              <p style={{ fontSize:14, color:"#667085", margin:0, lineHeight:1.6 }}>
+                Le tableau de bord affiche les statistiques et l&apos;activité de votre boutique.
+                Vous devez en créer une pour commencer à vendre.
+              </p>
+            </div>
+            <div style={{ background:"#F8FAF9", border:"1px solid #E8ECEA", borderRadius:16, padding:"1rem 1.25rem", display:"grid", gap:"0.5rem", textAlign:"left" }}>
+              {[
+                { step:"1", text:"Créez votre boutique et personnalisez-la" },
+                { step:"2", text:"Ajoutez vos produits au catalogue" },
+                { step:"3", text:"Partagez le lien à vos clients" },
+              ].map(({ step, text }) => (
+                <div key={step} style={{ display:"flex", alignItems:"center", gap:"0.75rem" }}>
+                  <div style={{ width:24, height:24, borderRadius:"50%", background:"#0A8F45", color:"#fff", fontSize:11, fontWeight:800, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{step}</div>
+                  <span style={{ fontSize:13, color:"#3d4552" }}>{text}</span>
+                </div>
+              ))}
+            </div>
+            <a href="/shops"
+              style={{ display:"inline-flex", alignItems:"center", justifyContent:"center", gap:"0.5rem", background:"linear-gradient(180deg, #228866 0%, #1d7c5f 100%)", color:"#fff", borderRadius:14, padding:"0.85rem 1.5rem", fontSize:15, fontWeight:700, textDecoration:"none", boxShadow:"0 12px 24px rgba(29,124,95,0.2)", transition:"transform 0.15s ease" }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(0)"; }}>
+              <Plus size={18} />
+              Créer ma première boutique
+            </a>
+            {sub && (
+              <p style={{ fontSize:12, color:"#98A2B3", margin:0 }}>
+                Plan <strong style={{ color:"#0A8F45" }}>{sub.plan.displayName}</strong> — jusqu&apos;à {sub.plan.maxShops} boutique{sub.plan.maxShops > 1 ? "s" : ""}
+              </p>
+            )}
           </div>
         </div>
       </>
@@ -274,7 +347,7 @@ export default function DashboardPage() {
         {/* ── KPI Cards ── */}
         <div className="db-kpi">
           {[
-            { label:"Chiffre d'affaires", value: fmtAmount(kpi?.sales ?? 0),          sub:"commandes non annulées" },
+            { label:"Chiffre d'affaires", value: fmtAmount(kpi?.confirmedSales ?? 0),  sub:"commandes livrées / payées" },
             { label:"Commandes",          value: String(kpi?.ordersCount ?? 0),        sub:"sur la période" },
             { label:"Clients",            value: String(kpi?.customersCount ?? 0),     sub:"total enregistrés" },
             { label:"Produits actifs",    value: String(activeShop?._count.products ?? products.length), sub:"dans le catalogue" },
@@ -324,12 +397,12 @@ export default function DashboardPage() {
                 <h3 style={{ fontSize:15, fontWeight:700, color:"#1F2A24", margin:0 }}>Performance de {activeName}</h3>
                 <p style={{ fontSize:12, color:"#98A2B3", margin:"3px 0 0" }}>Chiffre d&apos;affaires (période en cours)</p>
               </div>
-              <span style={{ fontSize:22, fontWeight:800, color:"#0A8F45" }}>{fmtAmount(kpi?.sales ?? 0)}</span>
+              <div style={{ textAlign:"right" }}>
+                <span style={{ fontSize:22, fontWeight:800, color:"#0A8F45" }}>{fmtAmount(kpi?.confirmedSales ?? 0)}</span>
+                <span style={{ display:"block", fontSize:10, color:"#98A2B3", marginTop:2 }}>Volume total : {fmtAmount(kpi?.sales ?? 0)}</span>
+              </div>
             </div>
-            <LineChart sales={kpi?.sales ?? 0} />
-            <div style={{ display:"flex", justifyContent:"space-between", marginTop:6 }}>
-              {CHART_MONTHS.map((m, i) => <span key={i} style={{ fontSize:9, color:"#98A2B3" }}>{m}</span>)}
-            </div>
+            <LineChart trend={kpi?.trend ?? []} />
           </div>
 
           {/* Mes boutiques */}

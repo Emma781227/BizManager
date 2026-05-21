@@ -11,6 +11,13 @@ import {
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+type ProductVariant = {
+  id: string;
+  label: string;
+  stock: number;
+  priceOverride: string | null;
+};
+
 type Product = {
   id: string;
   name: string;
@@ -23,6 +30,8 @@ type Product = {
   categories?: string[];
   shopName?: string;
   whatsappNumber?: string | null;
+  hasVariants?: boolean;
+  variants?: ProductVariant[];
 };
 
 type Shop = {
@@ -62,14 +71,6 @@ const PAYMENT_OPTIONS = [
   { value: "cash",          emoji: "💵", label: "Espèces" },
 ] as const;
 
-const COLORS = [
-  { hex: "#F2C24E", name: "Doré" },
-  { hex: "#F9A4B8", name: "Rose" },
-  { hex: "#4CAF7A", name: "Vert" },
-  { hex: "#1F2A24", name: "Noir" },
-];
-
-const SIZES = ["S", "M", "L", "XL"];
 
 const SIMULATED_REVIEWS = [
   { initials: "AM", name: "Aïcha M.", stars: 5, text: "Magnifique robe, qualité irréprochable !", date: "Il y a 2 jours" },
@@ -607,8 +608,7 @@ export default function ProductDetailPage() {
   const [orderResult, setOrderResult] = useState<OrderResult | null>(null);
 
   // États supplémentaires
-  const [selectedColor, setSelectedColor] = useState(0);
-  const [selectedSize,  setSelectedSize]  = useState("M");
+  const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
   const [descTab,       setDescTab]       = useState<"description"|"caracteristiques"|"avis"|"faq">("description");
   const [cartCount,     setCartCount]     = useState(0);
   const [favCount,      setFavCount]      = useState(0);
@@ -750,7 +750,7 @@ export default function ProductDetailPage() {
           customerAddress: customerAddress.trim() || undefined,
           paymentMethod,
           notes: orderNotes.trim() || undefined,
-          items: [{ productId: product.id, quantity }],
+          items: [{ productId: product.id, variantId: selectedVariantId ?? undefined, quantity }],
         }),
       });
       const json = await res.json().catch(() => ({}));
@@ -790,9 +790,15 @@ export default function ProductDetailPage() {
 
   // ─── Données dérivées ─────────────────────────────────────────────────────
 
-  const shopName       = product.shopName ?? shop?.name ?? "Boutique";
-  const badge          = stockBadge(product.stock);
-  const unitPrice      = Number(product.unitPrice);
+  const shopName   = product.shopName ?? shop?.name ?? "Boutique";
+  const variants   = product.variants ?? [];
+  const hasVariants = product.hasVariants && variants.length > 0;
+  const selectedVariant = hasVariants ? variants.find(v => v.id === selectedVariantId) ?? null : null;
+  const activeStock    = hasVariants ? (selectedVariant?.stock ?? 0) : product.stock;
+  const unitPrice      = selectedVariant?.priceOverride != null
+    ? Number(selectedVariant.priceOverride)
+    : Number(product.unitPrice);
+  const badge          = stockBadge(activeStock);
   const gallery        = Array.from(new Set([product.imageUrl, ...(product.imageVariants ?? [])].filter(Boolean) as string[]));
   const mainImage      = selectedImage ?? gallery[0] ?? null;
   const whatsappNumber = product.whatsappNumber ?? shop?.whatsappNumber ?? null;
@@ -979,42 +985,44 @@ export default function ProductDetailPage() {
 
               <hr style={{ border:"none", borderTop:"1px solid #E8ECEA", margin:"0 0 20px" }} />
 
-              {/* Couleurs */}
-              <div style={{ marginBottom:18 }}>
-                <div style={{ fontSize:13, fontWeight:600, color:"#1F2A24", marginBottom:10 }}>
-                  Couleur — <span style={{ fontWeight:400, color:"#667085" }}>{COLORS[selectedColor].name}</span>
+              {/* Variantes */}
+              {hasVariants && (
+                <div style={{ marginBottom:20 }}>
+                  <div style={{ fontSize:13, fontWeight:600, color:"#1F2A24", marginBottom:10 }}>
+                    Variante
+                    {selectedVariant && (
+                      <span style={{ fontWeight:400, color:"#667085" }}> — {selectedVariant.label}</span>
+                    )}
+                  </div>
+                  <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+                    {variants.map(v => (
+                      <button
+                        key={v.id}
+                        className={`pdp-size-btn${selectedVariantId === v.id ? " active" : ""}${v.stock === 0 ? "" : ""}`}
+                        onClick={() => { setSelectedVariantId(v.id); setQuantity(1); }}
+                        disabled={v.stock === 0}
+                        title={v.stock === 0 ? "Rupture" : undefined}
+                        style={v.stock === 0 ? { opacity:0.45, cursor:"not-allowed", textDecoration:"line-through" } : {}}
+                      >
+                        {v.label}
+                        {v.priceOverride != null && Number(v.priceOverride) !== Number(product.unitPrice) && (
+                          <span style={{ display:"block", fontSize:10, fontWeight:600, marginTop:1, color: selectedVariantId === v.id ? "#fff" : "#0A8F45" }}>
+                            {formatPrice(v.priceOverride)}
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                  {hasVariants && !selectedVariant && (
+                    <p style={{ margin:"8px 0 0", fontSize:12, color:"#F08A24", fontWeight:600 }}>
+                      Veuillez sélectionner une variante.
+                    </p>
+                  )}
                 </div>
-                <div style={{ display:"flex", gap:10, alignItems:"center" }}>
-                  {COLORS.map((c, i) => (
-                    <button
-                      key={i}
-                      className={`pdp-color-btn${selectedColor === i ? " active" : ""}`}
-                      style={{ background:c.hex }}
-                      onClick={() => setSelectedColor(i)}
-                      title={c.name}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              {/* Tailles */}
-              <div style={{ marginBottom:20 }}>
-                <div style={{ fontSize:13, fontWeight:600, color:"#1F2A24", marginBottom:10 }}>Taille</div>
-                <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
-                  {SIZES.map(s => (
-                    <button
-                      key={s}
-                      className={`pdp-size-btn${selectedSize === s ? " active" : ""}`}
-                      onClick={() => setSelectedSize(s)}
-                    >
-                      {s}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              )}
 
               {/* Quantité */}
-              {product.stock > 0 && (
+              {activeStock > 0 && (
                 <div style={{ display:"flex", alignItems:"center", gap:16, marginBottom:16 }}>
                   <span style={{ fontSize:13, fontWeight:600, color:"#1F2A24", minWidth:64 }}>Quantité</span>
                   <div className="pdp-qty-row">
@@ -1024,20 +1032,20 @@ export default function ProductDetailPage() {
                     <span style={{ minWidth:44, textAlign:"center", fontWeight:700, fontSize:15, color:"#1F2A24" }}>
                       {quantity}
                     </span>
-                    <button className="pdp-qty-btn" onClick={() => setQuantity(q => Math.min(product.stock, q + 1))} disabled={quantity >= product.stock}>
+                    <button className="pdp-qty-btn" onClick={() => setQuantity(q => Math.min(activeStock, q + 1))} disabled={quantity >= activeStock}>
                       <Plus style={{ width:14, height:14 }} />
                     </button>
                   </div>
-                  {product.stock <= 10 && product.stock > 0 && (
+                  {activeStock <= 10 && activeStock > 0 && (
                     <span style={{ fontSize:12, color:"#F08A24", fontWeight:600 }}>
-                      Plus que {product.stock} pièce{product.stock > 1 ? "s" : ""} en stock
+                      Plus que {activeStock} pièce{activeStock > 1 ? "s" : ""} en stock
                     </span>
                   )}
                 </div>
               )}
 
               {/* Sous-total */}
-              {product.stock > 0 && quantity > 1 && (
+              {activeStock > 0 && quantity > 1 && (
                 <div className="pdp-subtotal">
                   <span style={{ fontSize:13, color:"#667085" }}>Sous-total ({quantity} articles)</span>
                   <span style={{ fontSize:16, fontWeight:800, color:"#0A8F45" }}>{formatPrice(unitPrice * quantity)}</span>
@@ -1046,7 +1054,7 @@ export default function ProductDetailPage() {
 
               {/* CTAs */}
               <div style={{ display:"flex", flexDirection:"column", gap:10, marginBottom:16 }}>
-                {product.stock > 0 ? (
+                {activeStock > 0 ? (
                   <>
                     {whatsappUrl && (
                       <a
@@ -1058,7 +1066,12 @@ export default function ProductDetailPage() {
                         Discuter sur WhatsApp
                       </a>
                     )}
-                    <button className="pdp-cta-primary" onClick={() => { setFormError(null); setCheckoutOpen(true); }}>
+                    <button
+                      className="pdp-cta-primary"
+                      onClick={() => { setFormError(null); setCheckoutOpen(true); }}
+                      disabled={hasVariants && !selectedVariant}
+                      style={hasVariants && !selectedVariant ? { opacity:0.5, cursor:"not-allowed", boxShadow:"none" } : {}}
+                    >
                       <ShoppingBag style={{ width:17, height:17 }} />
                       Commander sur WhatsApp
                     </button>
@@ -1238,7 +1251,7 @@ export default function ProductDetailPage() {
                     <table className="pdp-spec-table">
                       <tbody>
                         <tr><td>Catégorie</td><td>{product.category ?? "—"}</td></tr>
-                        <tr><td>Stock disponible</td><td>{product.stock > 0 ? `${product.stock} unités` : "Rupture"}</td></tr>
+                        <tr><td>Stock disponible</td><td>{activeStock > 0 ? `${activeStock} unités` : "Rupture"}</td></tr>
                         <tr><td>Prix unitaire</td><td style={{ fontWeight:700, color:"#0A8F45" }}>{formatPrice(product.unitPrice)}</td></tr>
                         <tr><td>Référence</td><td style={{ fontFamily:"monospace", fontSize:12 }}>{product.id.slice(0, 10).toUpperCase()}</td></tr>
                         <tr><td>Boutique</td><td>{shopName}</td></tr>

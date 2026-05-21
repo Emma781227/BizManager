@@ -5,6 +5,9 @@ import { getSessionFromRequest } from "@/lib/auth";
 import { shopSchema, createShopSchema } from "@/lib/validators";
 import { z } from "zod";
 import { resolveShop, checkShopQuota } from "@/lib/shop";
+import { uploadMedia } from "@/lib/cloudinary";
+
+export const runtime = "nodejs";
 
 // GET /api/shop → première boutique (rétrocompatibilité) ou toutes via ?all=1
 export async function GET(request: NextRequest) {
@@ -50,6 +53,7 @@ export async function PUT(request: NextRequest) {
       const logoFile = formData.get("logoFile");
       const coverFile = formData.get("coverFile");
 
+      const rawPaymentMethods = String(formData.get("paymentMethods") ?? "[]");
       body = {
         slug:              String(formData.get("slug")              ?? ""),
         name:              String(formData.get("name")              ?? ""),
@@ -64,18 +68,18 @@ export async function PUT(request: NextRequest) {
         category:          String(formData.get("category")          ?? ""),
         address:           String(formData.get("address")           ?? ""),
         openingHours:      String(formData.get("openingHours")      ?? ""),
+        paymentMethods:    JSON.parse(rawPaymentMethods),
         isPublished:       String(formData.get("isPublished") ?? "true") === "true",
       };
 
-      async function saveImage(file: File) {
-        if (!file.type.startsWith("image/")) throw new Error("Le fichier doit etre une image");
-        if (file.size > 5 * 1024 * 1024) throw new Error("Image trop lourde (max 5MB)");
-        const base64 = Buffer.from(await file.arrayBuffer()).toString("base64");
-        return `data:${file.type};base64,${base64}`;
+      if (logoFile instanceof File && logoFile.size > 0) {
+        try { body.logoUrl = await uploadMedia(logoFile, "bizmanager/shops"); }
+        catch (e) { return NextResponse.json({ error: e instanceof Error ? e.message : "Erreur upload logo" }, { status: 400 }); }
       }
-
-      if (logoFile instanceof File && logoFile.size > 0) body.logoUrl = await saveImage(logoFile);
-      if (coverFile instanceof File && coverFile.size > 0) body.coverUrl = await saveImage(coverFile);
+      if (coverFile instanceof File && coverFile.size > 0) {
+        try { body.coverUrl = await uploadMedia(coverFile, "bizmanager/shops"); }
+        catch (e) { return NextResponse.json({ error: e instanceof Error ? e.message : "Erreur upload couverture" }, { status: 400 }); }
+      }
     } else {
       body = await request.json().catch(() => null);
     }
@@ -112,6 +116,7 @@ export async function PUT(request: NextRequest) {
       category:          data.category?.trim()        || null,
       address:           data.address?.trim()         || null,
       openingHours:      data.openingHours?.trim()    || null,
+      paymentMethods:    data.paymentMethods ?? [],
       isPublished:       data.isPublished ?? true,
     };
 
@@ -158,15 +163,23 @@ export async function POST(request: NextRequest) {
     const contentType = request.headers.get("content-type") ?? "";
     let body: Record<string, unknown> | null = null;
 
-    async function saveImage(file: File, maxMb: number) {
-      if (!file.type.startsWith("image/")) throw new Error("Le fichier doit être une image");
-      if (file.size > maxMb * 1024 * 1024) throw new Error(`Image trop lourde (max ${maxMb} Mo)`);
-      const base64 = Buffer.from(await file.arrayBuffer()).toString("base64");
-      return `data:${file.type};base64,${base64}`;
-    }
-
     if (contentType.includes("multipart/form-data")) {
       const fd = await request.formData();
+      const coverFile = fd.get("coverFile");
+      const logoFile  = fd.get("logoFile");
+
+      let logoUrl  = String(fd.get("logoUrl")  ?? "").trim();
+      let coverUrl = String(fd.get("coverUrl") ?? "").trim();
+
+      if (logoFile instanceof File && logoFile.size > 0) {
+        try { logoUrl = await uploadMedia(logoFile, "bizmanager/shops"); }
+        catch (e) { return NextResponse.json({ error: e instanceof Error ? e.message : "Erreur upload logo" }, { status: 400 }); }
+      }
+      if (coverFile instanceof File && coverFile.size > 0) {
+        try { coverUrl = await uploadMedia(coverFile, "bizmanager/shops"); }
+        catch (e) { return NextResponse.json({ error: e instanceof Error ? e.message : "Erreur upload couverture" }, { status: 400 }); }
+      }
+
       body = {
         name:              String(fd.get("name")              ?? ""),
         slug:              String(fd.get("slug")              ?? ""),
@@ -177,16 +190,12 @@ export async function POST(request: NextRequest) {
         regionCountry:     String(fd.get("regionCountry")     ?? ""),
         address:           String(fd.get("address")           ?? ""),
         description:       String(fd.get("description")       ?? ""),
-        logoUrl:           String(fd.get("logoUrl")           ?? "").trim(),
-        coverUrl:          String(fd.get("coverUrl")          ?? "").trim(),
+        logoUrl,
+        coverUrl,
         openingHours:      String(fd.get("openingHours")      ?? ""),
         paymentMethods:    JSON.parse(String(fd.get("paymentMethods") ?? "[]")),
         isPublished:       String(fd.get("isPublished") ?? "false") === "true",
       };
-      const coverFile = fd.get("coverFile");
-      const logoFile  = fd.get("logoFile");
-      if (coverFile instanceof File && coverFile.size > 0) body.coverUrl = await saveImage(coverFile, 5);
-      if (logoFile  instanceof File && logoFile.size  > 0) body.logoUrl  = await saveImage(logoFile,  2);
     } else {
       body = await request.json().catch(() => null);
     }

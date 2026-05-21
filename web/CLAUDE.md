@@ -159,10 +159,11 @@ public/
 | `Plan` | Plans d'abonnement | name (unique), maxShops, maxProducts, priceMonthly |
 | `Subscription` | Abonnement utilisateur | userId (unique), planId, status, expiresAt |
 | `Shop` | Boutiques marchandes | slug (unique), userId, whatsappNumber, status |
-| `Product` | Produits | shopId, unitPrice (Decimal), stock, imageUrl |
+| `Product` | Produits | shopId, unitPrice (Decimal), stock, imageUrl, hasVariants |
+| `ProductVariant` | Variantes d'un produit | productId, label, stock, priceOverride (Decimal?) |
 | `Customer` | Clients d'une boutique | shopId, phone, email |
 | `Order` | Commandes | shopId, customerId, status, paymentStatus, totalAmount |
-| `OrderItem` | Lignes de commande | orderId, productId, quantity, unitPrice, lineTotal |
+| `OrderItem` | Lignes de commande | orderId, productId, variantId?, variantLabel?, quantity, unitPrice, lineTotal |
 | `WhatsappLog` | Historique messages WhatsApp | shopId, orderId, type, message |
 
 ### Plans d'abonnement

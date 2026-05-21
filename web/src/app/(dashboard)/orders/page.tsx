@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { MessageCircle, Globe, PenLine, ShoppingCart, Clock, CheckCircle, TrendingUp, Bell, RefreshCw, X, Check, Store } from "lucide-react";
+import { MessageCircle, Globe, PenLine, ShoppingCart, Clock, CheckCircle, TrendingUp, Bell, RefreshCw, X, Check, Store, Download } from "lucide-react";
 import { useActiveShop } from "@/hooks/useActiveShop";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -130,6 +130,15 @@ const CSS = `
 .btn-secondary { height:34px; padding:0 12px; background:#fff; color:#1F2A24;
                  border:1px solid #E8ECEA; border-radius:10px; font-size:12px; cursor:pointer; white-space:nowrap; }
 .btn-secondary:hover { background:#F8FAF9; }
+.pag { display:flex; align-items:center; justify-content:space-between;
+       padding:11px 18px; border-top:1px solid #E8ECEA; flex-wrap:wrap; gap:8px; }
+.pag-info { font-size:12px; color:#98A2B3; }
+.pag-btns { display:flex; align-items:center; gap:4px; }
+.pag-btn  { min-width:32px; height:28px; padding:0 8px; border:1px solid #E8ECEA; border-radius:8px;
+            background:#fff; color:#1F2A24; font-size:12px; cursor:pointer; font-weight:500; }
+.pag-btn:hover:not(:disabled) { background:#F8FAF9; border-color:#0A8F45; color:#0A8F45; }
+.pag-btn:disabled { opacity:.4; cursor:default; }
+.pag-btn.active { background:#0A8F45; color:#fff; border-color:#0A8F45; font-weight:700; }
 @media(max-width:1100px){ .or-kpi{grid-template-columns:repeat(2,1fr);} .or-main{grid-template-columns:1fr;} }
 @media(max-width:700px){ .or-kpi{grid-template-columns:1fr 1fr;} .or-wrap{padding:14px 12px;}
   .or-ctx{flex-direction:column;align-items:flex-start;} .or-ctx-r{margin-left:0;}
@@ -444,6 +453,48 @@ function NewOrderModal({
   );
 }
 
+// ─── CSV export ───────────────────────────────────────────────────────────────
+function downloadCSV(rows: string[][], filename: string) {
+  const content = rows
+    .map(row => row.map(cell => `"${String(cell ?? "").replace(/"/g, '""')}"`).join(","))
+    .join("\r\n");
+  const blob = new Blob(["﻿" + content], { type: "text/csv;charset=utf-8;" });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ─── Paginator ────────────────────────────────────────────────────────────────
+const PAGE_SIZE = 25;
+function Paginator({ page, total, onChange }: { page: number; total: number; onChange: (p: number) => void }) {
+  const pages = Math.ceil(total / PAGE_SIZE);
+  if (pages <= 1) return (
+    <div className="pag"><span className="pag-info">{total} résultat{total !== 1 ? "s" : ""}</span></div>
+  );
+  const start = (page - 1) * PAGE_SIZE + 1;
+  const end   = Math.min(page * PAGE_SIZE, total);
+  const range = Array.from(new Set([1, pages, page - 1, page, page + 1].filter(n => n >= 1 && n <= pages))).sort((a,b) => a-b);
+  const nums: (number|"…")[] = [];
+  for (let i = 0; i < range.length; i++) {
+    if (i > 0 && range[i] - range[i-1] > 1) nums.push("…");
+    nums.push(range[i]);
+  }
+  return (
+    <div className="pag">
+      <span className="pag-info">{start}–{end} sur {total}</span>
+      <div className="pag-btns">
+        <button className="pag-btn" disabled={page <= 1} onClick={() => onChange(page - 1)}>‹</button>
+        {nums.map((n, i) => n === "…"
+          ? <span key={`e${i}`} style={{ padding:"0 4px", color:"#98A2B3", fontSize:12 }}>…</span>
+          : <button key={n} className={`pag-btn${n === page ? " active" : ""}`} onClick={() => onChange(n as number)}>{n}</button>
+        )}
+        <button className="pag-btn" disabled={page >= pages} onClick={() => onChange(page + 1)}>›</button>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main component ────────────────────────────────────────────────────────────
 export default function OrdersPage() {
   const [activeShopId, setActiveShopId] = useActiveShop("");
@@ -455,8 +506,10 @@ export default function OrdersPage() {
   const [payF, setPayF]                 = useState("all");
   const [channelF, setChannelF]         = useState("all");
   const [dateF, setDateF]               = useState("all");
-  const [newOrderOpen, setNewOrderOpen] = useState(false);
-  const [newBadge, setNewBadge]         = useState(0);
+  const [newOrderOpen, setNewOrderOpen]   = useState(false);
+  const [newBadge, setNewBadge]           = useState(0);
+  const [page, setPage]                   = useState(1);
+  const [cancelOrderId, setCancelOrderId] = useState<string | null>(null);
   const knownIds = useRef<Set<string>>(new Set());
 
   const activeShop = shops.find(s => s.id === activeShopId) ?? null;
@@ -517,6 +570,25 @@ export default function OrdersPage() {
     setOrdersLoading(false);
   }
 
+  function handleExportCSV() {
+    const shopName = activeShop?.name ?? "boutique";
+    const date     = new Date().toISOString().slice(0, 10);
+    const headers  = ["Référence", "Client", "Téléphone", "Canal", "Produits", "Montant (FCFA)", "Paiement", "Mode paiement", "Statut", "Date"];
+    const rows     = filtered.map(o => [
+      o.ref,
+      o.client,
+      o.phone,
+      CHANNEL_LABELS[o.channel],
+      o.items.map(i => `${i.name} ×${i.qty}`).join(" | "),
+      String(o.amount),
+      PAY_LABELS[o.paymentStatus],
+      o.paymentMethod ? PAY_METHOD_LABELS[o.paymentMethod] : "",
+      STATUS_LABELS[o.status],
+      o.date,
+    ]);
+    downloadCSV([headers, ...rows], `commandes_${shopName}_${date}.csv`);
+  }
+
   async function advanceStatus(orderId: string, nextStatus: ApiOrderStatus) {
     try {
       const res  = await fetch(`/api/orders/${orderId}`, {
@@ -552,6 +624,11 @@ export default function OrdersPage() {
     return list;
   }, [orders, search, statusF, payF, channelF, dateF]);
 
+  // Reset to page 1 when filters change
+  useEffect(() => { setPage(1); }, [search, statusF, payF, channelF, dateF]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
   // KPIs
   const pendingCount   = orders.filter(o => o.status === "new" || o.status === "pending").length;
   const deliveredCount = orders.filter(o => o.status === "delivered").length;
@@ -569,6 +646,35 @@ export default function OrdersPage() {
           onClose={() => setNewOrderOpen(false)}
           onCreated={() => { setNewOrderOpen(false); fetchOrders(activeShopId); }}
         />
+      )}
+
+      {cancelOrderId && (
+        <div className="or-modal" onClick={() => setCancelOrderId(null)}>
+          <div className="or-modal-box" style={{ maxWidth:380, textAlign:"center" }}
+               onClick={e => e.stopPropagation()}>
+            <div style={{ fontSize:44, marginBottom:12 }}>🗑️</div>
+            <h2 style={{ fontSize:18, fontWeight:800, color:"#1F2A24", margin:"0 0 8px" }}>
+              Annuler la commande ?
+            </h2>
+            <p style={{ fontSize:13, color:"#667085", margin:"0 0 20px", lineHeight:1.6 }}>
+              Cette action est irréversible. La commande&nbsp;
+              <strong style={{ color:"#1F2A24" }}>#{cancelOrderId.slice(-6).toUpperCase()}</strong>&nbsp;
+              passera au statut <strong style={{ color:"#EF4444" }}>Annulée</strong>.
+            </p>
+            <div style={{ display:"flex", gap:10 }}>
+              <button className="btn-secondary" style={{ flex:1, height:40 }}
+                onClick={() => setCancelOrderId(null)}>
+                Garder
+              </button>
+              <button
+                style={{ flex:1, height:40, background:"#EF4444", color:"#fff", border:"none",
+                         borderRadius:10, fontSize:13, fontWeight:700, cursor:"pointer" }}
+                onClick={() => { advanceStatus(cancelOrderId, "cancelled"); setCancelOrderId(null); }}>
+                Confirmer l&apos;annulation
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       <div className="or-wrap">
@@ -658,6 +764,12 @@ export default function OrdersPage() {
                 <div style={{ fontSize:11, color:"#98A2B3", marginTop:2 }}>Tous les canaux (WhatsApp, En ligne, Manuel)</div>
               </div>
               <div className="or-tacts">
+                <button className="btn-secondary" onClick={handleExportCSV}
+                  disabled={filtered.length === 0}
+                  style={{ display:"flex", alignItems:"center", gap:5 }}
+                  title={`Exporter ${filtered.length} commande${filtered.length !== 1 ? "s" : ""} en CSV`}>
+                  <Download size={13} /> Exporter
+                </button>
                 <button className="btn-primary" onClick={() => setNewOrderOpen(true)}>+ Nouvelle commande</button>
                 <button className="btn-secondary" onClick={() => fetchOrders(activeShopId)}>{ordersLoading ? "…" : <RefreshCw size={14} />}</button>
               </div>
@@ -716,7 +828,7 @@ export default function OrdersPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filtered.map(o => {
+                    {paginated.map(o => {
                       const nextStatus = NEXT_STATUS[o.status];
                       const nextLabel  = NEXT_STATUS_LABEL[o.status];
                       return (
@@ -753,8 +865,8 @@ export default function OrdersPage() {
                                 💬
                               </button>
                               {o.status !== "cancelled" && o.status !== "delivered" && (
-                                <button className="or-act-btn" title="Annuler" style={{ color:"#EF4444" }}
-                                  onClick={() => advanceStatus(o.id, "cancelled")}>
+                                <button className="or-act-btn" title="Annuler la commande" style={{ color:"#EF4444" }}
+                                  onClick={() => setCancelOrderId(o.id)}>
                                   🗑️
                                 </button>
                               )}
@@ -777,10 +889,7 @@ export default function OrdersPage() {
               </div>
             )}
 
-            <div style={{ padding:"11px 18px", display:"flex", justifyContent:"space-between",
-              alignItems:"center", borderTop:"1px solid #E8ECEA", fontSize:12, color:"#98A2B3" }}>
-              <span>{filtered.length} commande{filtered.length !== 1 ? "s" : ""} affichée{filtered.length !== 1 ? "s" : ""} sur {orders.length}</span>
-            </div>
+            <Paginator page={page} total={filtered.length} onChange={setPage} />
           </div>
 
           {/* Right sidebar */}

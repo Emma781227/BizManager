@@ -23,13 +23,27 @@ export async function GET(request: NextRequest) {
   const whereShop   = { shopId: shop.id };
   const wherePeriod = { shopId: shop.id, createdAt: { gte: since } };
 
-  const [ordersCount, customersCount, salesAgg, statusRows, channelRows, topRows] =
+  const confirmedWhere = {
+    ...wherePeriod,
+    OR: [{ status: "delivered" as const }, { paymentStatus: "paid" as const }],
+  };
+
+  const [ordersCount, customersCount, salesAgg, confirmedSalesAgg, trendOrders, statusRows, channelRows, topRows] =
     await Promise.all([
       prisma.order.count({ where: wherePeriod }),
       prisma.customer.count({ where: whereShop }),
       prisma.order.aggregate({
         where: { ...wherePeriod, status: { not: "cancelled" } },
         _sum: { totalAmount: true },
+      }),
+      prisma.order.aggregate({
+        where: confirmedWhere,
+        _sum: { totalAmount: true },
+      }),
+      prisma.order.findMany({
+        where: confirmedWhere,
+        select: { createdAt: true, totalAmount: true },
+        orderBy: { createdAt: "asc" },
       }),
       prisma.order.groupBy({
         by: ["status"],
@@ -71,6 +85,21 @@ export async function GET(request: NextRequest) {
     amount:    Number(row._sum.lineTotal ?? 0),
   }));
 
+  // Tendance journalière (ventes confirmées)
+  const trendByDay = new Map<string, number>();
+  for (const o of trendOrders) {
+    const day = o.createdAt.toISOString().slice(0, 10);
+    trendByDay.set(day, (trendByDay.get(day) ?? 0) + Number(o.totalAmount));
+  }
+  const trend: { date: string; amount: number }[] = [];
+  const cursor = new Date(since);
+  const now = new Date();
+  while (cursor <= now) {
+    const day = cursor.toISOString().slice(0, 10);
+    trend.push({ date: day, amount: Math.round(trendByDay.get(day) ?? 0) });
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
   // Produits en stock faible / rupture
   const [lowStockCount, outOfStockCount] = await Promise.all([
     prisma.product.count({ where: { shopId: shop.id, stock: { gt: 0, lte: 8 } } }),
@@ -82,6 +111,8 @@ export async function GET(request: NextRequest) {
     shopId:          shop.id,
     shopName:        shop.name,
     sales:           Number(salesAgg._sum.totalAmount ?? 0),
+    confirmedSales:  Number(confirmedSalesAgg._sum.totalAmount ?? 0),
+    trend,
     ordersCount,
     customersCount,
     statusCounts,

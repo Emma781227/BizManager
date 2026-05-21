@@ -5,6 +5,13 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { formatPriceCFA } from "@/lib/format";
 
+const PAYMENT_LABELS: Record<string, { label: string; icon: string }> = {
+  ORANGE_MONEY:     { label: "Orange Money",      icon: "🟠" },
+  MTN_MOBILE_MONEY: { label: "MTN Mobile Money",  icon: "🟡" },
+  CASH:             { label: "Espèces",            icon: "💵" },
+  BANK_TRANSFER:    { label: "Virement bancaire",  icon: "🏦" },
+};
+
 type ProductPayload = {
   id: string;
   name: string;
@@ -30,6 +37,7 @@ export default function PublicCheckoutPage() {
   const [address, setAddress] = useState("");
   const [note, setNote] = useState("");
   const [product, setProduct] = useState<ProductPayload | null>(null);
+  const [paymentMethods, setPaymentMethods] = useState<string[]>([]);
   const [loadingProduct, setLoadingProduct] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -54,16 +62,20 @@ export default function PublicCheckoutPage() {
     void (async () => {
       setLoadingProduct(true);
       try {
-        const response = await fetch(`/api/public/shop/${slug}/products/${productId}`, {
-          cache: "no-store",
-        });
-        const json = await response.json();
+        const [productRes, shopRes] = await Promise.all([
+          fetch(`/api/public/shop/${slug}/products/${productId}`, { cache: "no-store" }),
+          fetch(`/api/public/shop/${slug}`, { cache: "no-store" }),
+        ]);
+        const [productJson, shopJson] = await Promise.all([productRes.json(), shopRes.json()]);
 
-        if (!response.ok) {
-          throw new Error(json.error ?? "Produit introuvable");
+        if (!productRes.ok) {
+          throw new Error(productJson.error ?? "Produit introuvable");
         }
 
-        setProduct(json.data ?? null);
+        setProduct(productJson.data ?? null);
+        if (Array.isArray(shopJson.data?.paymentMethods)) {
+          setPaymentMethods(shopJson.data.paymentMethods);
+        }
       } catch (loadError) {
         setError(loadError instanceof Error ? loadError.message : "Erreur inconnue");
         setProduct(null);
@@ -230,9 +242,25 @@ export default function PublicCheckoutPage() {
             <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-700">Infos utiles</h2>
             <div className="grid gap-3 text-sm text-slate-600">
               <span className="rounded-xl border border-slate-200 bg-white px-3 py-2">Livraison rapide possible</span>
-              <span className="rounded-xl border border-slate-200 bg-white px-3 py-2">Paiement a la livraison ou Mobile Money</span>
               <span className="rounded-xl border border-slate-200 bg-white px-3 py-2">Confirmation de commande par WhatsApp</span>
             </div>
+            {paymentMethods.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-500">Moyens de paiement acceptés</p>
+                <div className="grid gap-2">
+                  {paymentMethods.map(id => {
+                    const pm = PAYMENT_LABELS[id];
+                    if (!pm) return null;
+                    return (
+                      <span key={id} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700">
+                        <span>{pm.icon}</span>
+                        {pm.label}
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {!slug ? <p className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">Boutique manquante dans le lien.</p> : null}
             {!productId ? <p className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">Produit manquant dans le lien.</p> : null}

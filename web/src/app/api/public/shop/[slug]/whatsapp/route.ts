@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { publicWhatsAppOrderSchema } from "@/lib/validators";
-import { sendStockZeroNotifications } from "@/lib/notifications";
+import { sendStockZeroNotifications, sendNewOrderNotification, sendLowStockNotification, LOW_STOCK_THRESHOLD } from "@/lib/notifications";
 import { formatPrice } from "@/lib/format";
 
 type RouteParams = {
@@ -201,13 +201,38 @@ export async function POST(request: Request, context: RouteParams) {
 
   if (orderOutcome.remainingStock === 0) {
     void sendStockZeroNotifications({
-      shopName: shop.name,
-      productName: orderOutcome.productName,
-      productId: orderOutcome.productId,
+      shopName:      shop.name,
+      productName:   orderOutcome.productName,
+      productId:     orderOutcome.productId,
       merchantPhone: shop.whatsappNumber,
       merchantEmail: shop.notificationEmail,
     });
+  } else if (orderOutcome.remainingStock <= LOW_STOCK_THRESHOLD) {
+    void sendLowStockNotification({
+      shopName:       shop.name,
+      merchantEmail:  shop.notificationEmail,
+      productName:    orderOutcome.productName,
+      productId:      orderOutcome.productId,
+      remainingStock: orderOutcome.remainingStock,
+    });
   }
+
+  void sendNewOrderNotification({
+    shopName:      shop.name,
+    merchantEmail: shop.notificationEmail,
+    orderId:       orderOutcome.orderId,
+    customerName,
+    customerPhone,
+    address,
+    note,
+    items: [{
+      productName: orderOutcome.productName,
+      quantity,
+      unitPrice:   orderOutcome.unitPrice,
+      lineTotal:   orderOutcome.total,
+    }],
+    totalAmount: orderOutcome.total,
+  });
 
   const messageLines = [
     `Bonjour ${shop.name},`,

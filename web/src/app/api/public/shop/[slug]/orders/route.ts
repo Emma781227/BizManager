@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { sendNewOrderNotification, sendStockZeroNotifications, sendLowStockNotification, LOW_STOCK_THRESHOLD } from "@/lib/notifications";
 
 type RouteParams = {
   params: Promise<{ slug: string }>;
@@ -19,6 +20,7 @@ const publicOrderSchema = z.object({
     .array(
       z.object({
         productId: z.string().min(1, "Identifiant produit requis"),
+        variantId: z.string().optional(),
         quantity: z
           .number()
           .int("La quantité doit être un entier")
@@ -49,6 +51,7 @@ export async function POST(request: NextRequest, context: RouteParams) {
       name: true,
       isPublished: true,
       whatsappNumber: true,
+      notificationEmail: true,
     },
   });
 
@@ -56,7 +59,7 @@ export async function POST(request: NextRequest, context: RouteParams) {
     const altSlug = `${slug}a`.toLowerCase();
     const alt = await prisma.shop.findUnique({
       where: { slug: altSlug },
-      select: { id: true, name: true, isPublished: true, whatsappNumber: true },
+      select: { id: true, name: true, isPublished: true, whatsappNumber: true, notificationEmail: true },
     });
     if (alt && alt.isPublished) {
       shop = alt;
@@ -80,8 +83,13 @@ export async function POST(request: NextRequest, context: RouteParams) {
       name: true,
       unitPrice: true,
       stock: true,
+      hasVariants: true,
+      variants: { select: { id: true, label: true, stock: true, priceOverride: true } },
     },
   });
+
+  // Validate products and variants; resolve unit prices
+  const resolvedItems: Array<{ productId: string; variantId?: string; variantLabel?: string; quantity: number; unitPrice: number }> = [];
 
   for (const item of items) {
     const product = products.find((p) => p.id === item.productId);
@@ -91,37 +99,62 @@ export async function POST(request: NextRequest, context: RouteParams) {
         { status: 404 },
       );
     }
-    if (product.stock < item.quantity) {
-      return NextResponse.json(
-        {
-          error: `Stock insuffisant pour "${product.name}". Disponible : ${product.stock}, demandé : ${item.quantity}`,
-        },
-        { status: 409 },
-      );
+
+    if (product.hasVariants) {
+      if (!item.variantId) {
+        return NextResponse.json(
+          { error: `Veuillez sélectionner une variante pour "${product.name}"` },
+          { status: 400 },
+        );
+      }
+      const variant = product.variants.find(v => v.id === item.variantId);
+      if (!variant) {
+        return NextResponse.json(
+          { error: `Variante introuvable pour "${product.name}"` },
+          { status: 404 },
+        );
+      }
+      if (variant.stock < item.quantity) {
+        return NextResponse.json(
+          { error: `Stock insuffisant pour "${product.name} — ${variant.label}". Disponible : ${variant.stock}, demandé : ${item.quantity}` },
+          { status: 409 },
+        );
+      }
+      const unitPrice = variant.priceOverride != null ? Number(variant.priceOverride) : Number(product.unitPrice);
+      resolvedItems.push({ productId: item.productId, variantId: variant.id, variantLabel: variant.label, quantity: item.quantity, unitPrice });
+    } else {
+      if (product.stock < item.quantity) {
+        return NextResponse.json(
+          { error: `Stock insuffisant pour "${product.name}". Disponible : ${product.stock}, demandé : ${item.quantity}` },
+          { status: 409 },
+        );
+      }
+      resolvedItems.push({ productId: item.productId, quantity: item.quantity, unitPrice: Number(product.unitPrice) });
     }
   }
 
   let totalAmount = 0;
-  for (const item of items) {
-    const product = products.find((p) => p.id === item.productId)!;
-    totalAmount += Number(product.unitPrice) * item.quantity;
+  for (const item of resolvedItems) {
+    totalAmount += item.unitPrice * item.quantity;
   }
 
   try {
     const order = await prisma.$transaction(async (tx) => {
-      for (const item of items) {
+      for (const item of resolvedItems) {
         const product = products.find((p) => p.id === item.productId)!;
-        const decremented = await tx.product.updateMany({
-          where: {
-            id: product.id,
-            stock: { gte: item.quantity },
-          },
-          data: {
-            stock: { decrement: item.quantity },
-          },
-        });
-        if (decremented.count === 0) {
-          throw new Error(`INSUFFICIENT_STOCK:${product.name}`);
+
+        if (item.variantId) {
+          const decremented = await tx.productVariant.updateMany({
+            where: { id: item.variantId, stock: { gte: item.quantity } },
+            data: { stock: { decrement: item.quantity } },
+          });
+          if (decremented.count === 0) throw new Error(`INSUFFICIENT_STOCK:${product.name}`);
+        } else {
+          const decremented = await tx.product.updateMany({
+            where: { id: product.id, stock: { gte: item.quantity } },
+            data: { stock: { decrement: item.quantity } },
+          });
+          if (decremented.count === 0) throw new Error(`INSUFFICIENT_STOCK:${product.name}`);
         }
       }
 
@@ -161,22 +194,65 @@ export async function POST(request: NextRequest, context: RouteParams) {
           paidAmount: "0",
           notes: notes ?? null,
           items: {
-            create: items.map((item) => {
-              const product = products.find((p) => p.id === item.productId)!;
-              const unitPrice = Number(product.unitPrice);
-              return {
-                productId: item.productId,
-                quantity: item.quantity,
-                unitPrice: String(unitPrice),
-                lineTotal: String(unitPrice * item.quantity),
-              };
-            }),
+            create: resolvedItems.map((item) => ({
+              productId:    item.productId,
+              variantId:    item.variantId ?? null,
+              variantLabel: item.variantLabel ?? null,
+              quantity:     item.quantity,
+              unitPrice:    String(item.unitPrice),
+              lineTotal:    String(item.unitPrice * item.quantity),
+            })),
           },
         },
         select: { id: true },
       });
 
       return createdOrder;
+    });
+
+    for (const item of resolvedItems) {
+      const product = products.find(p => p.id === item.productId)!;
+      if (!item.variantId) {
+        const remainingStock = product.stock - item.quantity;
+        if (remainingStock === 0) {
+          void sendStockZeroNotifications({
+            shopName:      shop.name,
+            productName:   product.name,
+            productId:     product.id,
+            merchantPhone: shop.whatsappNumber,
+            merchantEmail: shop.notificationEmail,
+          });
+        } else if (remainingStock <= LOW_STOCK_THRESHOLD) {
+          void sendLowStockNotification({
+            shopName:       shop.name,
+            merchantEmail:  shop.notificationEmail,
+            productName:    product.name,
+            productId:      product.id,
+            remainingStock,
+          });
+        }
+      }
+    }
+
+    void sendNewOrderNotification({
+      shopName:      shop.name,
+      merchantEmail: shop.notificationEmail,
+      orderId:       order.id,
+      customerName,
+      customerPhone,
+      address:       customerAddress ?? null,
+      note:          notes ?? null,
+      items: resolvedItems.map(item => {
+        const product = products.find(p => p.id === item.productId)!;
+        const label = item.variantLabel ? `${product.name} — ${item.variantLabel}` : product.name;
+        return {
+          productName: label,
+          quantity:    item.quantity,
+          unitPrice:   item.unitPrice,
+          lineTotal:   item.unitPrice * item.quantity,
+        };
+      }),
+      totalAmount,
     });
 
     return NextResponse.json(
