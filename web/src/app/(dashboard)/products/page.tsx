@@ -10,10 +10,20 @@ type Shop = {
   id: string; name: string; slug: string; isPublished: boolean; city: string | null;
   _count?: { products: number; orders: number; customers: number };
 };
+type ProductVariantRow = {
+  id?: string;
+  label: string;
+  stock: number;
+  priceOverride: string;
+};
+
 type ApiProduct = {
   id: string; name: string; sku?: string | null; category?: string | null;
   categories?: string[]; unitPrice: string | number; stock: number;
   isActive?: boolean; syncStatus?: string; createdAt?: string; updatedAt?: string;
+  imageUrl?: string | null; imageVariants?: string[];
+  hasVariants?: boolean;
+  variants?: { id: string; label: string; stock: number; priceOverride: string | null }[];
 };
 
 type MockProduct = {
@@ -224,6 +234,15 @@ const CSS = `
 
 @keyframes spin { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
 .spin { animation:spin .8s linear infinite; display:inline-flex; }
+.pag { display:flex; align-items:center; justify-content:space-between;
+       padding:11px 20px; border-top:1px solid #E8ECEA; flex-wrap:wrap; gap:8px; }
+.pag-info { font-size:12px; color:#98A2B3; }
+.pag-btns { display:flex; align-items:center; gap:4px; }
+.pag-btn  { min-width:32px; height:28px; padding:0 8px; border:1px solid #E8ECEA; border-radius:8px;
+            background:#fff; color:#1F2A24; font-size:12px; cursor:pointer; font-weight:500; }
+.pag-btn:hover:not(:disabled) { background:#F8FAF9; border-color:#0A8F45; color:#0A8F45; }
+.pag-btn:disabled { opacity:.4; cursor:default; }
+.pag-btn.active { background:#0A8F45; color:#fff; border-color:#0A8F45; font-weight:700; }
 
 /* ── Toast notification ── */
 @keyframes toast-in  { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
@@ -328,6 +347,51 @@ function generateSku(name: string): string {
   return base ? `${base}-001` : "";
 }
 
+// ─── Variants Editor ─────────────────────────────────────────────────────────
+function VariantsEditor({ variants, onChange }: { variants: ProductVariantRow[]; onChange: (v: ProductVariantRow[]) => void }) {
+  function add() { onChange([...variants, { label: "", stock: 0, priceOverride: "" }]); }
+  function remove(idx: number) { onChange(variants.filter((_, i) => i !== idx)); }
+  function update(idx: number, field: keyof ProductVariantRow, value: string | number) {
+    onChange(variants.map((v, i) => i === idx ? { ...v, [field]: value } : v));
+  }
+  return (
+    <div>
+      {variants.length === 0 && (
+        <p style={{ fontSize:12, color:"#98A2B3", margin:"0 0 10px" }}>
+          Aucune variante — cliquez sur « + Ajouter » pour en créer.
+        </p>
+      )}
+      {variants.map((v, i) => (
+        <div key={i} style={{ display:"flex", gap:8, alignItems:"center", marginBottom:8 }}>
+          <input className="pm-input" placeholder="Ex. : Taille M / Rouge"
+            value={v.label} onChange={e => update(i, "label", e.target.value)} style={{ flex:2 }} />
+          <input className="pm-input" type="number" min="0" placeholder="Stock"
+            value={v.stock} onChange={e => update(i, "stock", parseInt(e.target.value) || 0)} style={{ flex:1 }} />
+          <div style={{ position:"relative", flex:1 }}>
+            <input className="pm-input" type="number" min="0" placeholder="Prix opt."
+              value={v.priceOverride} onChange={e => update(i, "priceOverride", e.target.value)}
+              style={{ paddingRight:54 }} />
+            <span style={{ position:"absolute", right:10, top:"50%", transform:"translateY(-50%)",
+                           fontSize:11, color:"#98A2B3", fontWeight:700, pointerEvents:"none" }}>FCFA</span>
+          </div>
+          <button onClick={() => remove(i)}
+            style={{ width:36, height:40, border:"1px solid #E8ECEA", borderRadius:8, background:"#fff",
+                     color:"#EF4444", cursor:"pointer", display:"flex", alignItems:"center",
+                     justifyContent:"center", flexShrink:0 }}>
+            <X size={14} />
+          </button>
+        </div>
+      ))}
+      <button onClick={add}
+        style={{ background:"none", border:"1px dashed #0A8F45", borderRadius:8,
+                 padding:"7px 0", fontSize:12, color:"#0A8F45", cursor:"pointer",
+                 fontWeight:600, width:"100%" }}>
+        + Ajouter une variante
+      </button>
+    </div>
+  );
+}
+
 // ─── Add Product Modal ────────────────────────────────────────────────────────
 type AddProductModalProps = {
   open:       boolean;
@@ -351,6 +415,8 @@ function AddProductModal({ open, onClose, shopId, shopName, categories, onCreate
   const [status, setStatus]           = useState<"active" | "draft">("active");
   const [isPublished, setIsPublished] = useState(true);
   const [trackStock, setTrackStock]   = useState(true);
+  const [hasVariants, setHasVariants] = useState(false);
+  const [variants, setVariants]       = useState<ProductVariantRow[]>([]);
   const [mainFile, setMainFile]       = useState<File | null>(null);
   const [mainPreview, setMainPreview] = useState<string | null>(null);
   const [extraFiles, setExtraFiles]   = useState<(File | null)[]>([null, null, null]);
@@ -366,6 +432,7 @@ function AddProductModal({ open, onClose, shopId, shopName, categories, onCreate
     setName(""); setDescription(""); setCategory(""); setNewCatInput("");
     setShowNewCat(false); setLocalCats([]); setUnitPrice(""); setPromoPrice("");
     setStock("0"); setStatus("active"); setIsPublished(true); setTrackStock(true);
+    setHasVariants(false); setVariants([]);
     setMainFile(null); setMainPreview(null);
     setExtraFiles([null, null, null]); setExtraPreviews([null, null, null]);
     setIsSubmitting(false); setSubmitError(null); setSubmitSuccess(false);
@@ -413,6 +480,14 @@ function AddProductModal({ open, onClose, shopId, shopName, categories, onCreate
     fd.append("unitPrice", String(price));
     fd.append("stock", String(stockNum));
     fd.append("isActive", status === "active" ? "true" : "false");
+    fd.append("hasVariants", hasVariants ? "true" : "false");
+    if (hasVariants && variants.length > 0) {
+      fd.append("variants", JSON.stringify(variants.map(v => ({
+        label: v.label.trim(),
+        stock: v.stock,
+        priceOverride: v.priceOverride ? parseFloat(v.priceOverride) : undefined,
+      }))));
+    }
     if (mainFile) fd.append("imageFile", mainFile);
     extraFiles.forEach(f => { if (f) fd.append("imageVariantFiles", f); });
 
@@ -684,6 +759,24 @@ function AddProductModal({ open, onClose, shopId, shopName, categories, onCreate
             </div>
           </div>
 
+          {/* Variantes */}
+          <div style={{ border:"1px solid #E8ECEA", borderRadius:12, padding:"14px 18px", background:"#FAFBFA" }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
+              <div>
+                <span style={{ fontSize:14, fontWeight:700, color:"#1F2A24" }}>Variantes du produit</span>
+                <p style={{ margin:"2px 0 0", fontSize:12, color:"#667085" }}>
+                  Tailles, couleurs, modèles — chaque variante a son propre stock et un prix optionnel.
+                </p>
+              </div>
+              <button className={`pm-toggle${hasVariants ? " on" : ""}`} onClick={() => {
+                const next = !hasVariants;
+                setHasVariants(next);
+                if (next && variants.length === 0) setVariants([{ label: "", stock: 0, priceOverride: "" }]);
+              }} />
+            </div>
+            {hasVariants && <VariantsEditor variants={variants} onChange={setVariants} />}
+          </div>
+
           {/* Galerie produit */}
           <div>
             <div style={{ marginBottom:10 }}>
@@ -762,7 +855,7 @@ type EditProductModalProps = {
   shopId:     string | null;
   shopName:   string;
   categories: string[];
-  product:    MockProduct | null;
+  product:    ApiProduct | null;
   onUpdated:  () => void;
 };
 
@@ -779,6 +872,8 @@ function EditProductModal({ open, onClose, shopId, shopName, categories, product
   const [status, setStatus]           = useState<"active" | "draft">("active");
   const [isPublished, setIsPublished] = useState(true);
   const [trackStock, setTrackStock]   = useState(true);
+  const [hasVariants, setHasVariants] = useState(false);
+  const [variants, setVariants]       = useState<ProductVariantRow[]>([]);
   const [mainFile, setMainFile]       = useState<File | null>(null);
   const [mainPreview, setMainPreview] = useState<string | null>(null);
   const [extraFiles, setExtraFiles]   = useState<(File | null)[]>([null, null, null]);
@@ -793,12 +888,20 @@ function EditProductModal({ open, onClose, shopId, shopName, categories, product
   useEffect(() => {
     if (product) {
       setName(product.name);
-      setCategory(product.category);
-      setUnitPrice(String(product.price));
+      setCategory(product.category ?? "");
+      setUnitPrice(String(product.unitPrice));
       setStock(String(product.stock));
-      setStatus(product.status === "draft" ? "draft" : "active");
+      setStatus(product.isActive === false ? "draft" : "active");
       setDescription(""); setPromoPrice("");
       setIsPublished(true); setTrackStock(true);
+      const hv = product.hasVariants ?? false;
+      setHasVariants(hv);
+      setVariants((product.variants ?? []).map(v => ({
+        id: v.id,
+        label: v.label,
+        stock: v.stock,
+        priceOverride: v.priceOverride != null ? String(v.priceOverride) : "",
+      })));
       setMainFile(null); setMainPreview(product.imageUrl ?? null);
       setExtraFiles([null, null, null]); setExtraPreviews([null, null, null]);
       setSubmitError(null); setSubmitSuccess(false);
@@ -845,6 +948,13 @@ function EditProductModal({ open, onClose, shopId, shopName, categories, product
     fd.append("unitPrice", String(price));
     fd.append("stock", String(stockNum));
     fd.append("isActive", status === "active" ? "true" : "false");
+    fd.append("hasVariants", hasVariants ? "true" : "false");
+    fd.append("variants", JSON.stringify(variants.map(v => ({
+      id: v.id,
+      label: v.label.trim(),
+      stock: v.stock,
+      priceOverride: v.priceOverride ? parseFloat(v.priceOverride) : undefined,
+    }))));
     if (mainFile) fd.append("imageFile", mainFile);
     extraFiles.forEach(f => { if (f) fd.append("imageVariantFiles", f); });
 
@@ -1051,6 +1161,24 @@ function EditProductModal({ open, onClose, shopId, shopName, categories, product
             </div>
           </div>
 
+          {/* Variantes */}
+          <div style={{ border:"1px solid #E8ECEA", borderRadius:12, padding:"14px 18px", background:"#FAFBFA" }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
+              <div>
+                <span style={{ fontSize:14, fontWeight:700, color:"#1F2A24" }}>Variantes du produit</span>
+                <p style={{ margin:"2px 0 0", fontSize:12, color:"#667085" }}>
+                  Tailles, couleurs, modèles — chaque variante a son propre stock et un prix optionnel.
+                </p>
+              </div>
+              <button className={`pm-toggle${hasVariants ? " on" : ""}`} onClick={() => {
+                const next = !hasVariants;
+                setHasVariants(next);
+                if (next && variants.length === 0) setVariants([{ label: "", stock: 0, priceOverride: "" }]);
+              }} />
+            </div>
+            {hasVariants && <VariantsEditor variants={variants} onChange={setVariants} />}
+          </div>
+
           <div>
             <div style={{ marginBottom:10 }}>
               <span style={{ fontSize:14, fontWeight:700, color:"#1F2A24" }}>Galerie produit</span>
@@ -1179,6 +1307,36 @@ function DeleteConfirmModal({ product, shopId, onClose, onDeleted }: DeleteConfi
   );
 }
 
+// ─── Paginator ────────────────────────────────────────────────────────────────
+const PAGE_SIZE = 25;
+function Paginator({ page, total, onChange }: { page: number; total: number; onChange: (p: number) => void }) {
+  const pages = Math.ceil(total / PAGE_SIZE);
+  if (pages <= 1) return (
+    <div className="pag"><span className="pag-info">{total} résultat{total !== 1 ? "s" : ""}</span></div>
+  );
+  const start = (page - 1) * PAGE_SIZE + 1;
+  const end   = Math.min(page * PAGE_SIZE, total);
+  const range = Array.from(new Set([1, pages, page - 1, page, page + 1].filter(n => n >= 1 && n <= pages))).sort((a,b) => a-b);
+  const nums: (number|"…")[] = [];
+  for (let i = 0; i < range.length; i++) {
+    if (i > 0 && range[i] - range[i-1] > 1) nums.push("…");
+    nums.push(range[i]);
+  }
+  return (
+    <div className="pag">
+      <span className="pag-info">{start}–{end} sur {total}</span>
+      <div className="pag-btns">
+        <button className="pag-btn" disabled={page <= 1} onClick={() => onChange(page - 1)}>‹</button>
+        {nums.map((n, i) => n === "…"
+          ? <span key={`e${i}`} style={{ padding:"0 4px", color:"#98A2B3", fontSize:12 }}>…</span>
+          : <button key={n} className={`pag-btn${n === page ? " active" : ""}`} onClick={() => onChange(n as number)}>{n}</button>
+        )}
+        <button className="pag-btn" disabled={page >= pages} onClick={() => onChange(page + 1)}>›</button>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main component ────────────────────────────────────────────────────────────
 export default function ProductsPage() {
   const [activeShopId, setActiveShopId] = useActiveShop("");
@@ -1187,7 +1345,9 @@ export default function ProductsPage() {
   const [stockFilter, setStockFilter]   = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [sortBy, setSortBy]             = useState("name");
+  const [page, setPage]                 = useState(1);
   const [realShops, setRealShops]       = useState<Shop[]>([]);
+  const [rawProducts, setRawProducts]   = useState<ApiProduct[]>([]);
   const [products, setProducts]         = useState<MockProduct[]>([]);
   const [productsLoading, setProductsLoading] = useState(false);
   const [apiCategories, setApiCategories] = useState<string[]>([]);
@@ -1195,6 +1355,7 @@ export default function ProductsPage() {
   const [showUpgrade, setShowUpgrade]   = useState(false);
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [showCreateShop, setShowCreateShop] = useState(false);
+  const [editProductId, setEditProductId] = useState<string | null>(null);
   const [editProduct, setEditProduct]   = useState<MockProduct | null>(null);
   const [deleteProduct, setDeleteProduct] = useState<MockProduct | null>(null);
   const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
@@ -1284,7 +1445,9 @@ export default function ProductsPage() {
     fetch(`/api/products?shopId=${activeShopId}`)
       .then(r => r.json())
       .then(d => {
-        setProducts((d.data ?? []).map(apiToDisplay));
+        const raw: ApiProduct[] = d.data ?? [];
+        setRawProducts(raw);
+        setProducts(raw.map(apiToDisplay));
         setApiCategories(d.meta?.categories ?? []);
       })
       .catch(() => {})
@@ -1305,7 +1468,9 @@ export default function ProductsPage() {
     fetch(`/api/products?shopId=${activeShopId}`)
       .then(r => r.json())
       .then(d => {
-        setProducts((d.data ?? []).map(apiToDisplay));
+        const raw: ApiProduct[] = d.data ?? [];
+        setRawProducts(raw);
+        setProducts(raw.map(apiToDisplay));
         setApiCategories(d.meta?.categories ?? []);
       })
       .catch(() => {});
@@ -1327,6 +1492,10 @@ export default function ProductsPage() {
     if (sortBy === "name")       p.sort((a,b) => a.name.localeCompare(b.name));
     return p;
   }, [products, search, catFilter, stockFilter, statusFilter, sortBy]);
+
+  useEffect(() => { setPage(1); }, [search, catFilter, stockFilter, statusFilter, sortBy]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   async function handleDuplicate(p: MockProduct) {
     if (!activeShopId) return;
@@ -1531,7 +1700,7 @@ export default function ProductsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map(p => (
+                  {paginated.map(p => (
                     <tr key={p.id}>
                       <td>
                         <div className="pr-prod-cell">
@@ -1562,7 +1731,7 @@ export default function ProductsPage() {
                       <td style={{ fontSize:11, color:"#98A2B3" }}>{p.updatedAt}</td>
                       <td>
                         <div className="pr-act-btns">
-                          <button className="pr-act-btn" title="Éditer" style={{ display:"flex", alignItems:"center", justifyContent:"center" }} onClick={() => setEditProduct(p)}><Pencil size={13} /></button>
+                          <button className="pr-act-btn" title="Éditer" style={{ display:"flex", alignItems:"center", justifyContent:"center" }} onClick={() => { setEditProduct(p); setEditProductId(p.id); }}><Pencil size={13} /></button>
                           <button className="pr-act-btn" title="Dupliquer"
                             onClick={() => handleDuplicate(p)}
                             style={{ display:"flex", alignItems:"center", justifyContent:"center", ...(duplicatingId === p.id ? { opacity:0.5 } : {}) }}>
@@ -1588,14 +1757,7 @@ export default function ProductsPage() {
               </table>
             </div>
 
-            <div style={{ padding:"12px 20px", display:"flex", justifyContent:"space-between", alignItems:"center",
-              borderTop:"1px solid #E8ECEA", fontSize:12, color:"#98A2B3" }}>
-              <span>{filtered.length} produit{filtered.length > 1 ? "s" : ""} affiché{filtered.length > 1 ? "s" : ""}</span>
-              <div style={{ display:"flex", gap:6 }}>
-                <button className="btn-secondary btn-sm" style={{ height:28, padding:"0 10px", fontSize:11 }}>← Précédent</button>
-                <button className="btn-secondary btn-sm" style={{ height:28, padding:"0 10px", fontSize:11 }}>Suivant →</button>
-              </div>
-            </div>
+            <Paginator page={page} total={filtered.length} onChange={setPage} />
           </div>
 
           {/* Right col */}
@@ -1786,12 +1948,12 @@ export default function ProductsPage() {
 
       <EditProductModal
         open={editProduct !== null}
-        onClose={() => setEditProduct(null)}
+        onClose={() => { setEditProduct(null); setEditProductId(null); }}
         shopId={activeShopId || null}
         shopName={activeShop?.name ?? ""}
         categories={apiCategories}
-        product={editProduct}
-        onUpdated={() => { setEditProduct(null); refreshProducts(); }}
+        product={editProductId ? (rawProducts.find(p => p.id === editProductId) ?? null) : null}
+        onUpdated={() => { setEditProduct(null); setEditProductId(null); refreshProducts(); }}
       />
 
       <DeleteConfirmModal

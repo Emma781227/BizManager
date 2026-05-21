@@ -102,6 +102,7 @@ export async function GET(
       id: productId,
       shop: { userId: session.userId },
     },
+    include: { variants: { orderBy: { createdAt: "asc" } } },
   });
 
   if (!product) {
@@ -194,6 +195,13 @@ export async function PUT(
         new Set([...imageVariantUrls, ...uploadedVariants].map((item) => item.trim()).filter(Boolean)),
       ).slice(0, 3);
 
+      const hasVariantsRaw = formData.get("hasVariants");
+      const variantsRaw    = formData.get("variants");
+      let parsedVariants: unknown[] = [];
+      if (typeof variantsRaw === "string" && variantsRaw.trim()) {
+        try { parsedVariants = JSON.parse(variantsRaw) as unknown[]; } catch { /* ignore */ }
+      }
+
       body = {
         name: nameValue,
         category: mergedCategories[0] || undefined,
@@ -202,6 +210,8 @@ export async function PUT(
         sku: skuValue || undefined,
         unitPrice: unitPriceValue,
         stock: stockValue,
+        hasVariants: hasVariantsRaw === "true" || hasVariantsRaw === "1",
+        variants: parsedVariants,
         imageUrl: uploadedImageUrl || manualImageUrl || product.imageUrl || undefined,
         imageVariants: mergedImageVariants.length > 0 ? mergedImageVariants : (product.imageVariants ?? []),
       };
@@ -228,22 +238,62 @@ export async function PUT(
     );
   }
 
+  const hasVariants = result.data.hasVariants ?? false;
+  const variants    = result.data.variants ?? [];
+
+  // Upsert variants: delete removed ones, create/update remaining
+  const incomingIds = variants.map(v => v.id).filter(Boolean) as string[];
+  await prisma.productVariant.deleteMany({
+    where: { productId, ...(incomingIds.length > 0 ? { id: { notIn: incomingIds } } : {}) },
+  });
+
   const updated = await prisma.product.update({
     where: { id: productId },
     data: {
-      name: result.data.name.trim(),
-      category: result.data.category?.trim() || null,
-      categories: normalizeCategories(result.data.categories ?? []),
-      description: result.data.description?.trim() || null,
-      sku: result.data.sku?.trim() || null,
-      unitPrice: String(result.data.unitPrice),
-      stock: result.data.stock,
-      imageUrl: result.data.imageUrl || null,
+      name:         result.data.name.trim(),
+      category:     result.data.category?.trim() || null,
+      categories:   normalizeCategories(result.data.categories ?? []),
+      description:  result.data.description?.trim() || null,
+      sku:          result.data.sku?.trim() || null,
+      unitPrice:    String(result.data.unitPrice),
+      stock:        result.data.stock,
+      hasVariants,
+      imageUrl:     result.data.imageUrl || null,
       imageVariants: result.data.imageVariants ?? product.imageVariants ?? [],
     },
   });
 
-  return NextResponse.json({ data: updated });
+  // Upsert each variant
+  for (const v of variants) {
+    if (v.id) {
+      await prisma.productVariant.update({
+        where: { id: v.id },
+        data: {
+          label:         v.label.trim(),
+          sku:           v.sku?.trim() || null,
+          stock:         v.stock,
+          priceOverride: v.priceOverride != null ? String(v.priceOverride) : null,
+        },
+      }).catch(() => { /* variant may have been deleted concurrently */ });
+    } else {
+      await prisma.productVariant.create({
+        data: {
+          productId,
+          label:         v.label.trim(),
+          sku:           v.sku?.trim() || null,
+          stock:         v.stock,
+          priceOverride: v.priceOverride != null ? String(v.priceOverride) : null,
+        },
+      });
+    }
+  }
+
+  const updatedWithVariants = await prisma.product.findUnique({
+    where: { id: productId },
+    include: { variants: { orderBy: { createdAt: "asc" } } },
+  });
+
+  return NextResponse.json({ data: updatedWithVariants });
 }
 
 export async function DELETE(

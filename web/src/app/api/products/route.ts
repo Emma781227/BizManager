@@ -74,6 +74,7 @@ export async function GET(request: NextRequest) {
       ]} : {}),
     },
     orderBy: { createdAt: "desc" },
+    include: { variants: { orderBy: { createdAt: "asc" } } },
   });
 
   const categorySource = await prisma.product.findMany({
@@ -129,6 +130,13 @@ export async function POST(request: NextRequest) {
       const imageVariantUrls = parseImageVariantsInput(formData.get("imageVariants"));
       const mergedVariants   = Array.from(new Set([...imageVariantUrls, ...uploadedVariants].filter(Boolean))).slice(0, 3);
 
+      const hasVariantsRaw = formData.get("hasVariants");
+      const variantsRaw    = formData.get("variants");
+      let parsedVariants: unknown[] = [];
+      if (typeof variantsRaw === "string" && variantsRaw.trim()) {
+        try { parsedVariants = JSON.parse(variantsRaw) as unknown[]; } catch { /* ignore */ }
+      }
+
       body = {
         name:         String(formData.get("name")        ?? "").trim(),
         category:     mergedCategories[0] || undefined,
@@ -137,6 +145,8 @@ export async function POST(request: NextRequest) {
         sku:          String(formData.get("sku")         ?? "").trim() || undefined,
         unitPrice:    parseNumberInput(formData.get("unitPrice")),
         stock:        parseIntegerInput(formData.get("stock")),
+        hasVariants:  hasVariantsRaw === "true" || hasVariantsRaw === "1",
+        variants:     parsedVariants,
         imageUrl:     uploadedImageUrl || String(formData.get("imageUrl") ?? "").trim() || undefined,
         imageVariants: mergedVariants,
       };
@@ -154,6 +164,9 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    const hasVariants = result.data.hasVariants ?? false;
+    const variants    = result.data.variants ?? [];
+
     const product = await prisma.product.create({
       data: {
         shopId:       shop.id,
@@ -164,9 +177,21 @@ export async function POST(request: NextRequest) {
         sku:          result.data.sku?.trim()        || null,
         unitPrice:    String(result.data.unitPrice),
         stock:        result.data.stock,
+        hasVariants,
         imageUrl:     result.data.imageUrl           || null,
         imageVariants: result.data.imageVariants     ?? [],
+        ...(hasVariants && variants.length > 0 ? {
+          variants: {
+            create: variants.map(v => ({
+              label:         v.label.trim(),
+              sku:           v.sku?.trim() || null,
+              stock:         v.stock,
+              priceOverride: v.priceOverride != null ? String(v.priceOverride) : null,
+            })),
+          },
+        } : {}),
       },
+      include: { variants: { orderBy: { createdAt: "asc" } } },
     });
     return NextResponse.json({ data: product }, { status: 201 });
   } catch (error) {

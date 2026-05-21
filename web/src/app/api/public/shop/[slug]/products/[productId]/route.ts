@@ -48,7 +48,12 @@ export async function GET(_: Request, context: RouteParams) {
       stock: true,
       imageUrl: true,
       imageVariants: true,
+      hasVariants: true,
       createdAt: true,
+      variants: {
+        select: { id: true, label: true, stock: true, priceOverride: true },
+        orderBy: { createdAt: "asc" },
+      },
     },
   });
 

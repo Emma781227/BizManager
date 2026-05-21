@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useActiveShop } from "@/hooks/useActiveShop";
-import { Users, RefreshCw, ChevronUp, ChevronDown, Store, UserPlus, X } from "lucide-react";
+import { Users, RefreshCw, ChevronUp, ChevronDown, Store, UserPlus, X, Download } from "lucide-react";
 
 type Customer = {
   id: string;
@@ -68,10 +68,59 @@ const CSS = `
 .btn-secondary { height:34px; padding:0 12px; background:#fff; color:#1F2A24;
                  border:1px solid #E8ECEA; border-radius:10px; font-size:12px; cursor:pointer; white-space:nowrap; }
 .btn-secondary:hover { background:#F8FAF9; }
+.pag { display:flex; align-items:center; justify-content:space-between;
+       padding:11px 20px; border-top:1px solid #E8ECEA; flex-wrap:wrap; gap:8px; }
+.pag-info { font-size:12px; color:#98A2B3; }
+.pag-btns { display:flex; align-items:center; gap:4px; }
+.pag-btn  { min-width:32px; height:28px; padding:0 8px; border:1px solid #E8ECEA; border-radius:8px;
+            background:#fff; color:#1F2A24; font-size:12px; cursor:pointer; font-weight:500; }
+.pag-btn:hover:not(:disabled) { background:#F8FAF9; border-color:#0A8F45; color:#0A8F45; }
+.pag-btn:disabled { opacity:.4; cursor:default; }
+.pag-btn.active { background:#0A8F45; color:#fff; border-color:#0A8F45; font-weight:700; }
 @media(max-width:1100px){ .cu-kpi{grid-template-columns:repeat(2,1fr);} .cu-main{grid-template-columns:1fr;} }
 @media(max-width:700px){ .cu-kpi{grid-template-columns:1fr 1fr;} .cu-wrap{padding:14px 12px;}
   .cu-ctx{flex-direction:column;align-items:flex-start;} .cu-ctx-r{margin-left:0;} }
 `;
+
+function downloadCSV(rows: string[][], filename: string) {
+  const content = rows
+    .map(row => row.map(cell => `"${String(cell ?? "").replace(/"/g, '""')}"`).join(","))
+    .join("\r\n");
+  const blob = new Blob(["﻿" + content], { type: "text/csv;charset=utf-8;" });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
+
+const PAGE_SIZE = 25;
+function Paginator({ page, total, onChange }: { page: number; total: number; onChange: (p: number) => void }) {
+  const pages = Math.ceil(total / PAGE_SIZE);
+  if (pages <= 1) return (
+    <div className="pag"><span className="pag-info">{total} résultat{total !== 1 ? "s" : ""}</span></div>
+  );
+  const start = (page - 1) * PAGE_SIZE + 1;
+  const end   = Math.min(page * PAGE_SIZE, total);
+  const range = Array.from(new Set([1, pages, page - 1, page, page + 1].filter(n => n >= 1 && n <= pages))).sort((a,b) => a-b);
+  const nums: (number|"…")[] = [];
+  for (let i = 0; i < range.length; i++) {
+    if (i > 0 && range[i] - range[i-1] > 1) nums.push("…");
+    nums.push(range[i]);
+  }
+  return (
+    <div className="pag">
+      <span className="pag-info">{start}–{end} sur {total}</span>
+      <div className="pag-btns">
+        <button className="pag-btn" disabled={page <= 1} onClick={() => onChange(page - 1)}>‹</button>
+        {nums.map((n, i) => n === "…"
+          ? <span key={`e${i}`} style={{ padding:"0 4px", color:"#98A2B3", fontSize:12 }}>…</span>
+          : <button key={n} className={`pag-btn${n === page ? " active" : ""}`} onClick={() => onChange(n as number)}>{n}</button>
+        )}
+        <button className="pag-btn" disabled={page >= pages} onClick={() => onChange(page + 1)}>›</button>
+      </div>
+    </div>
+  );
+}
 
 function SortIcon({ field, sortField, sortDir }: { field: SortField; sortField: SortField; sortDir: SortDir }) {
   if (field !== sortField) return <ChevronDown size={12} style={{ opacity: 0.3, marginLeft: 3, verticalAlign: "middle" }} />;
@@ -91,6 +140,7 @@ export default function CustomersPage() {
   const [formOpen, setFormOpen]         = useState(false);
   const [submitting, setSubmitting]     = useState(false);
   const [formErr, setFormErr]           = useState<string | null>(null);
+  const [page, setPage]                 = useState(1);
 
   const [fullName, setFullName] = useState("");
   const [phone, setPhone]       = useState("");
@@ -163,6 +213,10 @@ export default function CustomersPage() {
     return list;
   }, [customers, sortField, sortDir]);
 
+  useEffect(() => { setPage(1); }, [search, sortField, sortDir]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
   function resetForm() {
     setFullName(""); setPhone(""); setEmail(""); setAddress(""); setNotes("");
     setFormErr(null);
@@ -195,6 +249,21 @@ export default function CustomersPage() {
     } finally {
       setSubmitting(false);
     }
+  }
+
+  function handleExportCSV() {
+    const shopName = activeShop?.name ?? "boutique";
+    const date     = new Date().toISOString().slice(0, 10);
+    const headers  = ["Nom", "Téléphone", "Email", "Adresse", "Notes", "Inscrit le"];
+    const rows     = filtered.map(c => [
+      c.fullName,
+      c.phone,
+      c.email ?? "",
+      c.address ?? "",
+      c.notes ?? "",
+      c.createdAt.slice(0, 10),
+    ]);
+    downloadCSV([headers, ...rows], `clients_${shopName}_${date}.csv`);
   }
 
   return (
@@ -240,7 +309,7 @@ export default function CustomersPage() {
         <div className="cu-kpi">
           {[
             { icon:<Users size={16} color="#0A8F45" />,   l:"Total clients",       v: String(customers.length) },
-            { icon:<Users size={16} color="#3B82F6" />,   l:"Résultats affichés",  v: String(filtered.length) },
+            { icon:<Users size={16} color="#3B82F6" />,   l:"Résultats filtrés",   v: String(filtered.length) },
             { icon:<Store size={16} color="#F08A24" />,   l:"Boutique",            v: activeShop?.name ?? "—" },
             { icon:<Users size={16} color="#8B5CF6" />,   l:"Avec email",          v: String(customers.filter(c => c.email).length) },
           ].map((k, i) => (
@@ -269,6 +338,12 @@ export default function CustomersPage() {
                 </div>
               </div>
               <div className="cu-tacts">
+                <button className="btn-secondary" onClick={handleExportCSV}
+                  disabled={filtered.length === 0}
+                  style={{ display:"flex", alignItems:"center", gap:5 }}
+                  title={`Exporter ${filtered.length} client${filtered.length !== 1 ? "s" : ""} en CSV`}>
+                  <Download size={13} /> Exporter
+                </button>
                 <button
                   className="btn-primary"
                   style={{ display:"flex", alignItems:"center", gap:5 }}
@@ -335,7 +410,7 @@ export default function CustomersPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filtered.map(c => (
+                    {paginated.map(c => (
                       <tr key={c.id}>
                         <td>
                           <div style={{ fontWeight:600, fontSize:13 }}>{c.fullName}</div>
@@ -371,9 +446,7 @@ export default function CustomersPage() {
               </div>
             )}
 
-            <div style={{ padding:"11px 20px", borderTop:"1px solid #E8ECEA", fontSize:12, color:"#98A2B3" }}>
-              {filtered.length} client{filtered.length !== 1 ? "s" : ""} affiché{filtered.length !== 1 ? "s" : ""} sur {customers.length}
-            </div>
+            <Paginator page={page} total={filtered.length} onChange={setPage} />
           </div>
 
           {/* Right sidebar */}

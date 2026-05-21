@@ -32,6 +32,14 @@ export const forgotPasswordResetSchema = z.object({
   newPassword: z.string().min(8, "Mot de passe trop court"),
 });
 
+export const productVariantInputSchema = z.object({
+  id: z.string().optional(),
+  label: z.string().min(1, "Libellé requis").max(100),
+  sku: z.string().max(100).optional(),
+  stock: z.number().int().nonnegative().default(0),
+  priceOverride: z.number().nonnegative().optional(),
+});
+
 export const productSchema = z.object({
   name: z.string().min(2),
   category: z.string().max(120).optional().or(z.literal("")),
@@ -40,6 +48,8 @@ export const productSchema = z.object({
   sku: z.string().optional(),
   unitPrice: z.number().nonnegative(),
   stock: z.number().int().nonnegative().default(0),
+  hasVariants: z.boolean().optional(),
+  variants: z.array(productVariantInputSchema).max(50).optional(),
   imageUrl: z
     .union([
       z.string().url(),
@@ -72,6 +82,7 @@ export const customerSchema = z.object({
 
 export const orderItemSchema = z.object({
   productId: z.string().min(1),
+  variantId: z.string().optional(),
   quantity: z.number().int().positive(),
 });
 

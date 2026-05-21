@@ -10,7 +10,9 @@ type ApiShop = {
 };
 type KpiData = {
   period: string; shopId: string; shopName: string;
-  sales: number; ordersCount: number; customersCount: number;
+  sales: number; confirmedSales: number;
+  trend: { date: string; amount: number }[];
+  ordersCount: number; customersCount: number;
   statusCounts: Record<string, number>;
   channelCounts: Record<string, number>;
   topProducts: { productId: string; name: string; quantity: number; amount: number }[];
@@ -29,8 +31,6 @@ type Order = {
 type Product = { id: string; name: string; unitPrice: number | string; stock: number; isActive?: boolean; };
 
 // ─── Static ───────────────────────────────────────────────────────────────────
-const CHART_MONTHS = ["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Aoû","Sep","Oct","Nov","Déc"];
-const CHART_BASE   = [180,210,195,240,280,260,310,290,340,380,360,420];
 
 const QUICK_ACTIONS = [
   { icon:"📦", label:"Ajouter un produit",  href:"/products" },
@@ -88,19 +88,33 @@ function statusStyle(s: string) {
 }
 
 // ─── SVG Line Chart ───────────────────────────────────────────────────────────
-function LineChart({ sales }: { sales: number }) {
+function LineChart({ trend }: { trend: { date: string; amount: number }[] }) {
   const w = 480; const h = 100; const pad = 8;
-  const pts = CHART_BASE.map((v, i) => i === CHART_BASE.length - 1 ? Math.max(sales / 1000, v) : v);
+  const pts = trend.length > 1 ? trend.map(t => t.amount) : [0, 0];
   const max = Math.max(...pts) || 1;
+  const n = pts.length;
   const coords = pts.map((v, i) => {
-    const x = pad + (i / (pts.length - 1)) * (w - pad * 2);
+    const x = pad + (i / (n - 1)) * (w - pad * 2);
     const y = pad + (1 - v / max) * (h - pad * 2);
     return [x, y] as [number, number];
   });
   const line = coords.map(([x, y], i) => `${i === 0 ? "M" : "L"} ${x},${y}`).join(" ");
-  const area = `${line} L ${coords[coords.length - 1][0]},${h} L ${coords[0][0]},${h} Z`;
+  const area = `${line} L ${coords[n - 1][0]},${h} L ${coords[0][0]},${h} Z`;
+
+  const hasRealTrend = trend.length > 1;
+  const labelStep = Math.max(1, Math.floor(n / 6));
+  const labelIdxs = hasRealTrend
+    ? Array.from({ length: n }, (_, i) => i).filter(i => i % labelStep === 0)
+    : [];
+  if (hasRealTrend && labelIdxs[labelIdxs.length - 1] !== n - 1) labelIdxs.push(n - 1);
+
+  function fmtLabel(dateStr: string) {
+    const [, m, d] = dateStr.split("-");
+    return `${d}/${m}`;
+  }
+
   return (
-    <svg viewBox={`0 0 ${w} ${h}`} style={{ width:"100%", height:100 }} aria-hidden>
+    <svg viewBox={`0 0 ${w} ${h + 18}`} style={{ width:"100%", height:118 }} aria-hidden>
       <defs>
         <linearGradient id="db-lg" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#0A8F45" stopOpacity="0.18" />
@@ -109,7 +123,13 @@ function LineChart({ sales }: { sales: number }) {
       </defs>
       <path d={area} fill="url(#db-lg)" />
       <path d={line} fill="none" stroke="#0A8F45" strokeWidth="2.5" strokeLinejoin="round" />
-      <circle cx={coords[coords.length - 1][0]} cy={coords[coords.length - 1][1]} r="4" fill="#0A8F45" />
+      <circle cx={coords[n - 1][0]} cy={coords[n - 1][1]} r="4" fill="#0A8F45" />
+      {labelIdxs.map(i => (
+        <text key={i} x={coords[i][0]} y={h + 14} textAnchor="middle"
+          style={{ fontSize: 9, fill: "#98A2B3", fontFamily: "Arial,sans-serif" }}>
+          {fmtLabel(trend[i].date)}
+        </text>
+      ))}
     </svg>
   );
 }
@@ -327,7 +347,7 @@ export default function DashboardPage() {
         {/* ── KPI Cards ── */}
         <div className="db-kpi">
           {[
-            { label:"Chiffre d'affaires", value: fmtAmount(kpi?.sales ?? 0),          sub:"commandes non annulées" },
+            { label:"Chiffre d'affaires", value: fmtAmount(kpi?.confirmedSales ?? 0),  sub:"commandes livrées / payées" },
             { label:"Commandes",          value: String(kpi?.ordersCount ?? 0),        sub:"sur la période" },
             { label:"Clients",            value: String(kpi?.customersCount ?? 0),     sub:"total enregistrés" },
             { label:"Produits actifs",    value: String(activeShop?._count.products ?? products.length), sub:"dans le catalogue" },
@@ -377,12 +397,12 @@ export default function DashboardPage() {
                 <h3 style={{ fontSize:15, fontWeight:700, color:"#1F2A24", margin:0 }}>Performance de {activeName}</h3>
                 <p style={{ fontSize:12, color:"#98A2B3", margin:"3px 0 0" }}>Chiffre d&apos;affaires (période en cours)</p>
               </div>
-              <span style={{ fontSize:22, fontWeight:800, color:"#0A8F45" }}>{fmtAmount(kpi?.sales ?? 0)}</span>
+              <div style={{ textAlign:"right" }}>
+                <span style={{ fontSize:22, fontWeight:800, color:"#0A8F45" }}>{fmtAmount(kpi?.confirmedSales ?? 0)}</span>
+                <span style={{ display:"block", fontSize:10, color:"#98A2B3", marginTop:2 }}>Volume total : {fmtAmount(kpi?.sales ?? 0)}</span>
+              </div>
             </div>
-            <LineChart sales={kpi?.sales ?? 0} />
-            <div style={{ display:"flex", justifyContent:"space-between", marginTop:6 }}>
-              {CHART_MONTHS.map((m, i) => <span key={i} style={{ fontSize:9, color:"#98A2B3" }}>{m}</span>)}
-            </div>
+            <LineChart trend={kpi?.trend ?? []} />
           </div>
 
           {/* Mes boutiques */}
