@@ -202,18 +202,20 @@ export async function PUT(
         try { parsedVariants = JSON.parse(variantsRaw) as unknown[]; } catch { /* ignore */ }
       }
 
+      const lowStockRaw = parseIntegerInput(formData.get("lowStockThreshold"));
       body = {
-        name: nameValue,
-        category: mergedCategories[0] || undefined,
-        categories: mergedCategories,
-        description: descriptionValue || undefined,
-        sku: skuValue || undefined,
-        unitPrice: unitPriceValue,
-        stock: stockValue,
-        hasVariants: hasVariantsRaw === "true" || hasVariantsRaw === "1",
-        variants: parsedVariants,
-        imageUrl: uploadedImageUrl || manualImageUrl || product.imageUrl || undefined,
-        imageVariants: mergedImageVariants.length > 0 ? mergedImageVariants : (product.imageVariants ?? []),
+        name:              nameValue,
+        category:          mergedCategories[0] || undefined,
+        categories:        mergedCategories,
+        description:       descriptionValue || undefined,
+        sku:               skuValue || undefined,
+        unitPrice:         unitPriceValue,
+        stock:             stockValue,
+        lowStockThreshold: Number.isFinite(lowStockRaw) ? lowStockRaw : product.lowStockThreshold,
+        hasVariants:       hasVariantsRaw === "true" || hasVariantsRaw === "1",
+        variants:          parsedVariants,
+        imageUrl:          uploadedImageUrl || manualImageUrl || product.imageUrl || undefined,
+        imageVariants:     mergedImageVariants.length > 0 ? mergedImageVariants : (product.imageVariants ?? []),
       };
     } catch {
       return NextResponse.json(
@@ -256,7 +258,8 @@ export async function PUT(
       description:  result.data.description?.trim() || null,
       sku:          result.data.sku?.trim() || null,
       unitPrice:    String(result.data.unitPrice),
-      stock:        result.data.stock,
+      stock:             result.data.stock,
+      lowStockThreshold: result.data.lowStockThreshold ?? product.lowStockThreshold,
       hasVariants,
       imageUrl:     result.data.imageUrl || null,
       imageVariants: result.data.imageVariants ?? product.imageVariants ?? [],

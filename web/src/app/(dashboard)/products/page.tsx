@@ -20,6 +20,7 @@ type ProductVariantRow = {
 type ApiProduct = {
   id: string; name: string; sku?: string | null; category?: string | null;
   categories?: string[]; unitPrice: string | number; stock: number;
+  lowStockThreshold?: number;
   isActive?: boolean; syncStatus?: string; createdAt?: string; updatedAt?: string;
   imageUrl?: string | null; imageVariants?: string[];
   hasVariants?: boolean;
@@ -412,6 +413,7 @@ function AddProductModal({ open, onClose, shopId, shopName, categories, onCreate
   const [unitPrice, setUnitPrice]     = useState("");
   const [promoPrice, setPromoPrice]   = useState("");
   const [stock, setStock]             = useState("0");
+  const [lowStockThreshold, setLowStockThreshold] = useState("5");
   const [status, setStatus]           = useState<"active" | "draft">("active");
   const [isPublished, setIsPublished] = useState(true);
   const [trackStock, setTrackStock]   = useState(true);
@@ -431,7 +433,7 @@ function AddProductModal({ open, onClose, shopId, shopName, categories, onCreate
   function reset() {
     setName(""); setDescription(""); setCategory(""); setNewCatInput("");
     setShowNewCat(false); setLocalCats([]); setUnitPrice(""); setPromoPrice("");
-    setStock("0"); setStatus("active"); setIsPublished(true); setTrackStock(true);
+    setStock("0"); setLowStockThreshold("5"); setStatus("active"); setIsPublished(true); setTrackStock(true);
     setHasVariants(false); setVariants([]);
     setMainFile(null); setMainPreview(null);
     setExtraFiles([null, null, null]); setExtraPreviews([null, null, null]);
@@ -479,6 +481,7 @@ function AddProductModal({ open, onClose, shopId, shopName, categories, onCreate
     fd.append("categories", JSON.stringify(category ? [category] : []));
     fd.append("unitPrice", String(price));
     fd.append("stock", String(stockNum));
+    fd.append("lowStockThreshold", String(parseInt(lowStockThreshold) || 5));
     fd.append("isActive", status === "active" ? "true" : "false");
     fd.append("hasVariants", hasVariants ? "true" : "false");
     if (hasVariants && variants.length > 0) {
@@ -719,6 +722,15 @@ function AddProductModal({ open, onClose, shopId, shopName, categories, onCreate
                 value={stock} onChange={e => setStock(e.target.value)} />
             </div>
 
+            {/* Seuil alerte */}
+            <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
+              <label className="pm-label" style={{ marginBottom:0 }} title="Alerte email déclenchée quand le stock atteint ce seuil">
+                Seuil alerte
+              </label>
+              <input className="pm-input" type="number" min="0" style={{ width:80, textAlign:"center" }}
+                value={lowStockThreshold} onChange={e => setLowStockThreshold(e.target.value)} />
+            </div>
+
             <div style={{ width:1, height:44, background:"#E8ECEA", flexShrink:0 }} />
 
             {/* Statut segmenté */}
@@ -869,6 +881,7 @@ function EditProductModal({ open, onClose, shopId, shopName, categories, product
   const [unitPrice, setUnitPrice]     = useState("");
   const [promoPrice, setPromoPrice]   = useState("");
   const [stock, setStock]             = useState("0");
+  const [lowStockThreshold, setLowStockThreshold] = useState("5");
   const [status, setStatus]           = useState<"active" | "draft">("active");
   const [isPublished, setIsPublished] = useState(true);
   const [trackStock, setTrackStock]   = useState(true);
@@ -891,6 +904,7 @@ function EditProductModal({ open, onClose, shopId, shopName, categories, product
       setCategory(product.category ?? "");
       setUnitPrice(String(product.unitPrice));
       setStock(String(product.stock));
+      setLowStockThreshold(String(product.lowStockThreshold ?? 5));
       setStatus(product.isActive === false ? "draft" : "active");
       setDescription(""); setPromoPrice("");
       setIsPublished(true); setTrackStock(true);
@@ -947,6 +961,7 @@ function EditProductModal({ open, onClose, shopId, shopName, categories, product
     fd.append("categories", JSON.stringify(category ? [category] : []));
     fd.append("unitPrice", String(price));
     fd.append("stock", String(stockNum));
+    fd.append("lowStockThreshold", String(parseInt(lowStockThreshold) || 5));
     fd.append("isActive", status === "active" ? "true" : "false");
     fd.append("hasVariants", hasVariants ? "true" : "false");
     fd.append("variants", JSON.stringify(variants.map(v => ({
@@ -1133,6 +1148,14 @@ function EditProductModal({ open, onClose, shopId, shopName, categories, product
               <label className="pm-label" style={{ marginBottom:0 }}>Stock <span style={{ color:"#EF4444" }}>*</span></label>
               <input className="pm-input" type="number" min="0" style={{ width:80, textAlign:"center" }}
                 value={stock} onChange={e => setStock(e.target.value)} />
+            </div>
+            {/* Seuil alerte */}
+            <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
+              <label className="pm-label" style={{ marginBottom:0 }} title="Alerte email déclenchée quand le stock atteint ce seuil">
+                Seuil alerte
+              </label>
+              <input className="pm-input" type="number" min="0" style={{ width:80, textAlign:"center" }}
+                value={lowStockThreshold} onChange={e => setLowStockThreshold(e.target.value)} />
             </div>
             <div style={{ width:1, height:44, background:"#E8ECEA", flexShrink:0 }} />
             <div style={{ display:"flex", flexDirection:"column", gap:6 }}>

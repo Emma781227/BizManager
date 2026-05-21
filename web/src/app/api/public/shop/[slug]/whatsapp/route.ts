@@ -65,6 +65,7 @@ export async function POST(request: Request, context: RouteParams) {
         unitPrice: number;
         total: number;
         remainingStock: number;
+        lowStockThreshold: number;
       }
     | null = null;
 
@@ -81,6 +82,7 @@ export async function POST(request: Request, context: RouteParams) {
           name: true,
           unitPrice: true,
           stock: true,
+          lowStockThreshold: true,
         },
       });
 
@@ -172,6 +174,7 @@ export async function POST(request: Request, context: RouteParams) {
         unitPrice,
         total,
         remainingStock: updatedProduct?.stock ?? 0,
+        lowStockThreshold: product.lowStockThreshold,
       };
     });
   } catch (error) {
@@ -207,7 +210,7 @@ export async function POST(request: Request, context: RouteParams) {
       merchantPhone: shop.whatsappNumber,
       merchantEmail: shop.notificationEmail,
     });
-  } else if (orderOutcome.remainingStock <= LOW_STOCK_THRESHOLD) {
+  } else if (orderOutcome.remainingStock <= orderOutcome.lowStockThreshold) {
     void sendLowStockNotification({
       shopName:       shop.name,
       merchantEmail:  shop.notificationEmail,

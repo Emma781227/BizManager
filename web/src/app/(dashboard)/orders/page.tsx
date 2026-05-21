@@ -9,6 +9,13 @@ type ApiPaymentStatus = "unpaid"|"partial"|"paid"|"refunded";
 type ApiPaymentMethod = "cash"|"mobile_money"|"bank_transfer"|"cod";
 type ApiChannel = "whatsapp"|"online"|"manual";
 
+type ApiStatusHistory = {
+  id: string;
+  status: ApiOrderStatus;
+  changedAt: string;
+  note: string | null;
+};
+
 type ApiShop = {
   id: string; name: string; slug: string; isPublished: boolean;
   _count: { orders: number; products: number; customers: number };
@@ -24,6 +31,7 @@ type ApiOrder = {
   createdAt: string;
   customer: { id: string; fullName: string; phone: string };
   items: { id: string; quantity: number; unitPrice: string; lineTotal: string; product: { id: string; name: string } }[];
+  statusHistory?: ApiStatusHistory[];
 };
 
 type Order = {
@@ -32,6 +40,7 @@ type Order = {
   paymentStatus: ApiPaymentStatus; paymentMethod: ApiPaymentMethod | null;
   status: ApiOrderStatus; date: string;
   items: { name: string; qty: number; price: number }[];
+  statusHistory: ApiStatusHistory[];
 };
 
 type ShopProduct = { id: string; name: string; unitPrice: number; stock: number };
@@ -163,6 +172,7 @@ function apiToDisplay(o: ApiOrder): Order {
       qty: i.quantity,
       price: parseFloat(String(i.lineTotal ?? 0)),
     })),
+    statusHistory: o.statusHistory ?? [],
   };
 }
 
@@ -178,6 +188,125 @@ function ChannelBadge({ c }: { c: ApiChannel }) {
     <span style={{ fontSize:12, color:"#667085", display:"flex", alignItems:"center", gap:4 }}>
       {CHANNEL_ICONS[c]} {CHANNEL_LABELS[c]}
     </span>
+  );
+}
+
+// ─── Detail Modal ─────────────────────────────────────────────────────────────
+const STATUS_DOT_COLOR: Record<string, string> = {
+  "badge-green":"#0A8F45", "badge-orange":"#F08A24", "badge-blue":"#3B82F6",
+  "badge-red":"#EF4444", "badge-gray":"#98A2B3", "badge-biz":"#08763A",
+};
+
+function DetailModal({
+  order, onClose, onAdvance,
+}: {
+  order: Order;
+  onClose: () => void;
+  onAdvance: (id: string, status: ApiOrderStatus) => void;
+}) {
+  const nextStatus = NEXT_STATUS[order.status];
+  const nextLabel  = NEXT_STATUS_LABEL[order.status];
+
+  return (
+    <div className="or-modal" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="or-modal-box">
+        {/* Header */}
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
+          <div>
+            <span style={{ fontFamily:"monospace", fontWeight:700, fontSize:15, color:"#0A8F45" }}>{order.ref}</span>
+            <span style={{ fontSize:12, color:"#98A2B3", marginLeft:10 }}>{order.date}</span>
+          </div>
+          <button onClick={onClose} style={{ border:"none", background:"none", cursor:"pointer", color:"#98A2B3", display:"flex", alignItems:"center" }}>
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Customer + meta */}
+        <div style={{ display:"flex", gap:10, marginBottom:16, flexWrap:"wrap" }}>
+          <div style={{ flex:1, background:"#F8FAF9", borderRadius:10, padding:"10px 14px", minWidth:120 }}>
+            <div style={{ fontSize:10, color:"#98A2B3", marginBottom:3 }}>Client</div>
+            <div style={{ fontWeight:700, fontSize:13, color:"#1F2A24" }}>{order.client}</div>
+            <div style={{ fontSize:11, color:"#667085" }}>{order.phone}</div>
+          </div>
+          <div style={{ background:"#F8FAF9", borderRadius:10, padding:"10px 14px", textAlign:"center", minWidth:90 }}>
+            <div style={{ fontSize:10, color:"#98A2B3", marginBottom:5 }}>Canal</div>
+            <ChannelBadge c={order.channel} />
+          </div>
+          <div style={{ background:"#F8FAF9", borderRadius:10, padding:"10px 14px", textAlign:"center", minWidth:90 }}>
+            <div style={{ fontSize:10, color:"#98A2B3", marginBottom:5 }}>Paiement</div>
+            <PayBadge p={order.paymentStatus} />
+          </div>
+        </div>
+
+        {/* Items */}
+        <div style={{ marginBottom:18 }}>
+          <div style={{ fontSize:12, fontWeight:700, color:"#1F2A24", marginBottom:8 }}>Produits</div>
+          <div style={{ border:"1px solid #E8ECEA", borderRadius:10, overflow:"hidden" }}>
+            {order.items.map((item, i) => (
+              <div key={i} style={{ display:"flex", alignItems:"center", padding:"8px 12px",
+                borderBottom: i < order.items.length - 1 ? "1px solid #F4F6F5" : "none", fontSize:13 }}>
+                <span style={{ flex:1, fontWeight:500 }}>{item.name}</span>
+                <span style={{ color:"#667085", marginRight:12 }}>×{item.qty}</span>
+                <span style={{ fontWeight:700 }}>{item.price.toLocaleString("fr-FR")} FCFA</span>
+              </div>
+            ))}
+            <div style={{ padding:"8px 12px", background:"#F8FAF9", display:"flex",
+              justifyContent:"space-between", fontWeight:700, fontSize:13 }}>
+              <span>Total</span>
+              <span style={{ color:"#0A8F45" }}>{order.amount.toLocaleString("fr-FR")} FCFA</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Status timeline */}
+        <div style={{ marginBottom:20 }}>
+          <div style={{ fontSize:12, fontWeight:700, color:"#1F2A24", marginBottom:10 }}>Historique des statuts</div>
+          {order.statusHistory.length === 0 ? (
+            <div style={{ fontSize:12, color:"#98A2B3" }}>Aucun historique disponible.</div>
+          ) : (
+            <div>
+              {order.statusHistory.map((h, i) => {
+                const isLast = i === order.statusHistory.length - 1;
+                const dt = new Date(h.changedAt);
+                const dateStr = dt.toLocaleDateString("fr-FR", { day:"2-digit", month:"2-digit" });
+                const timeStr = dt.toLocaleTimeString("fr-FR", { hour:"2-digit", minute:"2-digit" });
+                const dotColor = STATUS_DOT_COLOR[STATUS_BADGE[h.status]] ?? "#98A2B3";
+                return (
+                  <div key={h.id} style={{ display:"flex", gap:12, alignItems:"flex-start" }}>
+                    <div style={{ display:"flex", flexDirection:"column", alignItems:"center", width:14, flexShrink:0 }}>
+                      <div style={{ width:10, height:10, borderRadius:"50%", background:dotColor, flexShrink:0, marginTop:4 }} />
+                      {!isLast && <div style={{ width:2, background:"#E8ECEA", minHeight:24, marginTop:3 }} />}
+                    </div>
+                    <div style={{ flex:1, paddingBottom: isLast ? 0 : 14 }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
+                        <StatusBadge s={h.status} />
+                        <span style={{ fontSize:11, color:"#98A2B3" }}>{dateStr} à {timeStr}</span>
+                      </div>
+                      {h.note && <div style={{ fontSize:11, color:"#667085", marginTop:3 }}>{h.note}</div>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Actions */}
+        <div style={{ display:"flex", gap:10, flexWrap:"wrap" }}>
+          {nextStatus && nextLabel && (
+            <button className="btn-primary" style={{ flex:1, height:38, minWidth:120 }}
+              onClick={() => { onAdvance(order.id, nextStatus); onClose(); }}>
+              {nextLabel} →
+            </button>
+          )}
+          <button className="btn-secondary" style={{ height:38 }}
+            onClick={() => window.open(`https://wa.me/${order.phone.replace(/\D/g,"")}`, "_blank")}>
+            💬 WhatsApp
+          </button>
+          <button className="btn-secondary" style={{ height:38 }} onClick={onClose}>Fermer</button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -510,6 +639,9 @@ export default function OrdersPage() {
   const [newBadge, setNewBadge]           = useState(0);
   const [page, setPage]                   = useState(1);
   const [cancelOrderId, setCancelOrderId] = useState<string | null>(null);
+  const [detailOrder, setDetailOrder]     = useState<Order | null>(null);
+  const [sortBy,  setSortBy]  = useState<"date"|"amount">("date");
+  const [sortDir, setSortDir] = useState<"desc"|"asc">("desc");
   const knownIds = useRef<Set<string>>(new Set());
 
   const activeShop = shops.find(s => s.id === activeShopId) ?? null;
@@ -565,6 +697,7 @@ export default function OrdersPage() {
         const mapped = (data.data as ApiOrder[]).map(apiToDisplay);
         setOrders(mapped);
         knownIds.current = new Set(mapped.map(o => o.id));
+        setDetailOrder(prev => prev ? (mapped.find(o => o.id === prev.id) ?? prev) : null);
       }
     } catch {}
     setOrdersLoading(false);
@@ -599,7 +732,9 @@ export default function OrdersPage() {
       if (!res.ok) return;
       const data = await res.json();
       if (data.data) {
-        setOrders(prev => prev.map(o => o.id === orderId ? apiToDisplay(data.data as ApiOrder) : o));
+        const updated = apiToDisplay(data.data as ApiOrder);
+        setOrders(prev => prev.map(o => o.id === orderId ? updated : o));
+        setDetailOrder(prev => prev?.id === orderId ? updated : prev);
       }
     } catch {}
   }
@@ -624,10 +759,22 @@ export default function OrdersPage() {
     return list;
   }, [orders, search, statusF, payF, channelF, dateF]);
 
-  // Reset to page 1 when filters change
-  useEffect(() => { setPage(1); }, [search, statusF, payF, channelF, dateF]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Reset to page 1 when filters/sort change
+  useEffect(() => { setPage(1); }, [search, statusF, payF, channelF, dateF, sortBy, sortDir]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const sorted = useMemo(() => {
+    const list = [...filtered];
+    if (sortBy === "amount") {
+      list.sort((a, b) => sortDir === "asc" ? a.amount - b.amount : b.amount - a.amount);
+    } else {
+      list.sort((a, b) => sortDir === "asc"
+        ? a.date.localeCompare(b.date)
+        : b.date.localeCompare(a.date));
+    }
+    return list;
+  }, [filtered, sortBy, sortDir]);
+
+  const paginated = sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   // KPIs
   const pendingCount   = orders.filter(o => o.status === "new" || o.status === "pending").length;
@@ -645,6 +792,14 @@ export default function OrdersPage() {
           shopName={activeShop?.name ?? ""}
           onClose={() => setNewOrderOpen(false)}
           onCreated={() => { setNewOrderOpen(false); fetchOrders(activeShopId); }}
+        />
+      )}
+
+      {detailOrder && (
+        <DetailModal
+          order={detailOrder}
+          onClose={() => setDetailOrder(null)}
+          onAdvance={advanceStatus}
         />
       )}
 
@@ -820,10 +975,16 @@ export default function OrdersPage() {
                       <th>Client</th>
                       <th>Canal</th>
                       <th>Produits</th>
-                      <th>Montant</th>
+                      <th onClick={() => { if (sortBy === "amount") setSortDir(d => d === "asc" ? "desc" : "asc"); else { setSortBy("amount"); setSortDir("desc"); } }}
+                        style={{ cursor:"pointer", userSelect:"none", whiteSpace:"nowrap" }}>
+                        Montant {sortBy === "amount" ? (sortDir === "asc" ? "↑" : "↓") : "↕"}
+                      </th>
                       <th>Paiement</th>
                       <th>Statut</th>
-                      <th>Date</th>
+                      <th onClick={() => { if (sortBy === "date") setSortDir(d => d === "asc" ? "desc" : "asc"); else { setSortBy("date"); setSortDir("desc"); } }}
+                        style={{ cursor:"pointer", userSelect:"none", whiteSpace:"nowrap" }}>
+                        Date {sortBy === "date" ? (sortDir === "asc" ? "↑" : "↓") : "↕"}
+                      </th>
                       <th>Actions</th>
                     </tr>
                   </thead>
@@ -833,7 +994,13 @@ export default function OrdersPage() {
                       const nextLabel  = NEXT_STATUS_LABEL[o.status];
                       return (
                         <tr key={o.id}>
-                          <td><span style={{ fontFamily:"monospace", fontWeight:600, fontSize:12 }}>{o.ref}</span></td>
+                          <td>
+                            <span
+                              style={{ fontFamily:"monospace", fontWeight:600, fontSize:12, cursor:"pointer", color:"#0A8F45" }}
+                              title="Voir le détail"
+                              onClick={() => setDetailOrder(o)}
+                            >{o.ref}</span>
+                          </td>
                           <td>
                             <div style={{ fontWeight:600, fontSize:13 }}>{o.client}</div>
                             <div style={{ fontSize:11, color:"#98A2B3" }}>{o.phone}</div>
@@ -889,7 +1056,7 @@ export default function OrdersPage() {
               </div>
             )}
 
-            <Paginator page={page} total={filtered.length} onChange={setPage} />
+            <Paginator page={page} total={sorted.length} onChange={setPage} />
           </div>
 
           {/* Right sidebar */}

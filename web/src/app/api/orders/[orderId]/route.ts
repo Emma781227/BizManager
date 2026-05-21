@@ -26,41 +26,52 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
   // Vérifier ownership via la boutique
   const existing = await prisma.order.findFirst({
     where: { id: orderId, shop: { userId: session.userId } },
-    select: { id: true },
+    select: { id: true, status: true },
   });
 
   if (!existing) {
     return NextResponse.json({ error: "Commande introuvable" }, { status: 404 });
   }
 
-  const updated = await prisma.order.update({
-    where: { id: orderId },
-    data: {
-      ...(result.data.status ? { status: result.data.status } : {}),
-      ...(result.data.paymentStatus
-        ? { paymentStatus: result.data.paymentStatus }
-        : {}),
-      ...(result.data.paymentMethod
-        ? { paymentMethod: result.data.paymentMethod }
-        : {}),
-      ...(result.data.paidAmount !== undefined
-        ? { paidAmount: String(result.data.paidAmount) }
-        : {}),
-    },
-    include: {
-      customer: {
-        select: { id: true, fullName: true, phone: true },
+  const updated = await prisma.$transaction(async tx => {
+    const order = await tx.order.update({
+      where: { id: orderId },
+      data: {
+        ...(result.data.status ? { status: result.data.status } : {}),
+        ...(result.data.paymentStatus
+          ? { paymentStatus: result.data.paymentStatus }
+          : {}),
+        ...(result.data.paymentMethod
+          ? { paymentMethod: result.data.paymentMethod }
+          : {}),
+        ...(result.data.paidAmount !== undefined
+          ? { paidAmount: String(result.data.paidAmount) }
+          : {}),
       },
-      items: {
-        select: {
-          id: true,
-          quantity: true,
-          unitPrice: true,
-          lineTotal: true,
-          product: { select: { id: true, name: true } },
+      include: {
+        customer: {
+          select: { id: true, fullName: true, phone: true },
         },
+        items: {
+          select: {
+            id: true,
+            quantity: true,
+            unitPrice: true,
+            lineTotal: true,
+            product: { select: { id: true, name: true } },
+          },
+        },
+        statusHistory: { orderBy: { changedAt: "asc" } },
       },
-    },
+    });
+
+    if (result.data.status && result.data.status !== existing.status) {
+      await tx.orderStatusHistory.create({
+        data: { orderId, status: result.data.status },
+      });
+    }
+
+    return order;
   });
 
   return NextResponse.json({ data: updated });

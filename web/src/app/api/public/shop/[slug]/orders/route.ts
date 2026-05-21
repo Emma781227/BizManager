@@ -84,6 +84,7 @@ export async function POST(request: NextRequest, context: RouteParams) {
       unitPrice: true,
       stock: true,
       hasVariants: true,
+      lowStockThreshold: true,
       variants: { select: { id: true, label: true, stock: true, priceOverride: true } },
     },
   });
@@ -222,7 +223,7 @@ export async function POST(request: NextRequest, context: RouteParams) {
             merchantPhone: shop.whatsappNumber,
             merchantEmail: shop.notificationEmail,
           });
-        } else if (remainingStock <= LOW_STOCK_THRESHOLD) {
+        } else if (remainingStock <= (product.lowStockThreshold ?? LOW_STOCK_THRESHOLD)) {
           void sendLowStockNotification({
             shopName:       shop.name,
             merchantEmail:  shop.notificationEmail,

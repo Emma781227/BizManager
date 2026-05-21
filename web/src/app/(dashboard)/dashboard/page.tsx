@@ -168,6 +168,15 @@ export default function DashboardPage() {
   const [loading,   setLoading]   = useState(true);
   const [ready,     setReady]     = useState(false);
   const [period,    setPeriod]    = useState("30d");
+  const [copied,    setCopied]    = useState<string | null>(null);
+
+  function copyShopLink(slug: string) {
+    const url = `${window.location.origin}/shop/${slug}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(slug);
+      setTimeout(() => setCopied(null), 2000);
+    }).catch(() => {});
+  }
 
   // Load shops + subscription once
   useEffect(() => {
@@ -442,7 +451,14 @@ export default function DashboardPage() {
                         color: s.isPublished ? "#0A8F45" : "#98A2B3" }}>
                         {s.isPublished ? "Publiée" : "Brouillon"}
                       </span>
-                      <a href="/settings" onClick={e => e.stopPropagation()} style={{ fontSize:11, color:"#0A8F45", textDecoration:"none", fontWeight:500 }}>Gérer →</a>
+                      <div style={{ display:"flex", gap:8 }}>
+                        <button onClick={e => { e.stopPropagation(); copyShopLink(s.slug); }}
+                          style={{ fontSize:11, color: copied === s.slug ? "#0A8F45" : "#667085",
+                            fontWeight:500, background:"none", border:"none", cursor:"pointer", padding:0 }}>
+                          {copied === s.slug ? "✓ Copié" : "🔗 Lien"}
+                        </button>
+                        <a href="/settings" onClick={e => e.stopPropagation()} style={{ fontSize:11, color:"#0A8F45", textDecoration:"none", fontWeight:500 }}>Gérer →</a>
+                      </div>
                     </div>
                   </div>
                 );
@@ -460,15 +476,27 @@ export default function DashboardPage() {
           <div style={{ ...card, padding:20 }}>
             <h3 style={{ fontSize:14, fontWeight:700, color:"#1F2A24", margin:"0 0 14px" }}>Actions rapides</h3>
             <div style={{ display:"flex", flexDirection:"column", gap:9 }}>
-              {QUICK_ACTIONS.map((a, i) => (
-                <a key={i} href={a.href}
-                  style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 12px", borderRadius:10, background:"#F8FAF9", border:"1.5px solid #E8ECEA", textDecoration:"none", color:"#1F2A24", fontSize:13, fontWeight:500 }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "#EAF7EF"; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "#F8FAF9"; }}>
-                  <span style={{ fontSize:18 }}>{a.icon}</span>
-                  {a.label}
-                </a>
-              ))}
+              {QUICK_ACTIONS.map((a, i) => {
+                const sharedStyle: React.CSSProperties = { display:"flex", alignItems:"center", gap:12, padding:"10px 12px", borderRadius:10, background:"#F8FAF9", border:"1.5px solid #E8ECEA", color:"#1F2A24", fontSize:13, fontWeight:500, cursor:"pointer", width:"100%", boxSizing:"border-box" as const, textDecoration:"none" };
+                const isShare = a.label === "Partager la boutique";
+                return isShare ? (
+                  <button key={i} onClick={() => activeShop && copyShopLink(activeShop.slug)}
+                    style={sharedStyle}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "#EAF7EF"; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "#F8FAF9"; }}>
+                    <span style={{ fontSize:18 }}>{copied === activeShop?.slug ? "✓" : a.icon}</span>
+                    {copied === activeShop?.slug ? "Lien copié !" : a.label}
+                  </button>
+                ) : (
+                  <a key={i} href={a.href}
+                    style={sharedStyle}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "#EAF7EF"; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "#F8FAF9"; }}>
+                    <span style={{ fontSize:18 }}>{a.icon}</span>
+                    {a.label}
+                  </a>
+                );
+              })}
             </div>
           </div>
 

@@ -137,18 +137,20 @@ export async function POST(request: NextRequest) {
         try { parsedVariants = JSON.parse(variantsRaw) as unknown[]; } catch { /* ignore */ }
       }
 
+      const lowStockRaw = parseIntegerInput(formData.get("lowStockThreshold"));
       body = {
-        name:         String(formData.get("name")        ?? "").trim(),
-        category:     mergedCategories[0] || undefined,
-        categories:   mergedCategories,
-        description:  String(formData.get("description") ?? "").trim() || undefined,
-        sku:          String(formData.get("sku")         ?? "").trim() || undefined,
-        unitPrice:    parseNumberInput(formData.get("unitPrice")),
-        stock:        parseIntegerInput(formData.get("stock")),
-        hasVariants:  hasVariantsRaw === "true" || hasVariantsRaw === "1",
-        variants:     parsedVariants,
-        imageUrl:     uploadedImageUrl || String(formData.get("imageUrl") ?? "").trim() || undefined,
-        imageVariants: mergedVariants,
+        name:              String(formData.get("name")        ?? "").trim(),
+        category:          mergedCategories[0] || undefined,
+        categories:        mergedCategories,
+        description:       String(formData.get("description") ?? "").trim() || undefined,
+        sku:               String(formData.get("sku")         ?? "").trim() || undefined,
+        unitPrice:         parseNumberInput(formData.get("unitPrice")),
+        stock:             parseIntegerInput(formData.get("stock")),
+        lowStockThreshold: Number.isFinite(lowStockRaw) ? lowStockRaw : 5,
+        hasVariants:       hasVariantsRaw === "true" || hasVariantsRaw === "1",
+        variants:          parsedVariants,
+        imageUrl:          uploadedImageUrl || String(formData.get("imageUrl") ?? "").trim() || undefined,
+        imageVariants:     mergedVariants,
       };
     } catch {
       return NextResponse.json({ error: "Erreur lors du traitement du formulaire" }, { status: 400 });
@@ -176,7 +178,8 @@ export async function POST(request: NextRequest) {
         description:  result.data.description?.trim() || null,
         sku:          result.data.sku?.trim()        || null,
         unitPrice:    String(result.data.unitPrice),
-        stock:        result.data.stock,
+        stock:             result.data.stock,
+        lowStockThreshold: result.data.lowStockThreshold ?? 5,
         hasVariants,
         imageUrl:     result.data.imageUrl           || null,
         imageVariants: result.data.imageVariants     ?? [],
