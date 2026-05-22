@@ -59,7 +59,7 @@ function parseIntegerInput(value: FormDataEntryValue | null): number {
   return Math.trunc(parsed);
 }
 
-async function saveProductMedia(file: File): Promise<string> {
+async function saveProductMedia(file: File): Promise<string | null> {
   return uploadMedia(file);
 }
 
@@ -171,7 +171,8 @@ export async function PUT(
         }
 
         try {
-          uploadedVariants.push(await saveProductMedia(field));
+          const url = await saveProductMedia(field);
+          if (url) uploadedVariants.push(url);
         } catch (error) {
           const message = error instanceof Error ? error.message : "Media variante invalide";
           return NextResponse.json({ error: message }, { status: 400 });

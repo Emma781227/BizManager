@@ -38,7 +38,7 @@ function parseImageVariantsInput(value: FormDataEntryValue | null): string[] {
   } catch { /* fallback */ }
   return value.split(",").map(v => v.trim()).filter(Boolean);
 }
-async function saveProductMedia(file: File): Promise<string> {
+async function saveProductMedia(file: File): Promise<string | null> {
   return uploadMedia(file);
 }
 
@@ -120,8 +120,10 @@ export async function POST(request: NextRequest) {
       const uploadedVariants: string[] = [];
       for (const field of variantFileFields) {
         if (!(field instanceof File) || field.size === 0 || uploadedVariants.length >= 3) continue;
-        try { uploadedVariants.push(await saveProductMedia(field)); }
-        catch (e) { return NextResponse.json({ error: e instanceof Error ? e.message : "Media variante invalide" }, { status: 400 }); }
+        try {
+          const url = await saveProductMedia(field);
+          if (url) uploadedVariants.push(url);
+        } catch (e) { return NextResponse.json({ error: e instanceof Error ? e.message : "Media variante invalide" }, { status: 400 }); }
       }
 
       const categoryValue   = normalizeCategory(String(formData.get("category")   ?? ""));
