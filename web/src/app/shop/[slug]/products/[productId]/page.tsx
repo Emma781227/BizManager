@@ -557,6 +557,50 @@ const CSS = `
   }
   .pdp-pay-opt.active { border-color: #0A8F45; background: #EAF7EF; font-weight: 700; color: #0A8F45; }
 
+  /* ── Lightbox ────────────────────────────────────────────────────── */
+  @keyframes lbIn    { from { opacity: 0 } to { opacity: 1 } }
+  @keyframes lbImgIn { from { transform: scale(.94) } to { transform: scale(1) } }
+  .pdp-lightbox {
+    position: fixed; inset: 0; z-index: 1000;
+    background: rgba(0,0,0,.92); backdrop-filter: blur(4px);
+    display: flex; align-items: center; justify-content: center;
+    animation: lbIn .18s ease;
+  }
+  .pdp-lb-img {
+    max-width: min(90vw, 900px); max-height: 85vh;
+    object-fit: contain; border-radius: 8px;
+    user-select: none; touch-action: pinch-zoom;
+    animation: lbImgIn .2s ease;
+  }
+  .pdp-lb-close {
+    position: absolute; top: 16px; right: 16px;
+    width: 40px; height: 40px; border-radius: 50%;
+    background: rgba(255,255,255,.12); border: 1.5px solid rgba(255,255,255,.22);
+    color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: background .15s;
+  }
+  .pdp-lb-close:hover { background: rgba(255,255,255,.24); }
+  .pdp-lb-arrow {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    width: 44px; height: 44px; border-radius: 50%;
+    background: rgba(255,255,255,.12); border: 1.5px solid rgba(255,255,255,.22);
+    color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: background .15s;
+  }
+  .pdp-lb-arrow:hover { background: rgba(255,255,255,.26); }
+  .pdp-lb-prev { left: 16px; }
+  .pdp-lb-next { right: 16px; }
+  .pdp-lb-dots {
+    position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 7px;
+  }
+  .pdp-lb-dot {
+    width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,.35);
+    border: none; cursor: pointer; transition: background .15s; padding: 0;
+  }
+  .pdp-lb-dot.active { background: #fff; width: 20px; border-radius: 4px; }
+  .pdp-gallery-img { cursor: zoom-in; }
+
   /* ── Bottom nav (mobile only) ────────────────────────────────────── */
   .pdp-bottom-nav {
     display: none; position: fixed; bottom: 0; left: 0; right: 0; z-index: 200;
@@ -666,8 +710,12 @@ export default function ProductDetailPage() {
   const [headerCompact,     setHeaderCompact]     = useState(false);
   const [stickyBar,         setStickyBar]         = useState(false);
   const [canNativeShare,    setCanNativeShare]     = useState(false);
+  const [lightboxOpen,      setLightboxOpen]       = useState(false);
+  const [lightboxIdx,       setLightboxIdx]        = useState(0);
 
-  const ctaRef = useRef<HTMLDivElement>(null);
+  const ctaRef            = useRef<HTMLDivElement>(null);
+  const galleryLengthRef  = useRef(0);
+  const lbTouchStartX     = useRef<number | null>(null);
 
   // ── Data loading ────────────────────────────────────────────────────────────
 
@@ -769,6 +817,23 @@ export default function ProductDetailPage() {
       }
     } catch { /* ignore */ }
   }, [slug, product?.id]);
+
+  useEffect(() => {
+    document.body.style.overflow = lightboxOpen ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [lightboxOpen]);
+
+  useEffect(() => {
+    if (!lightboxOpen) return;
+    const n = galleryLengthRef.current || 1;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape")      setLightboxOpen(false);
+      if (e.key === "ArrowLeft")   setLightboxIdx(i => (i - 1 + n) % n);
+      if (e.key === "ArrowRight")  setLightboxIdx(i => (i + 1) % n);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [lightboxOpen]);
 
   // ── Actions ─────────────────────────────────────────────────────────────────
 
@@ -893,15 +958,65 @@ export default function ProductDetailPage() {
   const whatsappUrl     = whatsappNumber ? `https://wa.me/${whatsappNumber.replace(/[^0-9]/g, "")}` : null;
   const currentIdx      = gallery.indexOf(mainImage ?? "");
   const ctaDisabled     = hasVariants && !selectedVariant;
+  galleryLengthRef.current = gallery.length;
 
   function prevImage() { if (gallery.length < 2) return; setSelectedImage(gallery[(currentIdx - 1 + gallery.length) % gallery.length]); }
   function nextImage() { if (gallery.length < 2) return; setSelectedImage(gallery[(currentIdx + 1) % gallery.length]); }
+  function openLightbox(idx: number) { setLightboxIdx(idx); setLightboxOpen(true); }
 
   // ─────────────────────────────────────────────────────────────────────────────
 
   return (
     <div style={{ minHeight: "100vh", background: "#F8FAF9" }}>
       <style>{CSS}</style>
+
+      {/* ── Lightbox ─────────────────────────────────────────────── */}
+      {lightboxOpen && gallery.length > 0 && (
+        <div
+          className="pdp-lightbox"
+          role="dialog"
+          aria-modal={true}
+          aria-label="Agrandissement de l'image"
+          onClick={e => { if (e.target === e.currentTarget) setLightboxOpen(false); }}
+          onTouchStart={e => { lbTouchStartX.current = e.touches[0].clientX; }}
+          onTouchEnd={e => {
+            if (lbTouchStartX.current === null || gallery.length < 2) return;
+            const dx = e.changedTouches[0].clientX - lbTouchStartX.current;
+            if (Math.abs(dx) > 50) {
+              if (dx < 0) setLightboxIdx(i => (i + 1) % gallery.length);
+              else        setLightboxIdx(i => (i - 1 + gallery.length) % gallery.length);
+            }
+            lbTouchStartX.current = null;
+          }}
+        >
+          <button className="pdp-lb-close" onClick={() => setLightboxOpen(false)} title="Fermer (Échap)">
+            <X style={{ width: 18, height: 18 }} />
+          </button>
+
+          <img
+            key={lightboxIdx}
+            src={gallery[lightboxIdx]}
+            alt={`${product.name} — image ${lightboxIdx + 1}`}
+            className="pdp-lb-img"
+          />
+
+          {gallery.length > 1 && (
+            <>
+              <button className="pdp-lb-arrow pdp-lb-prev" onClick={() => setLightboxIdx(i => (i - 1 + gallery.length) % gallery.length)} title="Précédente (←)">
+                <ChevronLeft style={{ width: 22, height: 22 }} />
+              </button>
+              <button className="pdp-lb-arrow pdp-lb-next" onClick={() => setLightboxIdx(i => (i + 1) % gallery.length)} title="Suivante (→)">
+                <ChevronRight style={{ width: 22, height: 22 }} />
+              </button>
+              <div className="pdp-lb-dots">
+                {gallery.map((_, i) => (
+                  <button key={i} className={`pdp-lb-dot${i === lightboxIdx ? " active" : ""}`} onClick={() => setLightboxIdx(i)} />
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      )}
 
       {/* Toast simple (favoris, copie lien…) */}
       {toast && <div className="pdp-toast">{toast}</div>}
@@ -1004,7 +1119,15 @@ export default function ProductDetailPage() {
           <div>
             <div className="pdp-gallery-main">
               {mainImage ? (
-                <img src={mainImage} alt={product.name} className="pdp-gallery-img" />
+                <img
+                  src={mainImage}
+                  alt={product.name}
+                  className="pdp-gallery-img"
+                  onClick={() => openLightbox(currentIdx < 0 ? 0 : currentIdx)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={e => e.key === "Enter" && openLightbox(currentIdx < 0 ? 0 : currentIdx)}
+                />
               ) : (
                 <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, color: "#C8CED6" }}>
                   <Package style={{ width: 56, height: 56 }} />
