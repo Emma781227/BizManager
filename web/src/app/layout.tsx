@@ -14,48 +14,45 @@ const appMono = IBM_Plex_Mono({
   weight: ["400", "500"],
 });
 
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://bizmanager.app";
+
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"),
-  title: "BizManager - Gestion Commerciale",
-  description: "Plateforme de gestion commerciale pour petits commerçants et entrepreneurs",
+  metadataBase: new URL(APP_URL),
+  title: {
+    default: "BizManager — Créez votre boutique en ligne",
+    template: "%s | BizManager",
+  },
+  description:
+    "BizManager est la plateforme e-commerce pour commerçants africains. Créez votre boutique, gérez vos produits et recevez des commandes via WhatsApp.",
+  keywords: ["boutique en ligne", "e-commerce Afrique", "commande WhatsApp", "gestion commerciale", "BizManager"],
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
     title: "BizManager",
   },
-  formatDetection: {
-    telephone: false,
-  },
+  formatDetection: { telephone: false },
   icons: [
-    {
-      rel: "icon",
-      url: "/favicon.ico",
-    },
-    {
-      rel: "apple-touch-icon",
-      url: "/apple-touch-icon.png",
-      sizes: "180x180",
-    },
-    {
-      rel: "image_src",
-      url: "/icon-512.png",
-    },
+    { rel: "icon", url: "/favicon.ico" },
+    { rel: "apple-touch-icon", url: "/apple-touch-icon.png", sizes: "180x180" },
+    { rel: "image_src", url: "/icon-512.png" },
   ],
   openGraph: {
     type: "website",
     locale: "fr_FR",
-    url: "https://bizmanager.app",
-    title: "BizManager - Gestion Commerciale",
-    description: "Plateforme de gestion commerciale pour petits commerçants",
-    images: [
-      {
-        url: "/icon-512.png",
-        width: 512,
-        height: 512,
-        alt: "BizManager Logo",
-      },
-    ],
+    url: APP_URL,
+    siteName: "BizManager",
+    title: "BizManager — Créez votre boutique en ligne",
+    description:
+      "Plateforme e-commerce pour commerçants africains. Boutique en ligne, gestion des commandes et communication via WhatsApp.",
+    images: [{ url: "/icon-512.png", width: 512, height: 512, alt: "BizManager" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "BizManager — Créez votre boutique en ligne",
+    description:
+      "Plateforme e-commerce pour commerçants africains. Boutique en ligne, gestion des commandes et communication via WhatsApp.",
+    images: ["/icon-512.png"],
   },
 };
 
@@ -84,6 +81,21 @@ export default function RootLayout({
         <link rel="icon" type="image/png" href="/favicon.png" />
       </head>
       <body>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Organization",
+              name: "BizManager",
+              url: APP_URL,
+              logo: `${APP_URL}/icon-512.png`,
+              description:
+                "Plateforme e-commerce multi-tenant pour commerçants africains",
+              sameAs: [],
+            }),
+          }}
+        />
         {children}
         {process.env.NODE_ENV === "production" ? (
           <Script

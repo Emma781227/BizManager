@@ -1,4 +1,20 @@
+import type { Metadata } from "next";
 import React from "react";
+
+export const metadata: Metadata = {
+  title: "BizManager — Créez votre boutique en ligne en Afrique",
+  description:
+    "Créez votre boutique en ligne en quelques minutes. Gérez vos produits, recevez des commandes et communiquez avec vos clients via WhatsApp. Gratuit pour démarrer.",
+  openGraph: {
+    title: "BizManager — Créez votre boutique en ligne en Afrique",
+    description:
+      "Créez votre boutique en ligne en quelques minutes. Gérez vos produits, recevez des commandes et communiquez avec vos clients via WhatsApp.",
+    type: "website",
+  },
+  alternates: {
+    canonical: process.env.NEXT_PUBLIC_APP_URL || "https://bizmanager.app",
+  },
+};
 
 const LP_CSS = `
 * { box-sizing: border-box; }
