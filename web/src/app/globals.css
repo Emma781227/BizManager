@@ -422,6 +422,119 @@ a {
   position: static;
 }
 
+/* ── Mobile burger nav ──────────────────────────────────────────────────── */
+
+/* Burger button — hidden on desktop */
+.nav-burger-btn {
+  display: none;
+}
+
+/* Desktop nav links container */
+.nav-desktop-links {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Desktop account + logout block */
+.nav-desktop-only {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-top: auto;
+  padding-top: 1rem;
+  border-top: 1px solid #edf0f2;
+}
+
+@media (max-width: 1023px) {
+  /* Switch app-nav to column on mobile */
+  .app-nav {
+    flex-direction: column;
+    overflow: visible;
+    gap: 0;
+  }
+
+  /* Burger button visible on mobile */
+  .nav-burger-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1.5px solid #E8ECEA;
+    background: #F8FAF9;
+    color: #1F2A24;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+  }
+
+  .nav-burger-btn:hover {
+    background: #EEF7F3;
+    border-color: #0A8F45;
+    color: #0A8F45;
+  }
+
+  /* Desktop nav links and account block hidden on mobile */
+  .nav-desktop-links,
+  .nav-desktop-only {
+    display: none;
+  }
+}
+
+/* ── End mobile burger nav ──────────────────────────────────────────────── */
+
+/* Account block inside burger menu */
+.nav-account-block {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #F8FAF9;
+  border: 1px solid #E8ECEA;
+  margin-bottom: 6px;
+}
+
+.nav-account-label {
+  font-size: 10px;
+  color: #98A2B3;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.nav-account-email {
+  font-size: 13px;
+  color: #1F2A24;
+  word-break: break-word;
+}
+
+.nav-logout-wrap {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid #E8ECEA;
+}
+
+.nav-logout-btn {
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1.5px solid #f0ccc7;
+  background: #fff4f2;
+  color: #C0392B;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: center;
+}
+
+.nav-logout-btn:hover {
+  background: #ffe9e5;
+}
+
 @media (min-width: 1024px) {
   .app-sidebar {
     width: min(300px, 26vw);
