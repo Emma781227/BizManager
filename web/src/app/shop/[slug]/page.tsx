@@ -84,7 +84,7 @@ const CSS = `
   }
   .sp-search-input:focus { border-color: #0A8F45; background: #fff; }
   .sp-search-input::placeholder { color: #98A2B3; }
-  .sp-search-icon-pos { position: absolute; left: 12px; color: #98A2B3; pointer-events: none; }
+  .sp-search-icon-pos { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #98A2B3; pointer-events: none; }
   .sp-header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; flex-shrink: 0; }
   .sp-icon-btn {
     position: relative; width: 38px; height: 38px; border-radius: 10px;
@@ -1448,9 +1448,9 @@ function CheckoutModal({ cart, cartTotal, slug, onClose, onSuccess }: {
     }
   }
 
-  const paymentOptions: { id: 'cod' | 'cash' | 'mobile_money' | 'bank_transfer'; icon: string; label: string }[] = [
+  const paymentOptions: { id: 'cod' | 'cash' | 'mobile_money' | 'bank_transfer'; icon: string; label: string; imgUrl?: string }[] = [
     { id: 'cod', icon: '🚚', label: 'Paiement à la livraison' },
-    { id: 'mobile_money', icon: '📱', label: 'Mobile Money' },
+    { id: 'mobile_money', icon: '📱', label: 'Mobile Money', imgUrl: 'https://res.cloudinary.com/dngaowjt8/image/upload/v1779488827/MM_uvauci.jpg' },
     { id: 'cash', icon: '💵', label: 'Espèces' },
     { id: 'bank_transfer', icon: '🏦', label: 'Virement' },
   ];
@@ -1519,7 +1519,10 @@ function CheckoutModal({ cart, cartTotal, slug, onClose, onSuccess }: {
                   onClick={() => setPayment(opt.id)}
                   style={{ padding: '10px 12px', border: `1.5px solid ${payment === opt.id ? '#0A8F45' : '#E8ECEA'}`, borderRadius: 10, background: payment === opt.id ? '#F6FFF9' : '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 600, color: payment === opt.id ? '#0A8F45' : '#667085', transition: 'all .15s' }}
                 >
-                  <span style={{ fontSize: 18 }}>{opt.icon}</span>
+                  {opt.imgUrl
+                    ? <img src={opt.imgUrl} alt={opt.label} style={{ height: 24, width: 'auto', maxWidth: 60, objectFit: 'contain', flexShrink: 0 }} />
+                    : <span style={{ fontSize: 18 }}>{opt.icon}</span>
+                  }
                   {opt.label}
                 </button>
               ))}

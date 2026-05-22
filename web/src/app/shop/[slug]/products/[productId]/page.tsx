@@ -64,6 +64,8 @@ type FavoriteItem = {
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
+const MM_IMG_URL = "https://res.cloudinary.com/dngaowjt8/image/upload/v1779488827/MM_uvauci.jpg";
+
 const PAYMENT_OPTIONS = [
   { value: "cod",           emoji: "🚚", label: "Paiement à la livraison" },
   { value: "mobile_money",  emoji: "📱", label: "Mobile Money" },
@@ -119,7 +121,7 @@ const CSS = `
   }
   .pdp-search-input:focus { border-color: #0A8F45; background: #fff; }
   .pdp-search-input::placeholder { color: #98A2B3; }
-  .pdp-search-icon { position: absolute; left: 12px; color: #98A2B3; pointer-events: none; }
+  .pdp-search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #98A2B3; pointer-events: none; }
   .pdp-header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; flex-shrink: 0; }
   .pdp-icon-btn {
     position: relative; width: 38px; height: 38px; border-radius: 10px;
@@ -1718,7 +1720,10 @@ export default function ProductDetailPage() {
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                   {PAYMENT_OPTIONS.map(opt => (
                     <button key={opt.value} type="button" className={`pdp-pay-opt${paymentMethod === opt.value ? " active" : ""}`} onClick={() => setPaymentMethod(opt.value)}>
-                      <span style={{ fontSize: 20 }}>{opt.emoji}</span>
+                      {opt.value === "mobile_money"
+                        ? <img src={MM_IMG_URL} alt="Mobile Money" style={{ height: 24, width: "auto", maxWidth: 60, objectFit: "contain", flexShrink: 0 }} />
+                        : <span style={{ fontSize: 20 }}>{opt.emoji}</span>
+                      }
                       <span>{opt.label}</span>
                     </button>
                   ))}
