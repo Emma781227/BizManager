@@ -357,23 +357,29 @@ function VariantsEditor({ variants, onChange }: { variants: ProductVariantRow[];
   }
   return (
     <div>
-      {variants.length === 0 && (
+      {variants.length === 0 ? (
         <p style={{ fontSize:12, color:"#98A2B3", margin:"0 0 10px" }}>
           Aucune variante — cliquez sur « + Ajouter » pour en créer.
         </p>
+      ) : (
+        <div style={{ display:"flex", gap:8, marginBottom:4, paddingRight:44 }}>
+          <div style={{ flex:2, fontSize:10, fontWeight:700, color:"#98A2B3", textTransform:"uppercase", letterSpacing:".06em", paddingLeft:12 }}>Nom / Label</div>
+          <div style={{ flex:1, fontSize:10, fontWeight:700, color:"#98A2B3", textTransform:"uppercase", letterSpacing:".06em", paddingLeft:12 }}>Stock</div>
+          <div style={{ flex:1, fontSize:10, fontWeight:700, color:"#98A2B3", textTransform:"uppercase", letterSpacing:".06em", paddingLeft:12 }}>Prix de vente</div>
+        </div>
       )}
       {variants.map((v, i) => (
         <div key={i} style={{ display:"flex", gap:8, alignItems:"center", marginBottom:8 }}>
-          <input className="pm-input" placeholder="Ex. : Taille M / Rouge"
+          <input className="pm-input" placeholder="Ex. : Taille M / Rouge / 128 Go"
             value={v.label} onChange={e => update(i, "label", e.target.value)} style={{ flex:2 }} />
-          <input className="pm-input" type="number" min="0" placeholder="Stock"
+          <input className="pm-input" type="number" min="0" placeholder="0"
             value={v.stock} onChange={e => update(i, "stock", parseInt(e.target.value) || 0)} style={{ flex:1 }} />
           <div style={{ position:"relative", flex:1 }}>
-            <input className="pm-input" type="number" min="0" placeholder="Prix opt."
+            <input className="pm-input" type="number" min="0" placeholder="= prix de base"
               value={v.priceOverride} onChange={e => update(i, "priceOverride", e.target.value)}
-              style={{ paddingRight:54 }} />
-            <span style={{ position:"absolute", right:10, top:"50%", transform:"translateY(-50%)",
-                           fontSize:11, color:"#98A2B3", fontWeight:700, pointerEvents:"none" }}>FCFA</span>
+              style={{ paddingRight:44 }} />
+            <span style={{ position:"absolute", right:8, top:"50%", transform:"translateY(-50%)",
+                           fontSize:10, color:"#98A2B3", fontWeight:700, pointerEvents:"none" }}>FCFA</span>
           </div>
           <button onClick={() => remove(i)}
             style={{ width:36, height:40, border:"1px solid #E8ECEA", borderRadius:8, background:"#fff",
@@ -389,6 +395,9 @@ function VariantsEditor({ variants, onChange }: { variants: ProductVariantRow[];
                  fontWeight:600, width:"100%" }}>
         + Ajouter une variante
       </button>
+      <p style={{ fontSize:11, color:"#98A2B3", margin:"10px 0 0", lineHeight:1.5 }}>
+        💡 Laissez le prix vide pour utiliser le <strong>prix de base</strong> du produit. Si les variantes ont des prix différents, le client verra « À partir de X FCFA » et le prix se met à jour automatiquement à chaque sélection.
+      </p>
     </div>
   );
 }

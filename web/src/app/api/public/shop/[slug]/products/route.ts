@@ -109,6 +109,7 @@ export async function GET(request: Request, context: RouteParams) {
       imageVariants: true,
       category: true,
       categories: true,
+      hasVariants: true,
       createdAt: true,
     },
     orderBy:

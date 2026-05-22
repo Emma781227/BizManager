@@ -239,7 +239,17 @@ const CSS = `
   }
   .pdp-title { margin: 0 0 12px; font-size: 24px; font-weight: 800; color: #1F2A24; line-height: 1.25; }
   .pdp-stars-row { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
-  .pdp-price { font-size: 34px; font-weight: 800; color: #0A8F45; line-height: 1; margin-bottom: 18px; }
+  .pdp-price { font-size: 34px; font-weight: 800; color: #0A8F45; line-height: 1; }
+  .pdp-price-wrap { margin-bottom: 18px; }
+  .pdp-price-from { font-size: 12px; color: #98A2B3; font-weight: 500; margin-bottom: 3px; }
+  @keyframes priceFlash { 0% { opacity:.5; transform:scale(.96); } 100% { opacity:1; transform:scale(1); } }
+  .pdp-price { animation: priceFlash .22s ease; }
+  .pdp-price-diff {
+    display: inline-flex; align-items: center; margin-left: 10px;
+    padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; vertical-align: middle;
+  }
+  .pdp-price-diff-up   { background: #FFF1E5; color: #F08A24; }
+  .pdp-price-diff-down { background: #DDF6E7; color: #0A8F45; }
   .pdp-desc-box {
     background: #F8FAF9; border-radius: 12px; padding: 13px 15px; margin-bottom: 18px;
   }
@@ -262,13 +272,15 @@ const CSS = `
   }
   .pdp-desc-toggle:hover { opacity: .75; }
   .pdp-size-btn {
-    height: 36px; min-width: 44px; padding: 0 14px;
+    min-height: 36px; height: auto; min-width: 52px; padding: 6px 14px;
     border: 1.5px solid #E8ECEA; border-radius: 8px;
     background: #fff; color: #1F2A24; font-size: 13px; font-weight: 600;
     cursor: pointer; transition: all .15s;
+    display: flex; flex-direction: column; align-items: center; gap: 2px; line-height: 1.3;
   }
   .pdp-size-btn.active { background: #0A8F45; color: #fff; border-color: #0A8F45; }
   .pdp-size-btn:not(.active):hover { border-color: #0A8F45; color: #0A8F45; }
+  .pdp-size-btn-price { font-size: 10px; font-weight: 700; opacity: .8; white-space: nowrap; }
   .pdp-qty-row {
     display: flex; align-items: center; border: 1.5px solid #E8ECEA;
     border-radius: 10px; overflow: hidden; height: 44px;
@@ -960,6 +972,18 @@ export default function ProductDetailPage() {
   const ctaDisabled     = hasVariants && !selectedVariant;
   galleryLengthRef.current = gallery.length;
 
+  // ── Variant price range ────────────────────────────────────────────────────
+  const basePrice     = Number(product.unitPrice);
+  const variantPrices = variants
+    .filter(v => v.priceOverride != null)
+    .map(v => Number(v.priceOverride));
+  const allPrices     = [basePrice, ...variantPrices];
+  const priceFrom     = Math.min(...allPrices);
+  const priceTo       = Math.max(...allPrices);
+  const hasPriceRange = hasVariants && priceFrom !== priceTo;
+  const priceDiff     = selectedVariant?.priceOverride != null
+    ? Number(selectedVariant.priceOverride) - basePrice : 0;
+
   function prevImage() { if (gallery.length < 2) return; setSelectedImage(gallery[(currentIdx - 1 + gallery.length) % gallery.length]); }
   function nextImage() { if (gallery.length < 2) return; setSelectedImage(gallery[(currentIdx + 1) % gallery.length]); }
   function openLightbox(idx: number) { setLightboxIdx(idx); setLightboxOpen(true); }
@@ -1195,7 +1219,28 @@ export default function ProductDetailPage() {
               <span style={{ fontSize: 12, color: "#667085" }}>128 vendus</span>
             </div>
 
-            <div className="pdp-price">{formatPrice(unitPrice)}</div>
+            <div className="pdp-price-wrap">
+              {hasVariants && !selectedVariant && hasPriceRange && (
+                <div className="pdp-price-from">À partir de</div>
+              )}
+              <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 4 }}>
+                <div key={selectedVariantId ?? "base"} className="pdp-price">
+                  {hasVariants && !selectedVariant && hasPriceRange
+                    ? formatPrice(priceFrom)
+                    : formatPrice(unitPrice)}
+                </div>
+                {selectedVariant && priceDiff !== 0 && (
+                  <span className={`pdp-price-diff ${priceDiff > 0 ? "pdp-price-diff-up" : "pdp-price-diff-down"}`}>
+                    {priceDiff > 0 ? "+" : "−"}{formatPrice(Math.abs(priceDiff))} vs base
+                  </span>
+                )}
+              </div>
+              {hasVariants && !selectedVariant && hasPriceRange && (
+                <div style={{ fontSize: 12, color: "#C8CED6", marginTop: 2 }}>
+                  jusqu'à {formatPrice(priceTo)}
+                </div>
+              )}
+            </div>
 
             {product.description && (
               <div className="pdp-desc-box">
@@ -1227,17 +1272,26 @@ export default function ProductDetailPage() {
                   {selectedVariant && <span style={{ fontWeight: 400, color: "#667085" }}> — {selectedVariant.label}</span>}
                 </div>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  {variants.map(v => (
-                    <button
-                      key={v.id}
-                      className={`pdp-size-btn${selectedVariantId === v.id ? " active" : ""}`}
-                      onClick={() => { setSelectedVariantId(v.id); setQuantity(1); }}
-                      disabled={v.stock === 0}
-                      style={v.stock === 0 ? { opacity: .45, cursor: "not-allowed", textDecoration: "line-through" } : {}}
-                    >
-                      {v.label}
-                    </button>
-                  ))}
+                  {variants.map(v => {
+                    const vPrice = v.priceOverride != null ? Number(v.priceOverride) : basePrice;
+                    return (
+                      <button
+                        key={v.id}
+                        className={`pdp-size-btn${selectedVariantId === v.id ? " active" : ""}`}
+                        onClick={() => { setSelectedVariantId(v.id); setQuantity(1); }}
+                        disabled={v.stock === 0}
+                        style={v.stock === 0 ? { opacity: .45, cursor: "not-allowed", textDecoration: "line-through" } : {}}
+                        title={v.stock === 0 ? "Rupture de stock" : `${v.label} — ${formatPrice(vPrice)}`}
+                      >
+                        <span>{v.label}</span>
+                        {hasPriceRange && (
+                          <span className="pdp-size-btn-price">
+                            {vPrice.toLocaleString("fr-FR")} F
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
                 {hasVariants && !selectedVariant && (
                   <p style={{ margin: "8px 0 0", fontSize: 12, color: "#F08A24", fontWeight: 600 }}>

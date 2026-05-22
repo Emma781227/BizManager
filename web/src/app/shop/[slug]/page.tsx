@@ -32,6 +32,7 @@ interface Product {
   imageVariants?: string[];
   category?: string | null;
   categories?: string[];
+  hasVariants?: boolean;
   rating?: number;
   reviews?: number;
 }
@@ -694,11 +695,20 @@ export default function ShopPage() {
         </div>
 
         <div className="sp-card-body">
-          {(product.category || product.categories?.[0]) && (
-            <div className="sp-card-cat">{product.category || product.categories![0]}</div>
-          )}
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 5 }}>
+            {(product.category || product.categories?.[0]) && (
+              <div className="sp-card-cat">{product.category || product.categories![0]}</div>
+            )}
+            {product.hasVariants && (
+              <div style={{ fontSize: 9, fontWeight: 700, color: "#667085", textTransform: "uppercase", letterSpacing: ".06em", background: "#F4F6F5", borderRadius: 4, padding: "2px 5px", flexShrink: 0 }}>
+                Variantes
+              </div>
+            )}
+          </div>
           <div className="sp-card-name">{product.name}</div>
-          <div className="sp-card-price">{formatPrice(product.unitPrice)}</div>
+          <div className="sp-card-price">
+            {product.hasVariants ? `Dès ${formatPrice(product.unitPrice)}` : formatPrice(product.unitPrice)}
+          </div>
           {/* z-index: 2 via CSS — "Voir" supprimé */}
           <button
             className="sp-card-btn-add"
