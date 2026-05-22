@@ -50,6 +50,7 @@ export const productSchema = z.object({
   stock: z.number().int().nonnegative().default(0),
   hasVariants: z.boolean().optional(),
   variants: z.array(productVariantInputSchema).max(50).optional(),
+  lowStockThreshold: z.number().int().nonnegative().optional(),
   imageUrl: z
     .union([
       z.string().url(),

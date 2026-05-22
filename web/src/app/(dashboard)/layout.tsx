@@ -40,18 +40,7 @@ export default async function DashboardLayout({
           </div>
         </div>
 
-        <div className="sidebar-account">
-          <span>Compte connecté</span>
-          <strong>{session.email}</strong>
-        </div>
-
-        <MerchantNav links={navLinks} />
-
-        <div className="sidebar-footer">
-          <form className="sidebar-logout" action="/api/auth/logout" method="post">
-            <button type="submit">Déconnexion</button>
-          </form>
-        </div>
+        <MerchantNav links={navLinks} email={session.email} />
       </aside>
 
       <div className="app-main dashboard-main">{children}</div>

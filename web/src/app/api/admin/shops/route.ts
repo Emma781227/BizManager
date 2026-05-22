@@ -105,6 +105,51 @@ export async function GET(request: NextRequest) {
   });
 }
 
+export async function DELETE(request: NextRequest) {
+  const session = await getSessionFromRequest(request);
+
+  if (!session) {
+    return NextResponse.json({ error: "Non authentifie" }, { status: 401 });
+  }
+
+  if (!isPlatformAdmin(session)) {
+    return NextResponse.json({ error: "Acces refuse" }, { status: 403 });
+  }
+
+  const shopId = request.nextUrl.searchParams.get("shopId");
+  if (!shopId) {
+    return NextResponse.json({ error: "shopId requis" }, { status: 400 });
+  }
+
+  const shop = await prisma.shop.findUnique({ where: { id: shopId }, select: { id: true } });
+  if (!shop) {
+    return NextResponse.json({ error: "Boutique introuvable" }, { status: 404 });
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.whatsappLog.deleteMany({ where: { shopId } });
+
+    const orders = await tx.order.findMany({ where: { shopId }, select: { id: true } });
+    const orderIds = orders.map((o) => o.id);
+    if (orderIds.length > 0) {
+      await tx.orderStatusHistory.deleteMany({ where: { orderId: { in: orderIds } } });
+      await tx.orderItem.deleteMany({ where: { orderId: { in: orderIds } } });
+    }
+    await tx.order.deleteMany({ where: { shopId } });
+
+    const products = await tx.product.findMany({ where: { shopId }, select: { id: true } });
+    const productIds = products.map((p) => p.id);
+    if (productIds.length > 0) {
+      await tx.productVariant.deleteMany({ where: { productId: { in: productIds } } });
+    }
+    await tx.product.deleteMany({ where: { shopId } });
+    await tx.customer.deleteMany({ where: { shopId } });
+    await tx.shop.delete({ where: { id: shopId } });
+  });
+
+  return NextResponse.json({ success: true });
+}
+
 export async function PATCH(request: NextRequest) {
   const session = await getSessionFromRequest(request);
 

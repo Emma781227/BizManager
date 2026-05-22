@@ -73,12 +73,16 @@ export async function PUT(request: NextRequest) {
       };
 
       if (logoFile instanceof File && logoFile.size > 0) {
-        try { body.logoUrl = await uploadMedia(logoFile, "bizmanager/shops"); }
-        catch (e) { return NextResponse.json({ error: e instanceof Error ? e.message : "Erreur upload logo" }, { status: 400 }); }
+        try {
+          const uploaded = await uploadMedia(logoFile, "bizmanager/shops");
+          if (uploaded) body.logoUrl = uploaded;
+        } catch (e) { return NextResponse.json({ error: e instanceof Error ? e.message : "Erreur upload logo" }, { status: 400 }); }
       }
       if (coverFile instanceof File && coverFile.size > 0) {
-        try { body.coverUrl = await uploadMedia(coverFile, "bizmanager/shops"); }
-        catch (e) { return NextResponse.json({ error: e instanceof Error ? e.message : "Erreur upload couverture" }, { status: 400 }); }
+        try {
+          const uploaded = await uploadMedia(coverFile, "bizmanager/shops");
+          if (uploaded) body.coverUrl = uploaded;
+        } catch (e) { return NextResponse.json({ error: e instanceof Error ? e.message : "Erreur upload couverture" }, { status: 400 }); }
       }
     } else {
       body = await request.json().catch(() => null);
@@ -172,12 +176,16 @@ export async function POST(request: NextRequest) {
       let coverUrl = String(fd.get("coverUrl") ?? "").trim();
 
       if (logoFile instanceof File && logoFile.size > 0) {
-        try { logoUrl = await uploadMedia(logoFile, "bizmanager/shops"); }
-        catch (e) { return NextResponse.json({ error: e instanceof Error ? e.message : "Erreur upload logo" }, { status: 400 }); }
+        try {
+          const uploaded = await uploadMedia(logoFile, "bizmanager/shops");
+          if (uploaded) logoUrl = uploaded;
+        } catch (e) { return NextResponse.json({ error: e instanceof Error ? e.message : "Erreur upload logo" }, { status: 400 }); }
       }
       if (coverFile instanceof File && coverFile.size > 0) {
-        try { coverUrl = await uploadMedia(coverFile, "bizmanager/shops"); }
-        catch (e) { return NextResponse.json({ error: e instanceof Error ? e.message : "Erreur upload couverture" }, { status: 400 }); }
+        try {
+          const uploaded = await uploadMedia(coverFile, "bizmanager/shops");
+          if (uploaded) coverUrl = uploaded;
+        } catch (e) { return NextResponse.json({ error: e instanceof Error ? e.message : "Erreur upload couverture" }, { status: 400 }); }
       }
 
       body = {

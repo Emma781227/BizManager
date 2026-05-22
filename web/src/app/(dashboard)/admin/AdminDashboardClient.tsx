@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, Construction } from "lucide-react";
+import { AlertTriangle, Construction, Trash2 } from "lucide-react";
 
 type OverviewPayload = {
   shopsCount: number;
@@ -169,6 +169,8 @@ export default function AdminDashboardClient() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [pendingShopId, setPendingShopId] = useState<string | null>(null);
+  const [deleteConfirmShop, setDeleteConfirmShop] = useState<ShopRow | null>(null);
+  const [deletingShopId, setDeletingShopId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"boutiques" | "performance" | "moderation">("boutiques");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
   const [currentPage, setCurrentPage] = useState(1);
@@ -221,6 +223,28 @@ export default function AdminDashboardClient() {
       setTimeout(() => setActionError(null), 3000);
     } finally {
       setPendingShopId(null);
+    }
+  }
+
+  async function deleteShop(shopId: string) {
+    setDeletingShopId(shopId);
+    setActionError(null);
+    try {
+      const res = await fetch(`/api/admin/shops?shopId=${encodeURIComponent(shopId)}`, { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error((data as { error?: string }).error ?? "Erreur serveur");
+      }
+      setShops((prev) => prev.filter((s) => s.id !== shopId));
+      setSuccessMsg("Boutique supprimée avec succès.");
+      setTimeout(() => setSuccessMsg(null), 3000);
+      fetch("/api/admin/overview").then((r) => r.ok && r.json()).then((ov) => ov && setOverview(ov));
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : "Impossible de supprimer la boutique.");
+      setTimeout(() => setActionError(null), 4000);
+    } finally {
+      setDeletingShopId(null);
+      setDeleteConfirmShop(null);
     }
   }
 
@@ -488,21 +512,37 @@ export default function AdminDashboardClient() {
                           <td style={{ padding: "11px 12px", color: "#667085", textAlign: "center" }}>{shop.ordersCount}</td>
                           <td style={{ padding: "11px 12px", color: "#98A2B3", fontSize: 12, whiteSpace: "nowrap" }}>{formatDate(shop.createdAt)}</td>
                           <td style={{ padding: "11px 12px" }}>
-                            <button
-                              disabled={pendingShopId === shop.id}
-                              onClick={() => togglePublication(shop.id, shop.isPublished)}
-                              style={{
-                                padding: "5px 10px", borderRadius: 7, fontSize: 11, fontWeight: 600, border: "1.5px solid",
-                                borderColor: shop.isPublished ? "#EF4444" : "#0A8F45",
-                                background: shop.isPublished ? "#FDE8E8" : "#DDF6E7",
-                                color: shop.isPublished ? "#EF4444" : "#0A8F45",
-                                cursor: pendingShopId === shop.id ? "wait" : "pointer",
-                                opacity: pendingShopId === shop.id ? 0.6 : 1,
-                                whiteSpace: "nowrap",
-                              }}
-                            >
-                              {pendingShopId === shop.id ? "…" : shop.isPublished ? "Désactiver" : "Activer"}
-                            </button>
+                            <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                              <button
+                                disabled={pendingShopId === shop.id}
+                                onClick={() => togglePublication(shop.id, shop.isPublished)}
+                                style={{
+                                  padding: "5px 10px", borderRadius: 7, fontSize: 11, fontWeight: 600, border: "1.5px solid",
+                                  borderColor: shop.isPublished ? "#EF4444" : "#0A8F45",
+                                  background: shop.isPublished ? "#FDE8E8" : "#DDF6E7",
+                                  color: shop.isPublished ? "#EF4444" : "#0A8F45",
+                                  cursor: pendingShopId === shop.id ? "wait" : "pointer",
+                                  opacity: pendingShopId === shop.id ? 0.6 : 1,
+                                  whiteSpace: "nowrap",
+                                }}
+                              >
+                                {pendingShopId === shop.id ? "…" : shop.isPublished ? "Désactiver" : "Activer"}
+                              </button>
+                              <button
+                                disabled={deletingShopId === shop.id}
+                                onClick={() => setDeleteConfirmShop(shop)}
+                                title="Supprimer la boutique"
+                                style={{
+                                  padding: "5px 9px", borderRadius: 7, border: "1.5px solid #F5C6C6",
+                                  background: "#FDE8E8", color: "#EF4444", display: "flex", alignItems: "center", gap: 4,
+                                  cursor: deletingShopId === shop.id ? "wait" : "pointer",
+                                  opacity: deletingShopId === shop.id ? 0.5 : 1, flexShrink: 0,
+                                  fontSize: 11, fontWeight: 600, whiteSpace: "nowrap",
+                                }}
+                              >
+                                <Trash2 size={12} /> Supprimer
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))
@@ -686,6 +726,52 @@ export default function AdminDashboardClient() {
             </div>
           </div>
         </>
+      )}
+      {/* Delete confirmation modal */}
+      {deleteConfirmShop && (
+        <div
+          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 10000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
+          onClick={(e) => { if (e.target === e.currentTarget) setDeleteConfirmShop(null); }}
+        >
+          <div style={{ background: "#fff", borderRadius: 16, padding: "28px 28px 24px", maxWidth: 420, width: "100%", boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}>
+            <div style={{ width: 48, height: 48, borderRadius: 12, background: "#FDE8E8", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
+              <Trash2 size={22} color="#EF4444" />
+            </div>
+            <h2 style={{ fontSize: 17, fontWeight: 700, color: "#1F2A24", margin: "0 0 8px" }}>Supprimer la boutique</h2>
+            <p style={{ fontSize: 14, color: "#667085", margin: "0 0 6px", lineHeight: 1.5 }}>
+              Vous êtes sur le point de supprimer{" "}
+              <strong style={{ color: "#1F2A24" }}>{deleteConfirmShop.name}</strong>.
+            </p>
+            <p style={{ fontSize: 13, color: "#EF4444", margin: "0 0 24px", lineHeight: 1.5 }}>
+              Cette action supprimera définitivement toutes les données associées : produits, commandes, clients et logs. Elle est irréversible.
+            </p>
+            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+              <button
+                onClick={() => setDeleteConfirmShop(null)}
+                disabled={deletingShopId === deleteConfirmShop.id}
+                style={{ padding: "9px 18px", borderRadius: 9, border: "1.5px solid #E8ECEA", background: "#fff", color: "#1F2A24", fontSize: 14, fontWeight: 600, cursor: "pointer" }}
+              >
+                Annuler
+              </button>
+              <button
+                onClick={() => deleteShop(deleteConfirmShop.id)}
+                disabled={deletingShopId === deleteConfirmShop.id}
+                style={{
+                  padding: "9px 18px", borderRadius: 9, border: "none", background: "#EF4444", color: "#fff", fontSize: 14, fontWeight: 600,
+                  cursor: deletingShopId === deleteConfirmShop.id ? "wait" : "pointer",
+                  opacity: deletingShopId === deleteConfirmShop.id ? 0.7 : 1,
+                  display: "flex", alignItems: "center", gap: 7,
+                }}
+              >
+                {deletingShopId === deleteConfirmShop.id ? (
+                  <><span style={{ width: 14, height: 14, border: "2px solid rgba(255,255,255,0.4)", borderTopColor: "#fff", borderRadius: "50%", display: "inline-block", animation: "adm-spin 0.7s linear infinite" }} /> Suppression…</>
+                ) : (
+                  <><Trash2 size={14} /> Supprimer définitivement</>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

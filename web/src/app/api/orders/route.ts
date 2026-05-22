@@ -23,6 +23,7 @@ export async function GET(request: NextRequest) {
 
   const statusFilter  = request.nextUrl.searchParams.get("status")?.trim();
   const channelFilter = request.nextUrl.searchParams.get("channel")?.trim();
+  const searchQuery   = request.nextUrl.searchParams.get("q")?.trim() ?? "";
 
   const parsedStatus: AllowedOrderStatus | null =
     statusFilter && (allowedStatuses as readonly string[]).includes(statusFilter)
@@ -37,6 +38,11 @@ export async function GET(request: NextRequest) {
       shopId: shop.id,
       ...(parsedStatus  ? { status:  parsedStatus  } : {}),
       ...(parsedChannel ? { channel: parsedChannel } : {}),
+      ...(searchQuery ? { OR: [
+        { id: { contains: searchQuery, mode: "insensitive" } },
+        { customer: { fullName: { contains: searchQuery, mode: "insensitive" } } },
+        { customer: { phone:    { contains: searchQuery } } },
+      ]} : {}),
     },
     include: {
       customer: { select: { id: true, fullName: true, phone: true } },
@@ -46,6 +52,7 @@ export async function GET(request: NextRequest) {
           product: { select: { id: true, name: true } },
         },
       },
+      statusHistory: { orderBy: { changedAt: "asc" } },
     },
     orderBy: { createdAt: "desc" },
   });
@@ -99,7 +106,7 @@ export async function POST(request: NextRequest) {
       : "manual";
 
   const order = await prisma.$transaction(async tx => {
-    return tx.order.create({
+    const created = await tx.order.create({
       data: {
         shopId:        shop.id,
         customerId:    customer.id,
@@ -124,6 +131,10 @@ export async function POST(request: NextRequest) {
         },
       },
     });
+    await tx.orderStatusHistory.create({
+      data: { orderId: created.id, status: "new" },
+    });
+    return created;
   });
 
   void sendNewOrderNotification({

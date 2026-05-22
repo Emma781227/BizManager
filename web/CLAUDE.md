@@ -164,6 +164,7 @@ public/
 | `Customer` | Clients d'une boutique | shopId, phone, email |
 | `Order` | Commandes | shopId, customerId, status, paymentStatus, totalAmount |
 | `OrderItem` | Lignes de commande | orderId, productId, variantId?, variantLabel?, quantity, unitPrice, lineTotal |
+| `OrderStatusHistory` | Historique des statuts de commande | orderId, status (OrderStatus), changedAt, note? |
 | `WhatsappLog` | Historique messages WhatsApp | shopId, orderId, type, message |
 
 ### Plans d'abonnement

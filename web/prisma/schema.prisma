@@ -191,11 +191,12 @@ model Product {
   sku           String?
   unitPrice     Decimal    @db.Decimal(12, 2)
   stock         Int        @default(0)
-  syncStatus    SyncStatus @default(ok)
-  imageUrl      String?
-  imageVariants String[]   @default([])
-  isActive      Boolean    @default(true)
-  hasVariants   Boolean    @default(false)
+  syncStatus        SyncStatus @default(ok)
+  imageUrl          String?
+  imageVariants     String[]   @default([])
+  isActive          Boolean    @default(true)
+  hasVariants       Boolean    @default(false)
+  lowStockThreshold Int        @default(5)
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
 
@@ -259,10 +260,11 @@ model Order {
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
-  shop         Shop          @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  customer     Customer      @relation(fields: [customerId], references: [id], onDelete: Restrict)
-  items        OrderItem[]
-  whatsappLogs WhatsappLog[]
+  shop          Shop                 @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  customer      Customer             @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  items         OrderItem[]
+  whatsappLogs  WhatsappLog[]
+  statusHistory OrderStatusHistory[]
 
   @@index([shopId, createdAt])
   @@index([shopId, status])
@@ -287,6 +289,20 @@ model OrderItem {
 
   @@index([orderId])
   @@index([productId])
+}
+
+// ─── Order Status History ─────────────────────────────────────────────────────
+
+model OrderStatusHistory {
+  id        String      @id @default(cuid())
+  orderId   String
+  status    OrderStatus
+  changedAt DateTime    @default(now())
+  note      String?
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
 }
 
 // ─── WhatsApp ─────────────────────────────────────────────────────────────────

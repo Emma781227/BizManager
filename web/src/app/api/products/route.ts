@@ -38,7 +38,7 @@ function parseImageVariantsInput(value: FormDataEntryValue | null): string[] {
   } catch { /* fallback */ }
   return value.split(",").map(v => v.trim()).filter(Boolean);
 }
-async function saveProductMedia(file: File): Promise<string> {
+async function saveProductMedia(file: File): Promise<string | null> {
   return uploadMedia(file);
 }
 
@@ -120,8 +120,10 @@ export async function POST(request: NextRequest) {
       const uploadedVariants: string[] = [];
       for (const field of variantFileFields) {
         if (!(field instanceof File) || field.size === 0 || uploadedVariants.length >= 3) continue;
-        try { uploadedVariants.push(await saveProductMedia(field)); }
-        catch (e) { return NextResponse.json({ error: e instanceof Error ? e.message : "Media variante invalide" }, { status: 400 }); }
+        try {
+          const url = await saveProductMedia(field);
+          if (url) uploadedVariants.push(url);
+        } catch (e) { return NextResponse.json({ error: e instanceof Error ? e.message : "Media variante invalide" }, { status: 400 }); }
       }
 
       const categoryValue   = normalizeCategory(String(formData.get("category")   ?? ""));
@@ -137,18 +139,20 @@ export async function POST(request: NextRequest) {
         try { parsedVariants = JSON.parse(variantsRaw) as unknown[]; } catch { /* ignore */ }
       }
 
+      const lowStockRaw = parseIntegerInput(formData.get("lowStockThreshold"));
       body = {
-        name:         String(formData.get("name")        ?? "").trim(),
-        category:     mergedCategories[0] || undefined,
-        categories:   mergedCategories,
-        description:  String(formData.get("description") ?? "").trim() || undefined,
-        sku:          String(formData.get("sku")         ?? "").trim() || undefined,
-        unitPrice:    parseNumberInput(formData.get("unitPrice")),
-        stock:        parseIntegerInput(formData.get("stock")),
-        hasVariants:  hasVariantsRaw === "true" || hasVariantsRaw === "1",
-        variants:     parsedVariants,
-        imageUrl:     uploadedImageUrl || String(formData.get("imageUrl") ?? "").trim() || undefined,
-        imageVariants: mergedVariants,
+        name:              String(formData.get("name")        ?? "").trim(),
+        category:          mergedCategories[0] || undefined,
+        categories:        mergedCategories,
+        description:       String(formData.get("description") ?? "").trim() || undefined,
+        sku:               String(formData.get("sku")         ?? "").trim() || undefined,
+        unitPrice:         parseNumberInput(formData.get("unitPrice")),
+        stock:             parseIntegerInput(formData.get("stock")),
+        lowStockThreshold: Number.isFinite(lowStockRaw) ? lowStockRaw : 5,
+        hasVariants:       hasVariantsRaw === "true" || hasVariantsRaw === "1",
+        variants:          parsedVariants,
+        imageUrl:          uploadedImageUrl || String(formData.get("imageUrl") ?? "").trim() || undefined,
+        imageVariants:     mergedVariants,
       };
     } catch {
       return NextResponse.json({ error: "Erreur lors du traitement du formulaire" }, { status: 400 });
@@ -176,7 +180,8 @@ export async function POST(request: NextRequest) {
         description:  result.data.description?.trim() || null,
         sku:          result.data.sku?.trim()        || null,
         unitPrice:    String(result.data.unitPrice),
-        stock:        result.data.stock,
+        stock:             result.data.stock,
+        lowStockThreshold: result.data.lowStockThreshold ?? 5,
         hasVariants,
         imageUrl:     result.data.imageUrl           || null,
         imageVariants: result.data.imageVariants     ?? [],

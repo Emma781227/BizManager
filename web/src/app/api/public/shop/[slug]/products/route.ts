@@ -14,6 +14,8 @@ export async function GET(request: Request, context: RouteParams) {
   const minPriceParam = url.searchParams.get("minPrice")?.trim() ?? "";
   const maxPriceParam = url.searchParams.get("maxPrice")?.trim() ?? "";
   const sort = url.searchParams.get("sort") ?? "newest";
+  const limit  = parseInt(url.searchParams.get("limit")  ?? "0", 10);
+  const offset = parseInt(url.searchParams.get("offset") ?? "0", 10);
   const selectedCategories = url.searchParams
     .getAll("category")
     .map((item) => item.trim())
@@ -107,6 +109,7 @@ export async function GET(request: Request, context: RouteParams) {
       imageVariants: true,
       category: true,
       categories: true,
+      hasVariants: true,
       createdAt: true,
     },
     orderBy:
@@ -117,6 +120,7 @@ export async function GET(request: Request, context: RouteParams) {
           : sort === "name_asc"
             ? { name: "asc" }
             : { createdAt: "desc" },
+    ...(limit > 0 ? { take: limit, skip: offset } : {}),
   });
 
   const categoryRows = await prisma.product.findMany({
@@ -143,6 +147,7 @@ export async function GET(request: Request, context: RouteParams) {
     data: products,
     meta: {
       categories: allCategories,
+      hasMore: limit > 0 ? products.length === limit : false,
     },
   });
 }
