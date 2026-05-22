@@ -185,7 +185,7 @@ const CSS = `
 
   /* ── Filter bar ──────────────────────────────────────────────────── */
   .sp-filters {
-    display: flex; align-items: center; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;
+    display: flex; align-items: center; gap: 8px; margin-bottom: 20px; flex-wrap: wrap;
   }
   .sp-select {
     height: 36px; padding: 0 12px; border: 1.5px solid #E8ECEA;
@@ -194,6 +194,55 @@ const CSS = `
   }
   .sp-select:focus { border-color: #0A8F45; }
   .sp-count { font-size: 12px; color: #98A2B3; margin-left: auto; flex-shrink: 0; }
+  .sp-filter-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    height: 36px; padding: 0 14px; border: 1.5px solid #E8ECEA;
+    border-radius: 8px; font-size: 12px; font-weight: 600; color: #1F2A24;
+    background: #fff; cursor: pointer; transition: all .15s; white-space: nowrap; flex-shrink: 0;
+  }
+  .sp-filter-btn:hover { border-color: #0A8F45; color: #0A8F45; }
+  .sp-filter-btn.has-active { background: #EAF7EF; border-color: #0A8F45; color: #0A8F45; }
+  .sp-filter-badge {
+    min-width: 18px; height: 18px; background: #0A8F45; color: #fff;
+    border-radius: 9px; font-size: 10px; font-weight: 800;
+    display: inline-flex; align-items: center; justify-content: center; padding: 0 4px;
+  }
+  .sp-active-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    height: 28px; padding: 0 8px 0 11px;
+    background: #EAF7EF; border: 1.5px solid #C3EDD7; border-radius: 14px;
+    font-size: 11px; font-weight: 600; color: #0A8F45; white-space: nowrap; flex-shrink: 0;
+  }
+  .sp-active-chip button {
+    background: none; border: none; cursor: pointer; color: #0A8F45;
+    padding: 0; line-height: 1; display: flex; align-items: center;
+  }
+
+  /* ── Filter drawer ───────────────────────────────────────────────── */
+  .sp-filter-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 400;
+    opacity: 0; animation: backdropIn .2s ease forwards;
+  }
+  .sp-filter-drawer {
+    position: fixed; top: 0; right: 0; bottom: 0; width: 320px; max-width: 92vw;
+    background: #fff; z-index: 401; display: flex; flex-direction: column;
+    box-shadow: -8px 0 40px rgba(0,0,0,.14);
+    transform: translateX(100%); animation: drawerIn .25s ease forwards;
+  }
+  .sp-filter-section { padding: 20px; border-bottom: 1px solid #F4F6F5; }
+  .sp-filter-section-title {
+    font-size: 10px; font-weight: 700; color: #98A2B3;
+    text-transform: uppercase; letter-spacing: .08em; margin-bottom: 12px;
+  }
+  .sp-filter-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .sp-filter-chip {
+    height: 34px; padding: 0 14px; border-radius: 17px;
+    border: 1.5px solid #E8ECEA; font-size: 12px; font-weight: 600;
+    cursor: pointer; background: #fff; color: #1F2A24;
+    transition: all .15s; white-space: nowrap;
+  }
+  .sp-filter-chip.active { background: #0A8F45; color: #fff; border-color: #0A8F45; }
+  .sp-filter-chip:not(.active):hover { border-color: #0A8F45; color: #0A8F45; }
 
   /* ── Product grid ────────────────────────────────────────────────── */
   .sp-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
@@ -480,16 +529,15 @@ export default function ShopPage() {
   const [shop, setShop] = useState<Shop | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [products, setProducts] = useState<Product[]>([]);
-  const [productsLoading, setProductsLoading] = useState(false);
   const [apiCategories, setApiCategories] = useState<string[]>([]);
 
   const [activeCategory, setActiveCategory] = useState('all');
-  const [searchText, setSearchText] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [selectedPrice, setSelectedPrice] = useState('all');
-  const [selectedAvailability, setSelectedAvailability] = useState('all');
-  const [selectedSort, setSelectedSort] = useState('newest');
+  const [searchText,     setSearchText]     = useState('');
+  const [debouncedSearch,setDebouncedSearch]= useState('');
+  const [sortBy,         setSortBy]         = useState('newest');
+  const [priceRange,     setPriceRange]     = useState('all');
+  const [stockFilter,    setStockFilter]    = useState('all');
+  const [filterOpen,     setFilterOpen]     = useState(false);
 
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
@@ -499,14 +547,13 @@ export default function ShopPage() {
   const [headerCompact, setHeaderCompact] = useState(false);
   const [toast, setToast] = useState<{ name: string } | null>(null);
 
-  // ── Infinite scroll ───────────────────────────────────────────────
+  // ── Products (all fetched, filtered client-side) ──────────────────
   const PAGE_SIZE = 16;
-  const [offset,      setOffset]      = useState(0);
-  const [hasMore,     setHasMore]     = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const sentinelRef    = useRef<HTMLDivElement>(null);
-  const isFetchingRef  = useRef(false);
-  const loadMoreFnRef  = useRef<(() => void) | null>(null);
+  const [allProducts,     setAllProducts]     = useState<Product[]>([]);
+  const [productsLoading, setProductsLoading] = useState(false);
+  const [visibleCount,    setVisibleCount]    = useState(PAGE_SIZE);
+  const sentinelRef   = useRef<HTMLDivElement>(null);
+  const loadMoreFnRef = useRef<(() => void) | null>(null);
 
   const searchInputRef  = useRef<HTMLInputElement>(null);
   const suggestRef      = useRef<HTMLDivElement>(null);
@@ -705,88 +752,39 @@ export default function ShopPage() {
     return () => clearTimeout(t);
   }, [searchText]);
 
-  // ── Build filter params (shared by initial load + loadMore) ──────
-  const buildProductParams = (ofs: number) => {
-    const p = new URLSearchParams();
-    if (debouncedSearch) p.append('q', debouncedSearch);
-    if (activeCategory !== 'all') p.append('category', activeCategory);
-    if (selectedAvailability === 'in-stock') p.append('inStock', '1');
-    else if (selectedAvailability === 'low-stock') p.append('stockStatus', 'low');
-    else if (selectedAvailability === 'out-of-stock') p.append('stockStatus', 'out');
-    if (selectedPrice === '0-25000') { p.append('minPrice', '0'); p.append('maxPrice', '25000'); }
-    else if (selectedPrice === '25000-50000') { p.append('minPrice', '25000'); p.append('maxPrice', '50000'); }
-    else if (selectedPrice === '50000+') p.append('minPrice', '50000');
-    if (selectedSort !== 'newest') p.append('sort', selectedSort);
-    p.append('limit', String(PAGE_SIZE));
-    p.append('offset', String(ofs));
-    return p;
-  };
-
-  // ── Initial load (resets on filter change) ────────────────────────
+  // ── Fetch all products (server: text search only) ─────────────────
   useEffect(() => {
     if (!slug) return;
     setProductsLoading(true);
-    setProducts([]);
-    setOffset(0);
-    setHasMore(false);
-    isFetchingRef.current = false;
-
+    setAllProducts([]);
+    setVisibleCount(PAGE_SIZE);
     let cancelled = false;
     (async () => {
       try {
         const p = new URLSearchParams();
         if (debouncedSearch) p.append('q', debouncedSearch);
-        if (activeCategory !== 'all') p.append('category', activeCategory);
-        if (selectedAvailability === 'in-stock') p.append('inStock', '1');
-        else if (selectedAvailability === 'low-stock') p.append('stockStatus', 'low');
-        else if (selectedAvailability === 'out-of-stock') p.append('stockStatus', 'out');
-        if (selectedPrice === '0-25000') { p.append('minPrice', '0'); p.append('maxPrice', '25000'); }
-        else if (selectedPrice === '25000-50000') { p.append('minPrice', '25000'); p.append('maxPrice', '50000'); }
-        else if (selectedPrice === '50000+') p.append('minPrice', '50000');
-        if (selectedSort !== 'newest') p.append('sort', selectedSort);
-        p.append('limit', String(PAGE_SIZE));
-        p.append('offset', '0');
         const res = await fetch(`/api/public/shop/${slug}/products?${p}`);
         if (!res.ok) throw new Error('Failed');
         const data = await res.json();
         if (cancelled) return;
-        const items: Product[] = data?.data ?? [];
-        setProducts(items);
-        setHasMore(data.meta?.hasMore ?? items.length >= PAGE_SIZE);
-        setOffset(items.length);
+        setAllProducts(data?.data ?? []);
         if (data.meta?.categories) setApiCategories(data.meta.categories);
       } catch {
-        if (!cancelled) setProducts([]);
+        if (!cancelled) setAllProducts([]);
       } finally {
         if (!cancelled) setProductsLoading(false);
       }
     })();
-
     return () => { cancelled = true; };
-  }, [slug, debouncedSearch, activeCategory, selectedAvailability, selectedPrice, selectedSort]);
+  }, [slug, debouncedSearch]);
 
-  // ── loadMore — kept in a ref so observer always calls the latest ──
-  const loadMore = () => {
-    if (isFetchingRef.current || !hasMore) return;
-    isFetchingRef.current = true;
-    setLoadingMore(true);
-    fetch(`/api/public/shop/${slug}/products?${buildProductParams(offset)}`)
-      .then(r => r.ok ? r.json() : Promise.reject())
-      .then(data => {
-        const items: Product[] = data?.data ?? [];
-        setProducts(prev => {
-          const seen = new Set(prev.map(x => x.id));
-          return [...prev, ...items.filter(i => !seen.has(i.id))];
-        });
-        setHasMore(data.meta?.hasMore ?? items.length >= PAGE_SIZE);
-        setOffset(prev => prev + items.length);
-      })
-      .catch(() => {})
-      .finally(() => { isFetchingRef.current = false; setLoadingMore(false); });
-  };
+  // ── Reset visible count on any client filter change ───────────────
+  useEffect(() => { setVisibleCount(PAGE_SIZE); }, [activeCategory, priceRange, stockFilter, sortBy, debouncedSearch]);
+
+  // ── Sentinel increments visibleCount (no more API calls) ─────────
+  const loadMore = () => setVisibleCount(c => c + PAGE_SIZE);
   loadMoreFnRef.current = loadMore;
 
-  // ── IntersectionObserver — set up once, always calls latest fn ────
   useEffect(() => {
     const el = sentinelRef.current;
     if (!el) return;
@@ -817,6 +815,37 @@ export default function ShopPage() {
   const whatsappUrl = shop.whatsappNumber
     ? `https://wa.me/${shop.whatsappNumber.replace(/[^0-9]/g, '')}`
     : null;
+
+  // ── Client-side filter + sort ─────────────────────────────────────
+  let filteredProducts = allProducts;
+  if (activeCategory !== 'all') {
+    filteredProducts = filteredProducts.filter(p =>
+      p.category === activeCategory || (p.categories ?? []).includes(activeCategory)
+    );
+  }
+  if      (priceRange === '0-25000')      filteredProducts = filteredProducts.filter(p => +p.unitPrice <= 25000);
+  else if (priceRange === '25000-50000')  filteredProducts = filteredProducts.filter(p => +p.unitPrice > 25000 && +p.unitPrice <= 50000);
+  else if (priceRange === '50000+')       filteredProducts = filteredProducts.filter(p => +p.unitPrice > 50000);
+  if      (stockFilter === 'in')  filteredProducts = filteredProducts.filter(p => p.stock > 0);
+  else if (stockFilter === 'low') filteredProducts = filteredProducts.filter(p => p.stock > 0 && p.stock <= 5);
+  else if (stockFilter === 'out') filteredProducts = filteredProducts.filter(p => p.stock <= 0);
+  if (sortBy !== 'newest') {
+    filteredProducts = [...filteredProducts].sort((a, b) =>
+      sortBy === 'price_asc'  ? +a.unitPrice - +b.unitPrice :
+      sortBy === 'price_desc' ? +b.unitPrice - +a.unitPrice :
+      a.name.localeCompare(b.name, 'fr')
+    );
+  }
+  const displayedProducts = filteredProducts.slice(0, visibleCount);
+  const hasMore            = displayedProducts.length < filteredProducts.length;
+
+  const PRICE_LABEL: Record<string, string> = {
+    '0-25000': '< 25 000 FCFA', '25000-50000': '25 – 50 000 FCFA', '50000+': '50 000+ FCFA',
+  };
+  const STOCK_LABEL: Record<string, string> = {
+    'in': 'En stock', 'low': 'Stock faible', 'out': 'Rupture',
+  };
+  const activeFilterCount = (priceRange !== 'all' ? 1 : 0) + (stockFilter !== 'all' ? 1 : 0) + (sortBy !== 'newest' ? 1 : 0);
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#F8FAF9' }}>
@@ -956,7 +985,7 @@ export default function ShopPage() {
         {/* Stats strip */}
         <div className="sp-stats">
           <div className="sp-stat">
-            <div className="sp-stat-val">{shop.productsCount || products.length || '—'}</div>
+            <div className="sp-stat-val">{shop.productsCount || allProducts.length || '—'}</div>
             <div className="sp-stat-lbl">Produits</div>
           </div>
           <div className="sp-stat">
@@ -992,25 +1021,35 @@ export default function ShopPage() {
 
         {/* Filter bar */}
         <div className="sp-filters">
-          <select className="sp-select" value={selectedSort} onChange={e => setSelectedSort(e.target.value)}>
+          <button
+            className={`sp-filter-btn${activeFilterCount > 0 ? ' has-active' : ''}`}
+            onClick={() => setFilterOpen(true)}
+          >
+            ⚙ Filtres
+            {activeFilterCount > 0 && <span className="sp-filter-badge">{activeFilterCount}</span>}
+          </button>
+
+          <select className="sp-select" value={sortBy} onChange={e => setSortBy(e.target.value)}>
             <option value="newest">Plus récents</option>
-            <option value="price_asc">Prix croissant</option>
-            <option value="price_desc">Prix décroissant</option>
+            <option value="price_asc">Prix ↑</option>
+            <option value="price_desc">Prix ↓</option>
             <option value="name_asc">Nom A–Z</option>
           </select>
-          <select className="sp-select" value={selectedPrice} onChange={e => setSelectedPrice(e.target.value)}>
-            <option value="all">Tous les prix</option>
-            <option value="0-25000">0 – 25 000 FCFA</option>
-            <option value="25000-50000">25 – 50 000 FCFA</option>
-            <option value="50000+">50 000+ FCFA</option>
-          </select>
-          <select className="sp-select" value={selectedAvailability} onChange={e => setSelectedAvailability(e.target.value)}>
-            <option value="all">Disponibilité</option>
-            <option value="in-stock">En stock</option>
-            <option value="low-stock">Stock faible</option>
-            <option value="out-of-stock">Rupture</option>
-          </select>
-          <span className="sp-count">{products.length} produit{products.length !== 1 ? 's' : ''}</span>
+
+          {priceRange !== 'all' && (
+            <span className="sp-active-chip">
+              {PRICE_LABEL[priceRange]}
+              <button onClick={() => setPriceRange('all')} aria-label="Retirer filtre prix"><X size={10} /></button>
+            </span>
+          )}
+          {stockFilter !== 'all' && (
+            <span className="sp-active-chip">
+              {STOCK_LABEL[stockFilter]}
+              <button onClick={() => setStockFilter('all')} aria-label="Retirer filtre disponibilité"><X size={10} /></button>
+            </span>
+          )}
+
+          <span className="sp-count">{filteredProducts.length} produit{filteredProducts.length !== 1 ? 's' : ''}</span>
         </div>
 
         {/* Product grid / skeleton / empty */}
@@ -1027,29 +1066,41 @@ export default function ShopPage() {
               </div>
             ))}
           </div>
-        ) : products.length === 0 ? (
+        ) : filteredProducts.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '72px 0' }}>
             <div style={{ fontSize: 48, marginBottom: 14 }}>📦</div>
             <div style={{ fontSize: 16, fontWeight: 700, color: '#1F2A24', marginBottom: 6 }}>Aucun produit disponible</div>
-            <div style={{ fontSize: 13, color: '#98A2B3' }}>Essayez de modifier vos filtres</div>
+            <div style={{ fontSize: 13, color: '#98A2B3' }}>
+              {activeFilterCount > 0 || activeCategory !== 'all'
+                ? 'Aucun produit ne correspond à ces filtres'
+                : 'Cette boutique n\'a pas encore de produits'}
+            </div>
+            {(activeFilterCount > 0 || activeCategory !== 'all') && (
+              <button
+                onClick={() => { setPriceRange('all'); setStockFilter('all'); setSortBy('newest'); setActiveCategory('all'); }}
+                style={{ marginTop: 14, height: 36, padding: '0 16px', background: '#0A8F45', color: '#fff', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+              >
+                Réinitialiser les filtres
+              </button>
+            )}
           </div>
         ) : (
           <div className="sp-grid">
-            {products.map((product, idx) => renderProductCard(product, idx))}
+            {displayedProducts.map((product, idx) => renderProductCard(product, idx))}
           </div>
         )}
 
-        {/* ── Infinite scroll sentinel ─────────────────────────── */}
-        {products.length > 0 && (
+        {/* ── Virtual scroll sentinel ───────────────────────── */}
+        {filteredProducts.length > 0 && (
           <>
             <div ref={sentinelRef} className="sp-sentinel" aria-hidden />
-            {loadingMore && (
+            {hasMore && (
               <div className="sp-loading-more">
                 <div className="sp-loading-spinner" />
                 Chargement des produits…
               </div>
             )}
-            {!hasMore && !productsLoading && !loadingMore && products.length >= PAGE_SIZE && (
+            {!hasMore && !productsLoading && filteredProducts.length >= PAGE_SIZE && (
               <div className="sp-end-msg">— Tous les produits sont affichés —</div>
             )}
           </>
@@ -1116,6 +1167,93 @@ export default function ShopPage() {
             <X size={14} />
           </button>
         </div>
+      )}
+
+      {/* ── Filter drawer ────────────────────────────────────────────── */}
+      {filterOpen && (
+        <>
+          <div className="sp-filter-backdrop" onClick={() => setFilterOpen(false)} />
+          <div className="sp-filter-drawer" role="dialog" aria-label="Filtres">
+            {/* Header */}
+            <div style={{ padding: '0 20px', height: 60, borderBottom: '1px solid #E8ECEA', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+              <span style={{ fontWeight: 800, fontSize: 16, color: '#1F2A24' }}>Filtres</span>
+              <div style={{ display: 'flex', gap: 8 }}>
+                {activeFilterCount > 0 && (
+                  <button
+                    onClick={() => { setPriceRange('all'); setStockFilter('all'); setSortBy('newest'); }}
+                    style={{ height: 32, padding: '0 12px', background: 'none', border: '1.5px solid #E8ECEA', borderRadius: 8, cursor: 'pointer', fontSize: 12, fontWeight: 600, color: '#667085' }}
+                  >
+                    Réinitialiser
+                  </button>
+                )}
+                <button
+                  onClick={() => setFilterOpen(false)}
+                  style={{ width: 34, height: 34, border: '1.5px solid #E8ECEA', borderRadius: 8, background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#667085' }}
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            </div>
+
+            {/* Sections */}
+            <div style={{ overflowY: 'auto', flex: 1 }}>
+              {/* Sort */}
+              <div className="sp-filter-section">
+                <div className="sp-filter-section-title">Tri</div>
+                <div className="sp-filter-chips">
+                  {([
+                    { v: 'newest',     l: 'Plus récents' },
+                    { v: 'price_asc',  l: 'Prix croissant' },
+                    { v: 'price_desc', l: 'Prix décroissant' },
+                    { v: 'name_asc',   l: 'Nom A–Z' },
+                  ] as const).map(({ v, l }) => (
+                    <button key={v} className={`sp-filter-chip${sortBy === v ? ' active' : ''}`} onClick={() => setSortBy(v)}>{l}</button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Price */}
+              <div className="sp-filter-section">
+                <div className="sp-filter-section-title">Prix</div>
+                <div className="sp-filter-chips">
+                  {([
+                    { v: 'all',         l: 'Tous les prix' },
+                    { v: '0-25000',     l: '< 25 000 FCFA' },
+                    { v: '25000-50000', l: '25 – 50 000 FCFA' },
+                    { v: '50000+',      l: '50 000+ FCFA' },
+                  ] as const).map(({ v, l }) => (
+                    <button key={v} className={`sp-filter-chip${priceRange === v ? ' active' : ''}`} onClick={() => setPriceRange(v)}>{l}</button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Stock */}
+              <div className="sp-filter-section">
+                <div className="sp-filter-section-title">Disponibilité</div>
+                <div className="sp-filter-chips">
+                  {([
+                    { v: 'all', l: 'Tous' },
+                    { v: 'in',  l: '✓ En stock' },
+                    { v: 'low', l: '⚠ Stock faible' },
+                    { v: 'out', l: '✗ Rupture' },
+                  ] as const).map(({ v, l }) => (
+                    <button key={v} className={`sp-filter-chip${stockFilter === v ? ' active' : ''}`} onClick={() => setStockFilter(v)}>{l}</button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Footer CTA */}
+            <div style={{ padding: 20, borderTop: '1px solid #E8ECEA', flexShrink: 0 }}>
+              <button
+                onClick={() => setFilterOpen(false)}
+                style={{ width: '100%', height: 44, background: '#0A8F45', color: '#fff', border: 'none', borderRadius: 10, fontWeight: 700, fontSize: 14, cursor: 'pointer' }}
+              >
+                Voir {filteredProducts.length} produit{filteredProducts.length !== 1 ? 's' : ''}
+              </button>
+            </div>
+          </div>
+        </>
       )}
 
       {/* ── Cart drawer ───────────────────────────────────────────────── */}
