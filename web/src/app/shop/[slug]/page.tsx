@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Heart, Home, MessageCircle, Search, ShoppingBag, X } from 'lucide-react';
+import { Heart, Home, MessageCircle, Plus, Search, ShoppingBag, X } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 
@@ -202,8 +202,12 @@ const CSS = `
   .sp-card {
     background: #fff; border: 1px solid #E8ECEA; border-radius: 14px;
     overflow: hidden; transition: box-shadow .15s, transform .15s;
+    animation: cardIn .38s ease-out both; position: relative;
   }
   .sp-card:hover { box-shadow: 0 6px 28px rgba(16,24,40,.09); transform: translateY(-2px); }
+  .sp-card-link {
+    position: absolute; inset: 0; z-index: 1; border-radius: inherit;
+  }
   .sp-card-img-wrap {
     position: relative; padding-bottom: 75%; overflow: hidden; background: #F8FAF9;
   }
@@ -212,24 +216,61 @@ const CSS = `
     object-fit: cover; transition: transform .35s;
   }
   .sp-card:hover .sp-card-img { transform: scale(1.05); }
+  .sp-card-overlay {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    background: rgba(0,0,0,0); transition: background .28s; z-index: 1;
+    pointer-events: none;
+  }
+  .sp-card:hover .sp-card-overlay { background: rgba(0,0,0,0.38); }
+  .sp-card-overlay-label {
+    color: #fff; font-size: 12px; font-weight: 700; letter-spacing: .02em;
+    padding: 7px 15px; border-radius: 20px;
+    border: 1.5px solid rgba(255,255,255,0.55);
+    background: rgba(255,255,255,0.12); backdrop-filter: blur(6px);
+    opacity: 0; transform: translateY(5px);
+    transition: opacity .25s, transform .25s;
+    pointer-events: none; white-space: nowrap;
+  }
+  .sp-card:hover .sp-card-overlay-label { opacity: 1; transform: translateY(0); }
   .sp-card-stock {
     position: absolute; bottom: 8px; left: 8px;
     padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 600;
   }
+  @keyframes stockPulse {
+    0%, 100% { transform: scale(1); }
+    50%       { transform: scale(1.07); }
+  }
+  .sp-card-stock-urgent { animation: stockPulse 1.6s ease-in-out infinite; }
   .sp-card-fav {
     position: absolute; top: 8px; right: 8px; width: 30px; height: 30px;
     background: #fff; border: none; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
-    cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,.14); z-index: 1;
+    cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,.14); z-index: 3;
     transition: transform .15s;
   }
   .sp-card-fav:hover { transform: scale(1.1); }
-  .sp-card-body { padding: 11px 13px 13px; }
-  .sp-card-name {
-    font-size: 13px; font-weight: 700; color: #1F2A24;
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-bottom: 4px;
+  .sp-card-quick-add {
+    position: absolute; bottom: 8px; right: 8px; width: 32px; height: 32px;
+    background: #0A8F45; border: none; border-radius: 50%; color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; z-index: 3;
+    box-shadow: 0 3px 10px rgba(10,143,69,0.45);
+    opacity: 0; transform: scale(0.65) translateY(4px);
+    transition: opacity .22s, transform .22s, background .15s;
   }
-  .sp-card-price { font-size: 15px; font-weight: 800; color: #1F2A24; margin-bottom: 10px; }
+  .sp-card:hover .sp-card-quick-add { opacity: 1; transform: scale(1) translateY(0); }
+  .sp-card-quick-add:hover { background: #08763A; transform: scale(1.1) translateY(0) !important; }
+  .sp-card-body { padding: 11px 13px 13px; }
+  .sp-card-cat {
+    display: inline-block; font-size: 10px; font-weight: 700; color: #0A8F45;
+    text-transform: uppercase; letter-spacing: .05em; margin-bottom: 5px;
+  }
+  .sp-card-name {
+    font-size: 13px; font-weight: 700; color: #1F2A24; line-height: 1.4;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    overflow: hidden; margin-bottom: 6px;
+  }
+  .sp-card-price { font-size: 15px; font-weight: 800; color: #0A8F45; margin-bottom: 10px; }
   .sp-card-actions { display: flex; gap: 7px; }
   .sp-card-btn-see {
     height: 33px; padding: 0 11px;
@@ -243,11 +284,16 @@ const CSS = `
     flex: 1; height: 33px; background: #0A8F45; color: #fff;
     border: none; border-radius: 8px; font-size: 11px; font-weight: 600;
     cursor: pointer; transition: background .15s;
+    position: relative; z-index: 2;
   }
   .sp-card-btn-add:hover:not(:disabled) { background: #08763A; }
   .sp-card-btn-add:disabled { opacity: .4; cursor: default; }
 
   /* ── Skeleton ────────────────────────────────────────────────────── */
+  @keyframes cardIn {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
   @keyframes shimmer {
     0% { background-position: -600px 0; }
     100% { background-position: 600px 0; }
@@ -308,13 +354,21 @@ const CSS = `
     display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;
   }
 
-  /* ── Load more ───────────────────────────────────────────────────── */
-  .sp-load-more {
-    display: block; margin: 28px auto 0; height: 44px; padding: 0 36px;
-    background: #fff; color: #1F2A24; border: 1.5px solid #E8ECEA;
-    border-radius: 12px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all .15s;
+  /* ── Infinite scroll indicators ─────────────────────────────────── */
+  .sp-sentinel { height: 1px; margin-top: 16px; }
+  .sp-loading-more {
+    display: flex; align-items: center; justify-content: center;
+    gap: 10px; padding: 28px 0; color: #667085; font-size: 13px; font-weight: 500;
   }
-  .sp-load-more:hover { border-color: #0A8F45; color: #0A8F45; }
+  .sp-loading-spinner {
+    width: 20px; height: 20px; border: 2.5px solid #E8ECEA;
+    border-top-color: #0A8F45; border-radius: 50%;
+    animation: spin .7s linear infinite; flex-shrink: 0;
+  }
+  .sp-end-msg {
+    text-align: center; padding: 24px 0 8px;
+    font-size: 12px; color: #C8CED6; font-weight: 600; letter-spacing: .04em;
+  }
 
   /* ── Responsive ──────────────────────────────────────────────────── */
   @media (max-width: 1200px) {
@@ -350,6 +404,73 @@ const CSS = `
     .sp-shop-avatar { width: 58px; height: 58px; border-radius: 10px; }
     .sp-hero-name { font-size: 16px; }
   }
+
+  /* ── Search suggestions dropdown ────────────────────────────────── */
+  .sp-suggest-drop {
+    position: absolute; top: calc(100% + 6px); left: 0; right: 0;
+    background: #fff; border: 1px solid #E8ECEA; border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,.12); z-index: 999; overflow: hidden;
+  }
+  .sp-suggest-item {
+    width: 100%; display: flex; align-items: center; gap: 10px;
+    padding: 9px 14px; background: none; border: none;
+    border-bottom: 1px solid #F4F6F5; cursor: pointer;
+    text-align: left; transition: background .12s; text-decoration: none;
+    box-sizing: border-box;
+  }
+  .sp-suggest-item:hover { background: #F8FAF9; }
+  .sp-suggest-item:last-of-type { border-bottom: none; }
+  .sp-suggest-thumb {
+    width: 38px; height: 38px; border-radius: 8px; object-fit: cover;
+    background: #F0F2F1; flex-shrink: 0; display: flex; align-items: center;
+    justify-content: center; overflow: hidden;
+  }
+  .sp-suggest-msg { padding: 10px 14px; font-size: 12px; color: #98A2B3; }
+  .sp-suggest-footer {
+    padding: 9px 14px; display: flex; align-items: center;
+    justify-content: space-between; border-top: 1px solid #F4F6F5;
+    background: #F8FAF9; font-size: 12px; cursor: pointer;
+    width: 100%; border-left: none; border-right: none; border-bottom: none;
+    transition: background .12s;
+  }
+  .sp-suggest-footer:hover { background: #EAF7EF; }
+
+  /* ── Cart toast ──────────────────────────────────────────────────── */
+  @keyframes toastSlideIn {
+    from { opacity: 0; transform: translateY(-10px) scale(.97); }
+    to   { opacity: 1; transform: translateY(0)    scale(1); }
+  }
+  .sp-toast {
+    position: fixed; top: 76px; right: 20px; z-index: 9999;
+    background: #fff; border: 1px solid #E8ECEA; border-radius: 14px;
+    padding: 12px 14px; width: 300px; max-width: calc(100vw - 40px);
+    box-shadow: 0 8px 32px rgba(0,0,0,.12);
+    display: flex; align-items: flex-start; gap: 12px;
+    animation: toastSlideIn .22s ease;
+  }
+  .sp-toast-icon {
+    width: 36px; height: 36px; border-radius: 9px; background: #DDF6E7;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; font-size: 17px;
+  }
+  .sp-toast-close {
+    background: none; border: none; cursor: pointer;
+    color: #C8CED6; padding: 0; flex-shrink: 0; line-height: 1;
+    transition: color .15s;
+  }
+  .sp-toast-close:hover { color: #667085; }
+  .sp-toast-view {
+    background: none; border: none; cursor: pointer; padding: 0;
+    font-size: 12px; font-weight: 700; color: #0A8F45;
+    margin-top: 6px; display: block; transition: opacity .15s;
+  }
+  .sp-toast-view:hover { opacity: .75; }
+  @media (max-width: 768px) {
+    .sp-toast {
+      top: auto; bottom: 72px;
+      right: 16px; left: 16px; width: auto;
+    }
+  }
 `;
 
 export default function ShopPage() {
@@ -376,8 +497,24 @@ export default function ShopPage() {
   const [confirmedOrder, setConfirmedOrder] = useState<ConfirmedOrder | null>(null);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [headerCompact, setHeaderCompact] = useState(false);
+  const [toast, setToast] = useState<{ name: string } | null>(null);
 
-  const searchInputRef = useRef<HTMLInputElement>(null);
+  // ── Infinite scroll ───────────────────────────────────────────────
+  const PAGE_SIZE = 16;
+  const [offset,      setOffset]      = useState(0);
+  const [hasMore,     setHasMore]     = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const sentinelRef    = useRef<HTMLDivElement>(null);
+  const isFetchingRef  = useRef(false);
+  const loadMoreFnRef  = useRef<(() => void) | null>(null);
+
+  const searchInputRef  = useRef<HTMLInputElement>(null);
+  const suggestRef      = useRef<HTMLDivElement>(null);
+  const suggestDebRef   = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  const [suggestResults, setSuggestResults] = useState<Product[]>([]);
+  const [suggestLoading, setSuggestLoading] = useState(false);
+  const [showSuggest,    setShowSuggest]    = useState(false);
 
   const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
   const cartTotal = cart.reduce((s, i) => s + i.price * i.quantity, 0);
@@ -388,6 +525,41 @@ export default function ShopPage() {
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
+
+  // ── Search suggestions ────────────────────────────────────────────
+  useEffect(() => {
+    clearTimeout(suggestDebRef.current);
+    if (searchText.length < 2) { setSuggestResults([]); setShowSuggest(false); return; }
+    suggestDebRef.current = setTimeout(async () => {
+      if (!slug) return;
+      setSuggestLoading(true);
+      try {
+        const res  = await fetch(`/api/public/shop/${slug}/products?q=${encodeURIComponent(searchText)}&limit=6`);
+        const data = await res.json();
+        setSuggestResults(data?.data ?? []);
+        setShowSuggest(true);
+      } catch { /* ignore */ }
+      finally { setSuggestLoading(false); }
+    }, 200);
+    return () => clearTimeout(suggestDebRef.current);
+  }, [searchText, slug]);
+
+  useEffect(() => {
+    function onMouseDown(e: MouseEvent) {
+      if (suggestRef.current && !suggestRef.current.contains(e.target as Node)) {
+        setShowSuggest(false);
+      }
+    }
+    document.addEventListener('mousedown', onMouseDown);
+    return () => document.removeEventListener('mousedown', onMouseDown);
+  }, []);
+
+  // ── Toast auto-dismiss ────────────────────────────────────────────
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 3500);
+    return () => clearTimeout(t);
+  }, [toast]);
 
   // ── Favorites ─────────────────────────────────────────────────────
   const toggleFavorite = (productId: string, product?: Product) => {
@@ -424,7 +596,7 @@ export default function ShopPage() {
     const p = Number(unitPrice);
     return Number.isNaN(p) ? 'N/A' : `${p.toLocaleString('fr-FR')} FCFA`;
   };
-  const stockLabel = (stock: number) => stock <= 0 ? 'Rupture' : stock <= 5 ? 'Stock faible' : 'En stock';
+  const stockLabel = (stock: number) => stock <= 0 ? 'Rupture' : stock <= 5 ? `Plus que ${stock} en stock !` : 'En stock';
   const stockTone = (stock: number) => stock <= 0
     ? { color: '#dc2626', bg: '#fff1f2' }
     : stock <= 5
@@ -432,38 +604,62 @@ export default function ShopPage() {
       : { color: '#0A8F45', bg: '#DDF6E7' };
 
   // ── Product card ──────────────────────────────────────────────────
-  const renderProductCard = (product: Product) => {
-    const tone = stockTone(product.stock);
+  const renderProductCard = (product: Product, idx: number) => {
+    const tone  = stockTone(product.stock);
     const isFav = favorites.has(product.id);
+    const delay = Math.min(idx % PAGE_SIZE, 11) * 50;
     return (
-      <article key={product.id} className="sp-card">
+      <article key={product.id} className="sp-card" style={{ animationDelay: `${delay}ms` }}>
+        {/* Card-link — covers full surface, z-index: 1 */}
+        <Link
+          href={`/shop/${slug}/products/${product.id}`}
+          className="sp-card-link"
+          aria-label={`Voir ${product.name}`}
+        />
+
         <div className="sp-card-img-wrap">
-          <Link href={`/shop/${slug}/products/${product.id}`}>
-            {product.imageUrl
-              ? <img src={product.imageUrl} alt={product.name} className="sp-card-img" />
-              : <div className="sp-card-img" style={{ background: '#F0F2F1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32 }}>📦</div>
-            }
-          </Link>
-          <div className="sp-card-stock" style={{ background: tone.bg, color: tone.color }}>
+          {product.imageUrl
+            ? <img src={product.imageUrl} alt="" className="sp-card-img" />
+            : <div className="sp-card-img" style={{ background: '#F0F2F1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32 }}>📦</div>
+          }
+          <div className="sp-card-overlay" aria-hidden>
+            <span className="sp-card-overlay-label">Voir le produit →</span>
+          </div>
+          <div
+            className={`sp-card-stock${product.stock > 0 && product.stock <= 5 ? ' sp-card-stock-urgent' : ''}`}
+            style={{ background: tone.bg, color: tone.color }}
+          >
             {stockLabel(product.stock)}
           </div>
+          {/* z-index: 3 via CSS — au-dessus du card-link */}
           <button className="sp-card-fav" onClick={() => toggleFavorite(product.id, product)}>
             <span style={{ fontSize: 14, color: isFav ? '#EF4444' : '#D0D5DD' }}>{isFav ? '♥' : '♡'}</span>
           </button>
+          {product.stock > 0 && (
+            <button
+              className="sp-card-quick-add"
+              title="Ajouter au panier"
+              onClick={() => { addToCart(product); setToast({ name: product.name }); }}
+            >
+              <Plus style={{ width: 15, height: 15 }} />
+            </button>
+          )}
         </div>
+
         <div className="sp-card-body">
+          {(product.category || product.categories?.[0]) && (
+            <div className="sp-card-cat">{product.category || product.categories![0]}</div>
+          )}
           <div className="sp-card-name">{product.name}</div>
           <div className="sp-card-price">{formatPrice(product.unitPrice)}</div>
-          <div className="sp-card-actions">
-            <Link href={`/shop/${slug}/products/${product.id}`} className="sp-card-btn-see">Voir</Link>
-            <button
-              className="sp-card-btn-add"
-              disabled={product.stock <= 0}
-              onClick={() => { if (product.stock > 0) { addToCart(product); setCartOpen(true); } }}
-            >
-              {product.stock <= 0 ? 'Rupture' : 'Ajouter au panier'}
-            </button>
-          </div>
+          {/* z-index: 2 via CSS — "Voir" supprimé */}
+          <button
+            className="sp-card-btn-add"
+            disabled={product.stock <= 0}
+            onClick={() => { if (product.stock > 0) { addToCart(product); setToast({ name: product.name }); } }}
+          >
+            {product.stock <= 0 ? 'Rupture' : 'Ajouter au panier'}
+          </button>
         </div>
       </article>
     );
@@ -509,34 +705,97 @@ export default function ShopPage() {
     return () => clearTimeout(t);
   }, [searchText]);
 
+  // ── Build filter params (shared by initial load + loadMore) ──────
+  const buildProductParams = (ofs: number) => {
+    const p = new URLSearchParams();
+    if (debouncedSearch) p.append('q', debouncedSearch);
+    if (activeCategory !== 'all') p.append('category', activeCategory);
+    if (selectedAvailability === 'in-stock') p.append('inStock', '1');
+    else if (selectedAvailability === 'low-stock') p.append('stockStatus', 'low');
+    else if (selectedAvailability === 'out-of-stock') p.append('stockStatus', 'out');
+    if (selectedPrice === '0-25000') { p.append('minPrice', '0'); p.append('maxPrice', '25000'); }
+    else if (selectedPrice === '25000-50000') { p.append('minPrice', '25000'); p.append('maxPrice', '50000'); }
+    else if (selectedPrice === '50000+') p.append('minPrice', '50000');
+    if (selectedSort !== 'newest') p.append('sort', selectedSort);
+    p.append('limit', String(PAGE_SIZE));
+    p.append('offset', String(ofs));
+    return p;
+  };
+
+  // ── Initial load (resets on filter change) ────────────────────────
   useEffect(() => {
     if (!slug) return;
-    const load = async () => {
-      setProductsLoading(true);
+    setProductsLoading(true);
+    setProducts([]);
+    setOffset(0);
+    setHasMore(false);
+    isFetchingRef.current = false;
+
+    let cancelled = false;
+    (async () => {
       try {
         const p = new URLSearchParams();
         if (debouncedSearch) p.append('q', debouncedSearch);
         if (activeCategory !== 'all') p.append('category', activeCategory);
         if (selectedAvailability === 'in-stock') p.append('inStock', '1');
-        if (selectedAvailability === 'low-stock') p.append('stockStatus', 'low');
-        if (selectedAvailability === 'out-of-stock') p.append('stockStatus', 'out');
+        else if (selectedAvailability === 'low-stock') p.append('stockStatus', 'low');
+        else if (selectedAvailability === 'out-of-stock') p.append('stockStatus', 'out');
         if (selectedPrice === '0-25000') { p.append('minPrice', '0'); p.append('maxPrice', '25000'); }
         else if (selectedPrice === '25000-50000') { p.append('minPrice', '25000'); p.append('maxPrice', '50000'); }
         else if (selectedPrice === '50000+') p.append('minPrice', '50000');
         if (selectedSort !== 'newest') p.append('sort', selectedSort);
-        const res = await fetch(`/api/public/shop/${slug}/products?${p.toString()}`);
+        p.append('limit', String(PAGE_SIZE));
+        p.append('offset', '0');
+        const res = await fetch(`/api/public/shop/${slug}/products?${p}`);
         if (!res.ok) throw new Error('Failed');
         const data = await res.json();
-        setProducts(data?.data || []);
+        if (cancelled) return;
+        const items: Product[] = data?.data ?? [];
+        setProducts(items);
+        setHasMore(data.meta?.hasMore ?? items.length >= PAGE_SIZE);
+        setOffset(items.length);
         if (data.meta?.categories) setApiCategories(data.meta.categories);
       } catch {
-        setProducts([]);
+        if (!cancelled) setProducts([]);
       } finally {
-        setProductsLoading(false);
+        if (!cancelled) setProductsLoading(false);
       }
-    };
-    load();
+    })();
+
+    return () => { cancelled = true; };
   }, [slug, debouncedSearch, activeCategory, selectedAvailability, selectedPrice, selectedSort]);
+
+  // ── loadMore — kept in a ref so observer always calls the latest ──
+  const loadMore = () => {
+    if (isFetchingRef.current || !hasMore) return;
+    isFetchingRef.current = true;
+    setLoadingMore(true);
+    fetch(`/api/public/shop/${slug}/products?${buildProductParams(offset)}`)
+      .then(r => r.ok ? r.json() : Promise.reject())
+      .then(data => {
+        const items: Product[] = data?.data ?? [];
+        setProducts(prev => {
+          const seen = new Set(prev.map(x => x.id));
+          return [...prev, ...items.filter(i => !seen.has(i.id))];
+        });
+        setHasMore(data.meta?.hasMore ?? items.length >= PAGE_SIZE);
+        setOffset(prev => prev + items.length);
+      })
+      .catch(() => {})
+      .finally(() => { isFetchingRef.current = false; setLoadingMore(false); });
+  };
+  loadMoreFnRef.current = loadMore;
+
+  // ── IntersectionObserver — set up once, always calls latest fn ────
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) loadMoreFnRef.current?.();
+    }, { rootMargin: '0px 0px 300px 0px', threshold: 0 });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
 
   // ── Loading / error states ────────────────────────────────────────
   if (loading) return (
@@ -573,7 +832,7 @@ export default function ShopPage() {
             <span className="sp-logo-name">BizManager</span>
           </a>
 
-          <div className="sp-search-bar">
+          <div ref={suggestRef} className="sp-search-bar">
             <Search size={15} className="sp-search-icon-pos" />
             <input
               ref={searchInputRef}
@@ -582,7 +841,54 @@ export default function ShopPage() {
               placeholder="Rechercher un produit…"
               value={searchText}
               onChange={e => setSearchText(e.target.value)}
+              onFocus={() => suggestResults.length > 0 && setShowSuggest(true)}
             />
+
+            {showSuggest && (
+              <div className="sp-suggest-drop">
+                {suggestLoading && <div className="sp-suggest-msg">Recherche…</div>}
+
+                {!suggestLoading && suggestResults.length === 0 && (
+                  <div className="sp-suggest-msg">Aucun résultat pour « {searchText} »</div>
+                )}
+
+                {!suggestLoading && suggestResults.map(p => (
+                  <Link
+                    key={p.id}
+                    href={`/shop/${slug}/products/${p.id}`}
+                    className="sp-suggest-item"
+                    onClick={() => { setShowSuggest(false); setSearchText(''); }}
+                  >
+                    <div className="sp-suggest-thumb">
+                      {p.imageUrl
+                        ? <img src={p.imageUrl} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        : <span style={{ fontSize: 18 }}>📦</span>
+                      }
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: '#1F2A24', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {p.name}
+                      </div>
+                      {p.category && (
+                        <div style={{ fontSize: 11, color: '#98A2B3', marginTop: 1 }}>{p.category}</div>
+                      )}
+                    </div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#0A8F45', flexShrink: 0 }}>
+                      {formatPrice(p.unitPrice)}
+                    </div>
+                  </Link>
+                ))}
+
+                {!suggestLoading && suggestResults.length > 0 && (
+                  <button className="sp-suggest-footer" onClick={() => setShowSuggest(false)}>
+                    <span style={{ color: '#667085' }}>Voir tous les résultats</span>
+                    <span style={{ fontWeight: 700, color: '#0A8F45' }}>
+                      {suggestResults.length} produit{suggestResults.length > 1 ? 's' : ''} →
+                    </span>
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="sp-header-actions">
@@ -729,12 +1035,24 @@ export default function ShopPage() {
           </div>
         ) : (
           <div className="sp-grid">
-            {products.map(product => renderProductCard(product))}
+            {products.map((product, idx) => renderProductCard(product, idx))}
           </div>
         )}
 
-        {products.length >= 10 && (
-          <button className="sp-load-more">Afficher plus de produits</button>
+        {/* ── Infinite scroll sentinel ─────────────────────────── */}
+        {products.length > 0 && (
+          <>
+            <div ref={sentinelRef} className="sp-sentinel" aria-hidden />
+            {loadingMore && (
+              <div className="sp-loading-more">
+                <div className="sp-loading-spinner" />
+                Chargement des produits…
+              </div>
+            )}
+            {!hasMore && !productsLoading && !loadingMore && products.length >= PAGE_SIZE && (
+              <div className="sp-end-msg">— Tous les produits sont affichés —</div>
+            )}
+          </>
         )}
 
         {/* Reassurance */}
@@ -777,6 +1095,28 @@ export default function ShopPage() {
           <span>Panier</span>
         </button>
       </nav>
+
+      {/* ── Cart toast ───────────────────────────────────────────────── */}
+      {toast && (
+        <div className="sp-toast" role="alert">
+          <div className="sp-toast-icon">✓</div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#1F2A24' }}>Ajouté au panier</div>
+            <div style={{ fontSize: 12, color: '#667085', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 2 }}>
+              {toast.name}
+            </div>
+            <button
+              className="sp-toast-view"
+              onClick={() => { setToast(null); setCartOpen(true); }}
+            >
+              Voir le panier ({cartCount}) →
+            </button>
+          </div>
+          <button className="sp-toast-close" onClick={() => setToast(null)} aria-label="Fermer">
+            <X size={14} />
+          </button>
+        </div>
+      )}
 
       {/* ── Cart drawer ───────────────────────────────────────────────── */}
       {cartOpen && (
