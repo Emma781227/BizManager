@@ -48,12 +48,15 @@ const CHANNEL_ICONS: Record<string, React.ReactNode> = {
 // ─── CSS ──────────────────────────────────────────────────────────────────────
 const DB_CSS = `
 @keyframes db-spin { to { transform: rotate(360deg); } }
-.db-wrap { padding: 20px 28px; max-width: 1280px; margin: 0 auto; }
-.db-ctx  { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 14px; }
+.db-wrap { padding: 20px 28px; max-width: 1280px; margin: 0 auto; overflow-x: hidden; }
+.db-ctx  { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+.db-row1 > *, .db-row2 > *, .db-row3 > * { min-width: 0; }
+.db-ctx-create { margin-left: auto; }
 .db-kpi  { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 16px; }
 .db-row1 { display: grid; grid-template-columns: 1fr 400px; gap: 20px; margin-bottom: 18px; }
 .db-row2 { display: grid; grid-template-columns: 240px 1fr 1fr; gap: 16px; margin-bottom: 18px; }
 .db-row3 { display: grid; grid-template-columns: 1fr 380px; gap: 16px; }
+.db-quick-grid { display: flex; flex-direction: column; gap: 9px; }
 @media (max-width: 1100px) {
   .db-row1 { grid-template-columns: 1fr; }
   .db-row2 { grid-template-columns: 1fr 1fr; }
@@ -64,6 +67,21 @@ const DB_CSS = `
   .db-wrap { padding: 14px 12px; }
   .db-kpi  { grid-template-columns: repeat(2, 1fr); gap: 10px; }
   .db-row2 { grid-template-columns: 1fr; }
+  .db-quick-grid { display: grid; grid-template-columns: 1fr 1fr; }
+  .db-quick-grid > a, .db-quick-grid > button {
+    flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; gap: 6px; padding: 14px 8px; font-size: 11px !important;
+  }
+  .db-quick-grid > a > span, .db-quick-grid > button > span { font-size: 22px !important; }
+}
+@media (max-width: 640px) {
+  .db-ctx { flex-direction: column; align-items: stretch; }
+  .db-ctx-create { margin-left: 0; text-align: center; }
+  .db-col-hide-sm { display: none !important; }
+  .db-kpi { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .db-kpi > div { padding: 14px !important; }
+  .db-kpi > div > p:first-child { font-size: 10px !important; }
+  .db-kpi > div > p:nth-child(2) { font-size: 22px !important; }
 }
 `;
 
@@ -315,7 +333,7 @@ export default function DashboardPage() {
         <div className="db-ctx">
           <div style={{ display:"flex", alignItems:"center", gap:10 }}>
             <span style={{ fontSize:12, fontWeight:600, color:"#98A2B3", textTransform:"uppercase", letterSpacing:"0.05em" }}>Boutique active</span>
-            <div style={{ display:"flex", alignItems:"center", gap:100, background:"#fff", border:"1.5px solid #E8ECEA", borderRadius:10, padding:"6px 14px" }}>
+            <div style={{ display:"flex", alignItems:"center", gap:8, background:"#fff", border:"1.5px solid #E8ECEA", borderRadius:10, padding:"6px 14px" }}>
               <div style={{ width:8, height:8, borderRadius:"50%", background:"#0A8F45" }} />
               <select value={activeId} onChange={e => setActiveId(e.target.value)}
                 style={{ border:"none", outline:"none", fontSize:14, fontWeight:600, color:"#1F2A24", background:"transparent", cursor:"pointer" }}>
@@ -339,7 +357,7 @@ export default function DashboardPage() {
             <option value="90d">90 derniers jours</option>
           </select>
 
-          <a href="/settings" style={{ marginLeft:"auto", display:"inline-block", background:"#0A8F45", color:"#fff", borderRadius:10, padding:"8px 18px", fontSize:13, fontWeight:600, textDecoration:"none" }}>
+          <a href="/settings" className="db-ctx-create" style={{ display:"inline-block", background:"#0A8F45", color:"#fff", borderRadius:10, padding:"8px 18px", fontSize:13, fontWeight:600, textDecoration:"none" }}>
             + Créer une boutique
           </a>
         </div>
@@ -475,7 +493,7 @@ export default function DashboardPage() {
 
           <div style={{ ...card, padding:20 }}>
             <h3 style={{ fontSize:14, fontWeight:700, color:"#1F2A24", margin:"0 0 14px" }}>Actions rapides</h3>
-            <div style={{ display:"flex", flexDirection:"column", gap:9 }}>
+            <div className="db-quick-grid">
               {QUICK_ACTIONS.map((a, i) => {
                 const sharedStyle: React.CSSProperties = { display:"flex", alignItems:"center", gap:12, padding:"10px 12px", borderRadius:10, background:"#F8FAF9", border:"1.5px solid #E8ECEA", color:"#1F2A24", fontSize:13, fontWeight:500, cursor:"pointer", width:"100%", boxSizing:"border-box" as const, textDecoration:"none" };
                 const isShare = a.label === "Partager la boutique";
@@ -512,8 +530,13 @@ export default function DashboardPage() {
               <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12 }}>
                 <thead>
                   <tr style={{ background:"#F8FAF9" }}>
-                    {["Produit","Prix","Stock","Statut"].map(h => (
-                      <th key={h} style={{ padding:"7px 10px", textAlign:"left", color:"#98A2B3", fontWeight:600, fontSize:10, textTransform:"uppercase", borderBottom:"1px solid #E8ECEA", whiteSpace:"nowrap" }}>{h}</th>
+                    {[
+                      { label:"Produit" },
+                      { label:"Prix" },
+                      { label:"Stock", hideSm: true },
+                      { label:"Statut", hideSm: true },
+                    ].map(h => (
+                      <th key={h.label} className={h.hideSm ? "db-col-hide-sm" : ""} style={{ padding:"7px 10px", textAlign:"left", color:"#98A2B3", fontWeight:600, fontSize:10, textTransform:"uppercase", borderBottom:"1px solid #E8ECEA", whiteSpace:"nowrap" }}>{h.label}</th>
                     ))}
                   </tr>
                 </thead>
@@ -526,14 +549,14 @@ export default function DashboardPage() {
                       <tr key={p.id} style={{ borderBottom:"1px solid #E8ECEA", background: i % 2 === 0 ? "#fff" : "#FAFCFB" }}>
                         <td style={{ padding:"8px 10px", fontWeight:600, color:"#1F2A24", maxWidth:120, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.name}</td>
                         <td style={{ padding:"8px 10px", color:"#667085", whiteSpace:"nowrap" }}>{fmtAmount(p.unitPrice)}</td>
-                        <td style={{ padding:"8px 10px", textAlign:"center" }}>
+                        <td className="db-col-hide-sm" style={{ padding:"8px 10px", textAlign:"center" }}>
                           <span style={{ fontSize:11, fontWeight:600, borderRadius:20, padding:"2px 8px",
                             background: stock === 0 ? "#FDE8E8" : stock <= 8 ? "#FFF1E5" : "#DDF6E7",
                             color:      stock === 0 ? "#EF4444" : stock <= 8 ? "#F08A24" : "#0A8F45" }}>
                             {stock}
                           </span>
                         </td>
-                        <td style={{ padding:"8px 10px" }}>
+                        <td className="db-col-hide-sm" style={{ padding:"8px 10px" }}>
                           <span style={{ fontSize:10, fontWeight:600, borderRadius:20, padding:"2px 8px",
                             background: p.isActive === false ? "#F2F4F7" : "#DDF6E7",
                             color:      p.isActive === false ? "#667085" : "#0A8F45" }}>
@@ -560,8 +583,14 @@ export default function DashboardPage() {
               <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12 }}>
                 <thead>
                   <tr style={{ background:"#F8FAF9" }}>
-                    {["Réf.","Client","Montant","Statut","Canal"].map(h => (
-                      <th key={h} style={{ padding:"7px 10px", textAlign:"left", color:"#98A2B3", fontWeight:600, fontSize:10, textTransform:"uppercase", borderBottom:"1px solid #E8ECEA", whiteSpace:"nowrap" }}>{h}</th>
+                    {[
+                      { label:"Réf." },
+                      { label:"Client" },
+                      { label:"Montant" },
+                      { label:"Statut" },
+                      { label:"Canal", hideSm: true },
+                    ].map(h => (
+                      <th key={h.label} className={h.hideSm ? "db-col-hide-sm" : ""} style={{ padding:"7px 10px", textAlign:"left", color:"#98A2B3", fontWeight:600, fontSize:10, textTransform:"uppercase", borderBottom:"1px solid #E8ECEA", whiteSpace:"nowrap" }}>{h.label}</th>
                     ))}
                   </tr>
                 </thead>
@@ -580,7 +609,7 @@ export default function DashboardPage() {
                             {STATUS_LABELS[o.status] ?? o.status}
                           </span>
                         </td>
-                        <td style={{ padding:"8px 10px" }}>{CHANNEL_ICONS[o.channel] ?? <Package size={16} color="#98A2B3" />}</td>
+                        <td className="db-col-hide-sm" style={{ padding:"8px 10px" }}>{CHANNEL_ICONS[o.channel] ?? <Package size={16} color="#98A2B3" />}</td>
                       </tr>
                     );
                   })}

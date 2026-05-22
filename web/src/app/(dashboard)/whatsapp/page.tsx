@@ -6,15 +6,20 @@ import { Check, DollarSign, ArrowUpRight, Copy, CheckCircle, FileText, Eye, Rota
 const WA_CSS = `
 @keyframes wa-spin { to { transform: rotate(360deg); } }
 
-.wa-page { padding: 24px 28px; max-width: 1280px; margin: 0 auto; background: #F8FAF9; min-height: 100vh; }
+.wa-page { padding: 24px 28px; max-width: 1280px; margin: 0 auto; background: #F8FAF9; min-height: 100vh; overflow-x: hidden; }
 .wa-kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 16px; }
 .wa-main { display: grid; grid-template-columns: 1fr 380px; gap: 20px; margin-bottom: 18px; }
+.wa-main > * { min-width: 0; }
 .wa-bottom-left { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 18px; }
+.wa-bottom-left > * { min-width: 0; }
 .wa-bottom-banner { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 18px; }
+.wa-bottom-banner > * { min-width: 0; }
 .wa-toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
 .wa-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 .wa-kpi-card { cursor: pointer; transition: box-shadow 0.15s, transform 0.12s; }
 .wa-kpi-card:hover { box-shadow: 0 4px 18px rgba(10,143,69,0.12) !important; transform: translateY(-1px); }
+.wa-title-bar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 14px; }
+.wa-title-actions { display: flex; gap: 10px; flex-shrink: 0; }
 
 .wa-modal-overlay {
   position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 1000;
@@ -36,6 +41,10 @@ const WA_CSS = `
   .wa-kpi-row { grid-template-columns: repeat(2, 1fr); gap: 10px; }
   .wa-bottom-left { grid-template-columns: 1fr; }
   .wa-bottom-banner { grid-template-columns: 1fr; }
+  .wa-toolbar select { flex: 1 1 calc(50% - 5px); min-width: 0; width: auto !important; }
+  .wa-toolbar input { width: 100% !important; flex: 1 1 100%; }
+  .wa-title-actions { width: 100%; }
+  .wa-title-actions button { flex: 1; }
 }
 @media (max-width: 480px) {
   .wa-kpi-row { grid-template-columns: repeat(2, 1fr); gap: 8px; }
@@ -623,14 +632,14 @@ export default function WhatsAppPage() {
         )}
 
         {/* ── A — Titre ─────────────────────────────────────── */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 14 }}>
+        <div className="wa-title-bar">
           <div>
             <h1 style={{ fontSize: 22, fontWeight: 700, color: "#1F2A24", margin: 0 }}>Centre WhatsApp</h1>
             <p style={{ fontSize: 13, color: "#667085", margin: "4px 0 0" }}>
               Gérez vos commandes WhatsApp, vos relances et vos messages clients.
             </p>
           </div>
-          <div style={{ display: "flex", gap: 10 }}>
+          <div className="wa-title-actions">
             <button onClick={() => setCreateTplOpen(true)}
               style={{ border: "1.5px solid #E8ECEA", background: "#fff", color: "#1F2A24", padding: "9px 16px", borderRadius: 10, fontSize: 13, cursor: "pointer", fontWeight: 500 }}>
               Créer un modèle
