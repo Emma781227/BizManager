@@ -47,6 +47,8 @@ src/
 │   │       ├── checkout/
 │   │       ├── confirmation/
 │   │       └── favorites/
+│   ├── billing/
+│   │   └── success/          # Page de confirmation post-paiement (polling statut)
 │   ├── api/                  # Routes API (voir section dédiée)
 │   ├── layout.tsx            # Layout racine (fonts, PWA, metadata)
 │   └── page.tsx              # Landing page marketing
@@ -58,6 +60,7 @@ src/
 │   ├── subscription.ts       # Plans et abonnements
 │   ├── mailer.ts             # Envoi d'emails
 │   ├── format.ts             # formatPrice(), formatPriceCFA()
+│   ├── geniuspay.ts          # initiatePayment(), verifyWebhookTimestamp(), WEBHOOK_SECRET
 │   └── notifications.ts      # Alertes stock
 ├── hooks/
 │   └── useActiveShop.ts      # Shop actif (localStorage)
@@ -134,7 +137,10 @@ public/
 | GET | `/api/health` | Health check |
 | GET | `/api/dashboard` | Métriques tableau de bord |
 | POST | `/api/whatsapp/preview` | Aperçu message WhatsApp |
-| GET/POST | `/api/subscription` | Abonnement utilisateur |
+| GET/PATCH | `/api/subscription` | Abonnement utilisateur |
+| POST | `/api/billing/create-checkout` | Créer une session de paiement GeniusPay |
+| GET | `/api/billing/status` | Statut d'une transaction de paiement |
+| POST | `/api/webhooks/geniuspay` | Webhook GeniusPay (payment.success / payment.failed) |
 
 ---
 
@@ -149,6 +155,8 @@ public/
 - **PaymentStatus** : `unpaid`, `partial`, `paid`, `refunded`
 - **PaymentMethod** : `cash`, `mobile_money`, `bank_transfer`, `cod`
 - **WhatsappLogType** : `relance`, `confirmation`, `custom`, `template`
+- **PaymentTransactionStatus** : `pending`, `paid`, `failed`, `cancelled`, `expired`
+- **BillingCycle** : `monthly`, `yearly`
 
 ### Modèles principaux
 | Modèle | Description | Champs clés |
@@ -166,6 +174,8 @@ public/
 | `OrderItem` | Lignes de commande | orderId, productId, variantId?, variantLabel?, quantity, unitPrice, lineTotal |
 | `OrderStatusHistory` | Historique des statuts de commande | orderId, status (OrderStatus), changedAt, note? |
 | `WhatsappLog` | Historique messages WhatsApp | shopId, orderId, type, message |
+| `PaymentTransaction` | Transactions de paiement GeniusPay | userId, planId, amount, currency, status, providerReference (unique) |
+| `WebhookEvent` | Événements webhook reçus | provider, eventType, providerReference, processed |
 
 ### Plans d'abonnement
 | Plan | Boutiques | Produits | Prix mensuel |
@@ -221,6 +231,13 @@ WHATSAPP_CLOUD_PHONE_NUMBER_ID=""
 
 # Cloudinary (stockage images/vidéos produits)
 CLOUDINARY_URL="cloudinary://api_key:api_secret@cloud_name"
+
+# GeniusPay (paiement abonnements)
+GENIUSPAY_API_KEY="pk_sandbox_..."
+GENIUSPAY_API_SECRET="sk_sandbox_..."
+GENIUSPAY_BASE_URL="https://pay.genius.ci/api/v1/merchant"
+GENIUSPAY_WEBHOOK_SECRET="whsec_..."
+APP_URL="https://bizmanager.africa"
 ```
 
 ---

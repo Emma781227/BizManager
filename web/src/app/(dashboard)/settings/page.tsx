@@ -1018,25 +1018,21 @@ export default function ShopsPage() {
     setActionsShop(prev => prev?.id === id ? { ...prev, name } : prev);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async function upgradePlan(planName: string, displayName: string) {
-    if (!confirm(`Passer au plan ${displayName} ? Votre abonnement sera mis à jour immédiatement.`)) return;
+    if (!confirm(`Passer au plan ${displayName} ?\n\nVous allez être redirigé vers la page de paiement sécurisée.`)) return;
     setUpgrading(true);
     setUpgradeErr(null);
     try {
-      const res = await fetch("/api/subscription", {
-        method: "PATCH",
+      const res = await fetch("/api/billing/create-checkout", {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ planName }),
+        body: JSON.stringify({ planName, billingCycle: "monthly" }),
       });
-      const json = await res.json();
+      const json = await res.json() as { checkoutUrl?: string; error?: string };
       if (!res.ok) throw new Error(json.error ?? "Erreur serveur");
-      const subRes = await fetch("/api/subscription");
-      const subData = await subRes.json();
-      if (subData.plan) setQuota(subData as SubscriptionQuota);
+      if (json.checkoutUrl) window.location.href = json.checkoutUrl;
     } catch (err) {
       setUpgradeErr(err instanceof Error ? err.message : "Erreur serveur");
-    } finally {
       setUpgrading(false);
     }
   }

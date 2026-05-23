@@ -191,24 +191,21 @@ export default function DashboardPage() {
   const [upgradeErr, setUpgradeErr] = useState<string | null>(null);
 
   async function upgradePlan(planName: string, displayName: string) {
-    if (!confirm(`Passer au plan ${displayName} ? Votre abonnement sera mis à jour immédiatement.`)) return;
+    if (!confirm(`Passer au plan ${displayName} ?\n\nVous allez être redirigé vers la page de paiement sécurisée.`)) return;
     setUpgrading(true);
     setUpgradeErr(null);
     try {
-      const res = await fetch("/api/subscription", {
-        method: "PATCH",
+      const res = await fetch("/api/billing/create-checkout", {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ planName }),
+        body: JSON.stringify({ planName, billingCycle: "monthly" }),
       });
-      const json = await res.json();
+      const json = await res.json() as { checkoutUrl?: string; error?: string };
       if (!res.ok) throw new Error(json.error ?? "Erreur serveur");
-      // Recharge la subscription pour mettre à jour l'UI
-      const subRes = await fetch("/api/subscription");
-      const subData = await subRes.json();
-      if (subData.plan) setSub(subData as Subscription);
+      if (json.checkoutUrl) { window.location.href = json.checkoutUrl; return; }
+      throw new Error("URL de paiement manquante");
     } catch (err) {
       setUpgradeErr(err instanceof Error ? err.message : "Erreur serveur");
-    } finally {
       setUpgrading(false);
     }
   }
