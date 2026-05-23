@@ -187,6 +187,31 @@ export default function DashboardPage() {
   const [ready,     setReady]     = useState(false);
   const [period,    setPeriod]    = useState("30d");
   const [copied,    setCopied]    = useState<string | null>(null);
+  const [upgrading, setUpgrading] = useState(false);
+  const [upgradeErr, setUpgradeErr] = useState<string | null>(null);
+
+  async function upgradePlan(planName: string, displayName: string) {
+    if (!confirm(`Passer au plan ${displayName} ? Votre abonnement sera mis à jour immédiatement.`)) return;
+    setUpgrading(true);
+    setUpgradeErr(null);
+    try {
+      const res = await fetch("/api/subscription", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ planName }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "Erreur serveur");
+      // Recharge la subscription pour mettre à jour l'UI
+      const subRes = await fetch("/api/subscription");
+      const subData = await subRes.json();
+      if (subData.plan) setSub(subData as Subscription);
+    } catch (err) {
+      setUpgradeErr(err instanceof Error ? err.message : "Erreur serveur");
+    } finally {
+      setUpgrading(false);
+    }
+  }
 
   function copyShopLink(slug: string) {
     const url = `${window.location.origin}/shop/${slug}`;
@@ -408,9 +433,15 @@ export default function DashboardPage() {
               </div>
             </div>
             {sub.nextPlan && (
-              <a href="/settings" style={{ flexShrink:0, border:"1.5px solid #0A8F45", background:"#fff", color:"#0A8F45", borderRadius:10, padding:"8px 16px", fontSize:13, fontWeight:600, textDecoration:"none", whiteSpace:"nowrap" }}>
-                Passer au {sub.nextPlan.displayName}
-              </a>
+              <div style={{ flexShrink:0, display:"flex", flexDirection:"column", alignItems:"flex-end", gap:4 }}>
+                <button
+                  onClick={() => upgradePlan(sub.nextPlan!.name, sub.nextPlan!.displayName)}
+                  disabled={upgrading}
+                  style={{ border:"1.5px solid #0A8F45", background: upgrading ? "#EAF7EF" : "#fff", color:"#0A8F45", borderRadius:10, padding:"8px 16px", fontSize:13, fontWeight:600, cursor: upgrading ? "not-allowed" : "pointer", whiteSpace:"nowrap", opacity: upgrading ? 0.7 : 1 }}>
+                  {upgrading ? "Mise à jour…" : `Passer au ${sub.nextPlan.displayName}`}
+                </button>
+                {upgradeErr && <span style={{ fontSize:11, color:"#EF4444" }}>{upgradeErr}</span>}
+              </div>
             )}
           </div>
         )}

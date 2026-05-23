@@ -38,6 +38,11 @@ type SubscriptionQuota = {
     shops: number;
     products: number;
   };
+  nextPlan: {
+    name: string;
+    displayName: string;
+    priceMonthly: number;
+  } | null;
 };
 
 const COLORS = ["#0A8F45", "#3B82F6", "#F08A24", "#8B5CF6", "#EC4899", "#14B8A6"];
@@ -985,6 +990,8 @@ export default function ShopsPage() {
   const [loading, setLoading]         = useState(true);
   const [quota, setQuota]             = useState<SubscriptionQuota | null>(null);
   const [actionsShop, setActionsShop] = useState<SettingsShop | null>(null);
+  const [upgrading, setUpgrading]     = useState(false);
+  const [upgradeErr, setUpgradeErr]   = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([
@@ -1012,6 +1019,28 @@ export default function ShopsPage() {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async function upgradePlan(planName: string, displayName: string) {
+    if (!confirm(`Passer au plan ${displayName} ? Votre abonnement sera mis à jour immédiatement.`)) return;
+    setUpgrading(true);
+    setUpgradeErr(null);
+    try {
+      const res = await fetch("/api/subscription", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ planName }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "Erreur serveur");
+      const subRes = await fetch("/api/subscription");
+      const subData = await subRes.json();
+      if (subData.plan) setQuota(subData as SubscriptionQuota);
+    } catch (err) {
+      setUpgradeErr(err instanceof Error ? err.message : "Erreur serveur");
+    } finally {
+      setUpgrading(false);
+    }
+  }
+
   function onUpdated(raw: any) {
     setShops(prev => prev.map((s, i) =>
       s.id === raw.id ? { ...toSettingsShop(raw, i), color: COLORS[i % COLORS.length] } : s
@@ -1202,20 +1231,30 @@ export default function ShopsPage() {
                   ? `${Math.round((quota.usage.shops / quota.plan.maxShops) * 100)}% du quota utilisé · ${Math.max(0, quota.plan.maxShops - quota.usage.shops)} boutique${Math.max(0, quota.plan.maxShops - quota.usage.shops) !== 1 ? "s" : ""} restante${Math.max(0, quota.plan.maxShops - quota.usage.shops) !== 1 ? "s" : ""}`
                   : `${shops.length} boutique${shops.length !== 1 ? "s" : ""} active${shops.length !== 1 ? "s" : ""}`}
               </div>
-              <div style={{ background:"#EAF7EF", border:"1px solid #C8E6D5", borderRadius:12, padding:"14px 16px" }}>
-                <div style={{ display:"flex", gap:10, alignItems:"flex-start" }}>
-                  <span style={{ color:"#F08A24" }}><Crown size={20} /></span>
-                  <div>
-                    <div style={{ fontWeight:700, color:"#1F2A24", fontSize:13, marginBottom:4 }}>Passez au plan Premium</div>
-                    <div style={{ fontSize:12, color:"#667085", marginBottom:10 }}>
-                      Gérez jusqu'à 10 boutiques et débloquez plus de fonctionnalités avancées.
+              {quota?.nextPlan && (
+                <div style={{ background:"#EAF7EF", border:"1px solid #C8E6D5", borderRadius:12, padding:"14px 16px" }}>
+                  <div style={{ display:"flex", gap:10, alignItems:"flex-start" }}>
+                    <span style={{ color:"#F08A24" }}><Crown size={20} /></span>
+                    <div style={{ flex:1 }}>
+                      <div style={{ fontWeight:700, color:"#1F2A24", fontSize:13, marginBottom:4 }}>
+                        Passez au plan {quota.nextPlan.displayName}
+                      </div>
+                      <div style={{ fontSize:12, color:"#667085", marginBottom:10 }}>
+                        {quota.nextPlan.name === "business"
+                          ? "Gérez jusqu'à 3 boutiques et 500 produits."
+                          : "Gérez jusqu'à 10 boutiques et un catalogue illimité."}
+                      </div>
+                      <button
+                        onClick={() => upgradePlan(quota!.nextPlan!.name, quota!.nextPlan!.displayName)}
+                        disabled={upgrading}
+                        style={{ fontSize:12, fontWeight:600, color:"#fff", background:"#0A8F45", border:"none", borderRadius:8, padding:"6px 14px", cursor: upgrading ? "not-allowed" : "pointer", opacity: upgrading ? 0.7 : 1 }}>
+                        {upgrading ? "Mise à jour…" : `Passer au ${quota.nextPlan.displayName} →`}
+                      </button>
+                      {upgradeErr && <div style={{ fontSize:11, color:"#EF4444", marginTop:6 }}>{upgradeErr}</div>}
                     </div>
-                    <a href="/payments" style={{ fontSize:12, fontWeight:600, color:"#0A8F45", textDecoration:"none" }}>
-                      Découvrir les offres →
-                    </a>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
 
             {/* Global activity */}

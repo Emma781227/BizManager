@@ -5,6 +5,54 @@ import { getSessionFromRequest } from "@/lib/auth";
 
 const PLAN_ORDER = ["starter", "business", "premium"];
 
+export async function PATCH(request: NextRequest) {
+  const session = await getSessionFromRequest(request);
+  if (!session) return NextResponse.json({ error: "Non authentifie" }, { status: 401 });
+
+  const body = await request.json().catch(() => ({}));
+  const { planName } = body as { planName?: string };
+  if (!planName) return NextResponse.json({ error: "planName requis" }, { status: 400 });
+
+  const [targetPlan, currentSub] = await Promise.all([
+    prisma.plan.findFirst({ where: { name: planName, isActive: true } }),
+    prisma.subscription.findUnique({
+      where: { userId: session.userId },
+      include: { plan: true },
+    }),
+  ]);
+
+  if (!targetPlan) return NextResponse.json({ error: "Plan introuvable" }, { status: 404 });
+
+  const currentPlanName = currentSub?.plan.name ?? "starter";
+  const currentIdx = PLAN_ORDER.indexOf(currentPlanName);
+  const targetIdx  = PLAN_ORDER.indexOf(planName);
+
+  if (targetIdx <= currentIdx) {
+    return NextResponse.json({ error: "Ce plan est inférieur ou identique à votre plan actuel" }, { status: 400 });
+  }
+
+  const expiresAt = new Date();
+  expiresAt.setMonth(expiresAt.getMonth() + 1);
+
+  const sub = await prisma.subscription.upsert({
+    where:  { userId: session.userId },
+    create: { userId: session.userId, planId: targetPlan.id, status: "active", expiresAt },
+    update: { planId: targetPlan.id, status: "active", expiresAt },
+    include: { plan: true },
+  });
+
+  return NextResponse.json({
+    success: true,
+    plan: {
+      name:         sub.plan.name,
+      displayName:  sub.plan.displayName,
+      maxShops:     sub.plan.maxShops,
+      maxProducts:  sub.plan.maxProducts,
+      priceMonthly: Number(sub.plan.priceMonthly),
+    },
+  });
+}
+
 export async function GET(request: NextRequest) {
   const session = await getSessionFromRequest(request);
   if (!session) return NextResponse.json({ error: "Non authentifie" }, { status: 401 });
