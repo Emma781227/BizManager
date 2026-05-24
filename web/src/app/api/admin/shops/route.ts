@@ -126,26 +126,32 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: "Boutique introuvable" }, { status: 404 });
   }
 
-  await prisma.$transaction(async (tx) => {
-    await tx.whatsappLog.deleteMany({ where: { shopId } });
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.whatsappLog.deleteMany({ where: { shopId } });
 
-    const orders = await tx.order.findMany({ where: { shopId }, select: { id: true } });
-    const orderIds = orders.map((o) => o.id);
-    if (orderIds.length > 0) {
-      await tx.orderStatusHistory.deleteMany({ where: { orderId: { in: orderIds } } });
-      await tx.orderItem.deleteMany({ where: { orderId: { in: orderIds } } });
-    }
-    await tx.order.deleteMany({ where: { shopId } });
+      const orders = await tx.order.findMany({ where: { shopId }, select: { id: true } });
+      const orderIds = orders.map((o) => o.id);
+      if (orderIds.length > 0) {
+        await tx.orderStatusHistory.deleteMany({ where: { orderId: { in: orderIds } } });
+        await tx.orderItem.deleteMany({ where: { orderId: { in: orderIds } } });
+      }
+      await tx.order.deleteMany({ where: { shopId } });
 
-    const products = await tx.product.findMany({ where: { shopId }, select: { id: true } });
-    const productIds = products.map((p) => p.id);
-    if (productIds.length > 0) {
-      await tx.productVariant.deleteMany({ where: { productId: { in: productIds } } });
-    }
-    await tx.product.deleteMany({ where: { shopId } });
-    await tx.customer.deleteMany({ where: { shopId } });
-    await tx.shop.delete({ where: { id: shopId } });
-  });
+      const products = await tx.product.findMany({ where: { shopId }, select: { id: true } });
+      const productIds = products.map((p) => p.id);
+      if (productIds.length > 0) {
+        await tx.productVariant.deleteMany({ where: { productId: { in: productIds } } });
+      }
+      await tx.product.deleteMany({ where: { shopId } });
+      await tx.customer.deleteMany({ where: { shopId } });
+      await tx.shop.delete({ where: { id: shopId } });
+    }, { timeout: 15000 });
+  } catch (err) {
+    console.error("[admin] deleteShop error:", err);
+    const msg = err instanceof Error ? err.message : "Erreur inconnue";
+    return NextResponse.json({ error: `Erreur lors de la suppression : ${msg}` }, { status: 500 });
+  }
 
   return NextResponse.json({ success: true });
 }
