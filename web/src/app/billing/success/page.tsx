@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 
 type TxStatus = "pending" | "paid" | "failed" | "cancelled" | "expired";
@@ -31,7 +31,7 @@ const CSS = `
 .bs-err { color: #dc2626; font-size: 14px; margin-bottom: 16px; }
 `;
 
-export default function BillingSuccessPage() {
+function BillingSuccessContent() {
   const params = useSearchParams();
   const router = useRouter();
   const txId = params.get("txId");
@@ -165,5 +165,21 @@ export default function BillingSuccessPage() {
         </button>
       </div>
     </div>
+  );
+}
+
+export default function BillingSuccessPage() {
+  return (
+    <Suspense fallback={
+      <div className="bs-wrap">
+        <style>{CSS}</style>
+        <div className="bs-card">
+          <div className="bs-spinner" />
+          <h1 className="bs-title">Chargement…</h1>
+        </div>
+      </div>
+    }>
+      <BillingSuccessContent />
+    </Suspense>
   );
 }
