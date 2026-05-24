@@ -1,31 +1,21 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { WEBHOOK_SECRET, verifyWebhookTimestamp } from "@/lib/geniuspay";
-import { createHmac, timingSafeEqual } from "crypto";
-
-// Compute HMAC-SHA256 signature for webhook verification
-function computeSignature(body: string): string {
-  return createHmac("sha256", WEBHOOK_SECRET).update(body, "utf8").digest("hex");
-}
-
-function verifySignature(body: string, header: string | null): boolean {
-  if (!WEBHOOK_SECRET || !header) return false;
-  const expected = computeSignature(body);
-  try {
-    return timingSafeEqual(Buffer.from(expected, "hex"), Buffer.from(header, "hex"));
-  } catch {
-    return false;
-  }
-}
+import { verifyWebhookSignature, verifyWebhookTimestamp } from "@/lib/geniuspay";
 
 export async function POST(request: NextRequest) {
   const rawBody = await request.text();
 
-  const sig = request.headers.get("x-geniuspay-signature") ?? request.headers.get("x-webhook-signature");
+  const sig       = request.headers.get("x-webhook-signature");
+  const timestamp = request.headers.get("x-webhook-timestamp");
+  const eventType = request.headers.get("x-webhook-event") ?? "";
 
-  if (!verifySignature(rawBody, sig)) {
+  if (!verifyWebhookSignature(rawBody, sig, timestamp)) {
     return NextResponse.json({ error: "Signature invalide" }, { status: 401 });
+  }
+
+  if (!verifyWebhookTimestamp(timestamp)) {
+    return NextResponse.json({ error: "Webhook expiré" }, { status: 400 });
   }
 
   let payload: Record<string, unknown>;
@@ -35,26 +25,21 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Payload invalide" }, { status: 400 });
   }
 
-  if (!verifyWebhookTimestamp(payload.timestamp ?? payload.created_at)) {
-    return NextResponse.json({ error: "Webhook expiré" }, { status: 400 });
-  }
+  // La transaction GeniusPay est dans payload.data ou directement dans payload
+  const txData = (payload.data ?? payload) as Record<string, unknown>;
+  const providerReference = (txData.reference ?? "") as string;
 
-  const eventType = (payload.event ?? payload.type ?? payload.event_type ?? "") as string;
-  const providerReference = (payload.reference ?? payload.transaction_reference ?? payload.payment_reference ?? "") as string;
-
-  // Idempotency: check if event was already processed
+  // Idempotence : vérifier si l'événement a déjà été traité
   const existing = await prisma.webhookEvent.findFirst({
     where: { provider: "geniuspay", providerReference, eventType },
   });
-
   if (existing?.processed) {
     return NextResponse.json({ ok: true, duplicate: true });
   }
 
-  // Record the event
   const webhookEvent = await prisma.webhookEvent.create({
     data: {
-      provider: "geniuspay",
+      provider:  "geniuspay",
       eventType,
       providerReference: providerReference || null,
       payload,
@@ -63,12 +48,12 @@ export async function POST(request: NextRequest) {
   });
 
   try {
-    if (eventType === "payment.success" || eventType === "payment.completed" || eventType === "payment_success") {
-      await handlePaymentSuccess(payload, providerReference);
-    } else if (eventType === "payment.failed" || eventType === "payment_failed") {
-      await handlePaymentFailed(providerReference);
-    } else if (eventType === "payment.cancelled" || eventType === "payment_cancelled") {
-      await handlePaymentCancelled(providerReference);
+    if (eventType === "payment.success" || eventType === "payment.completed") {
+      await handlePaymentSuccess(txData, providerReference);
+    } else if (eventType === "payment.failed") {
+      await handlePaymentFailed(providerReference, txData);
+    } else if (eventType === "payment.cancelled") {
+      await handlePaymentCancelled(providerReference, txData);
     }
 
     await prisma.webhookEvent.update({
@@ -77,36 +62,43 @@ export async function POST(request: NextRequest) {
     });
   } catch (err) {
     console.error("[GeniusPay webhook] processing error:", err);
-    // Don't throw — return 200 so GeniusPay won't retry with a bad payload
   }
 
   return NextResponse.json({ ok: true });
 }
 
-async function handlePaymentSuccess(payload: Record<string, unknown>, providerReference: string) {
-  if (!providerReference) return;
+async function handlePaymentSuccess(
+  txData: Record<string, unknown>,
+  providerReference: string,
+) {
+  // Retrouver notre transaction via les metadata ou la référence GeniusPay
+  const metadata = txData.metadata as Record<string, string> | undefined;
+  const internalTxId = metadata?.transactionId;
 
-  const transaction = await prisma.paymentTransaction.findUnique({
-    where: { providerReference },
-    include: { plan: true, user: true },
-  });
+  const transaction = internalTxId
+    ? await prisma.paymentTransaction.findUnique({ where: { id: internalTxId }, include: { plan: true } })
+    : providerReference
+    ? await prisma.paymentTransaction.findUnique({ where: { providerReference }, include: { plan: true } })
+    : null;
 
-  if (!transaction) return;
-  if (transaction.status === "paid") return; // already handled
+  if (!transaction) {
+    console.error("[webhook] transaction introuvable pour", { internalTxId, providerReference });
+    return;
+  }
+  if (transaction.status === "paid") return; // déjà traité
 
-  // Security checks
-  const paidAmount = Number(payload.amount ?? payload.paid_amount ?? 0);
-  const paidCurrency = (payload.currency ?? "XOF") as string;
+  // Vérifications de sécurité
+  const paidAmount   = Number(txData.amount ?? 0);
+  const paidCurrency = ((txData.currency ?? "XOF") as string).toUpperCase();
 
-  if (paidCurrency.toUpperCase() !== transaction.currency.toUpperCase()) {
+  if (paidCurrency !== transaction.currency.toUpperCase()) {
     throw new Error(`Devise incorrecte: reçu ${paidCurrency}, attendu ${transaction.currency}`);
   }
-
   if (paidAmount < Number(transaction.amount)) {
     throw new Error(`Montant insuffisant: reçu ${paidAmount}, attendu ${Number(transaction.amount)}`);
   }
 
-  const now = new Date();
+  const now       = new Date();
   const expiresAt = new Date(now);
   if (transaction.billingCycle === "yearly") {
     expiresAt.setFullYear(expiresAt.getFullYear() + 1);
@@ -114,58 +106,81 @@ async function handlePaymentSuccess(payload: Record<string, unknown>, providerRe
     expiresAt.setMonth(expiresAt.getMonth() + 1);
   }
 
+  const geniusPayRef = providerReference || (txData.reference as string | undefined) || null;
+
   await prisma.$transaction([
     prisma.paymentTransaction.update({
       where: { id: transaction.id },
       data: {
-        status: "paid",
-        webhookPayload: payload,
-        providerPaymentId: (payload.payment_id ?? payload.id ?? transaction.providerPaymentId) as string | null,
+        status:            "paid",
+        providerReference: geniusPayRef ?? transaction.providerReference,
+        providerPaymentId: (txData.id as string | undefined) ?? transaction.providerPaymentId,
+        webhookPayload:    txData,
       },
     }),
     prisma.subscription.upsert({
-      where: { userId: transaction.userId },
+      where:  { userId: transaction.userId },
       create: {
-        userId: transaction.userId,
-        planId: transaction.planId,
-        status: "active",
-        billingCycle: transaction.billingCycle,
-        startedAt: now,
+        userId:            transaction.userId,
+        planId:            transaction.planId,
+        status:            "active",
+        billingCycle:      transaction.billingCycle,
+        startedAt:         now,
         expiresAt,
-        provider: "geniuspay",
-        providerReference,
-        providerPaymentId: transaction.providerPaymentId ?? null,
+        provider:          "geniuspay",
+        providerReference: geniusPayRef,
+        providerPaymentId: (txData.id as string | undefined) ?? null,
       },
       update: {
-        planId: transaction.planId,
-        status: "active",
-        billingCycle: transaction.billingCycle,
-        startedAt: now,
+        planId:            transaction.planId,
+        status:            "active",
+        billingCycle:      transaction.billingCycle,
+        startedAt:         now,
         expiresAt,
-        provider: "geniuspay",
-        providerReference,
-        providerPaymentId: transaction.providerPaymentId ?? null,
+        provider:          "geniuspay",
+        providerReference: geniusPayRef,
+        providerPaymentId: (txData.id as string | undefined) ?? null,
       },
-    }),
-    prisma.paymentTransaction.update({
-      where: { id: transaction.id },
-      data: { subscription: { connect: { userId: transaction.userId } } },
     }),
   ]);
 }
 
-async function handlePaymentFailed(providerReference: string) {
-  if (!providerReference) return;
-  await prisma.paymentTransaction.updateMany({
-    where: { providerReference, status: "pending" },
-    data: { status: "failed" },
-  });
+async function handlePaymentFailed(
+  providerReference: string,
+  txData: Record<string, unknown>,
+) {
+  const metadata    = txData.metadata as Record<string, string> | undefined;
+  const internalTxId = metadata?.transactionId;
+
+  if (internalTxId) {
+    await prisma.paymentTransaction.updateMany({
+      where: { id: internalTxId, status: "pending" },
+      data:  { status: "failed" },
+    });
+  } else if (providerReference) {
+    await prisma.paymentTransaction.updateMany({
+      where: { providerReference, status: "pending" },
+      data:  { status: "failed" },
+    });
+  }
 }
 
-async function handlePaymentCancelled(providerReference: string) {
-  if (!providerReference) return;
-  await prisma.paymentTransaction.updateMany({
-    where: { providerReference, status: "pending" },
-    data: { status: "cancelled" },
-  });
+async function handlePaymentCancelled(
+  providerReference: string,
+  txData: Record<string, unknown>,
+) {
+  const metadata    = txData.metadata as Record<string, string> | undefined;
+  const internalTxId = metadata?.transactionId;
+
+  if (internalTxId) {
+    await prisma.paymentTransaction.updateMany({
+      where: { id: internalTxId, status: "pending" },
+      data:  { status: "cancelled" },
+    });
+  } else if (providerReference) {
+    await prisma.paymentTransaction.updateMany({
+      where: { providerReference, status: "pending" },
+      data:  { status: "cancelled" },
+    });
+  }
 }

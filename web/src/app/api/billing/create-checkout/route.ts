@@ -24,7 +24,10 @@ export async function POST(request: NextRequest) {
       where: { userId: session.userId },
       include: { plan: true },
     }),
-    prisma.user.findUnique({ where: { id: session.userId }, select: { fullName: true, email: true, phone: true } }),
+    prisma.user.findUnique({
+      where: { id: session.userId },
+      select: { fullName: true, email: true, phone: true },
+    }),
   ]);
 
   if (!targetPlan) return NextResponse.json({ error: "Plan introuvable" }, { status: 404 });
@@ -32,7 +35,7 @@ export async function POST(request: NextRequest) {
 
   const currentPlanName = currentSub?.plan.name ?? "starter";
   const currentIdx = PLAN_ORDER.indexOf(currentPlanName);
-  const targetIdx = PLAN_ORDER.indexOf(planName);
+  const targetIdx  = PLAN_ORDER.indexOf(planName);
 
   if (targetIdx <= currentIdx) {
     return NextResponse.json({ error: "Ce plan est inférieur ou identique à votre plan actuel" }, { status: 400 });
@@ -47,47 +50,51 @@ export async function POST(request: NextRequest) {
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? process.env.APP_URL ?? "https://bizmanager.africa";
 
-  // Create a pending transaction first to get the reference
+  // Crée la transaction en pending pour obtenir son ID
   const transaction = await prisma.paymentTransaction.create({
     data: {
-      userId: session.userId,
-      planId: targetPlan.id,
+      userId:      session.userId,
+      planId:      targetPlan.id,
       billingCycle,
       amount,
-      currency: "XOF",
-      status: "pending",
-      provider: "geniuspay",
+      currency:    "XOF",
+      status:      "pending",
+      provider:    "geniuspay",
     },
   });
 
   try {
     const result = await initiatePayment({
-      reference: transaction.id,
       amount,
-      currency: "XOF",
+      currency:    "XOF",
       description: `Abonnement BizManager ${targetPlan.displayName} (${billingCycle === "yearly" ? "annuel" : "mensuel"})`,
       customer: {
-        name: user.fullName,
+        name:  user.fullName,
         email: user.email,
         phone: user.phone ?? undefined,
       },
-      returnUrl: `${appUrl}/billing/success?txId=${transaction.id}`,
-      webhookUrl: `${appUrl}/api/webhooks/geniuspay`,
+      successUrl: `${appUrl}/billing/success?txId=${transaction.id}`,
+      errorUrl:   `${appUrl}/billing/success?txId=${transaction.id}&error=1`,
+      metadata: {
+        transactionId: transaction.id,
+        userId:        session.userId,
+        planName,
+        billingCycle,
+      },
     });
 
-    // Update transaction with provider data
     await prisma.paymentTransaction.update({
       where: { id: transaction.id },
       data: {
-        providerReference: result.providerReference,
-        providerPaymentId: result.providerPaymentId,
-        checkoutUrl: result.checkoutUrl,
+        providerReference: result.providerReference || null,
+        providerPaymentId: result.providerPaymentId || null,
+        checkoutUrl:       result.checkoutUrl || null,
       },
     });
 
     return NextResponse.json({ checkoutUrl: result.checkoutUrl, transactionId: transaction.id });
   } catch (err) {
-    // Mark transaction as failed if initiation fails
+    console.error("[create-checkout] GeniusPay error:", err);
     await prisma.paymentTransaction.update({
       where: { id: transaction.id },
       data: { status: "failed" },

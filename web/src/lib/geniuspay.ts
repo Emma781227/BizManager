@@ -12,7 +12,6 @@ function headers() {
 }
 
 export type InitiatePaymentParams = {
-  reference:   string;
   amount:      number;
   currency:    string;
   description: string;
@@ -21,8 +20,9 @@ export type InitiatePaymentParams = {
     email:  string;
     phone?: string;
   };
-  returnUrl:  string;
-  webhookUrl: string;
+  successUrl: string;
+  errorUrl:   string;
+  metadata?:  Record<string, string>;
 };
 
 export type InitiatePaymentResult = {
@@ -34,40 +34,59 @@ export type InitiatePaymentResult = {
 export async function initiatePayment(
   params: InitiatePaymentParams,
 ): Promise<InitiatePaymentResult> {
-  const res = await fetch(`${BASE_URL}/payments/initiate`, {
+  const res = await fetch(`${BASE_URL}/payments`, {
     method:  "POST",
     headers: headers(),
     body: JSON.stringify({
-      reference:   params.reference,
       amount:      params.amount,
       currency:    params.currency,
       description: params.description,
       customer:    params.customer,
-      return_url:  params.returnUrl,
-      webhook_url: params.webhookUrl,
+      success_url: params.successUrl,
+      error_url:   params.errorUrl,
+      metadata:    params.metadata,
     }),
   });
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({})) as Record<string, unknown>;
-    const msg = (err.message ?? err.error ?? "Erreur GeniusPay") as string;
+    const errObj = err.error as Record<string, unknown> | undefined;
+    const msg = (errObj?.message ?? err.message ?? err.error ?? "Erreur GeniusPay") as string;
     throw new Error(msg);
   }
 
-  const data = await res.json() as Record<string, unknown>;
+  const json = await res.json() as Record<string, unknown>;
+  // La réponse peut être { data: {...} } ou directement l'objet
+  const data = (json.data ?? json) as Record<string, unknown>;
 
   return {
-    checkoutUrl:       (data.checkout_url ?? data.checkoutUrl ?? "") as string,
-    providerReference: (data.reference ?? data.transaction_reference ?? params.reference) as string,
-    providerPaymentId: (data.payment_id ?? data.id ?? "") as string,
+    checkoutUrl:       (data.checkout_url ?? data.payment_url ?? "") as string,
+    providerReference: (data.reference ?? "") as string,
+    providerPaymentId: (data.id ?? "") as string,
   };
 }
 
+// Vérifie la signature du webhook : HMAC-SHA256(timestamp + "." + body, secret)
+export function verifyWebhookSignature(
+  rawBody: string,
+  signature: string | null,
+  timestamp: string | null,
+): boolean {
+  if (!WEBHOOK_SECRET || !signature || !timestamp) return false;
+  const { createHmac, timingSafeEqual } = require("crypto") as typeof import("crypto");
+  const toSign = `${timestamp}.${rawBody}`;
+  const expected = createHmac("sha256", WEBHOOK_SECRET).update(toSign, "utf8").digest("hex");
+  try {
+    return timingSafeEqual(Buffer.from(expected, "hex"), Buffer.from(signature, "hex"));
+  } catch {
+    return false;
+  }
+}
+
 // Vérifie que le timestamp du webhook est dans la fenêtre de 5 minutes
-export function verifyWebhookTimestamp(timestampValue: unknown): boolean {
-  if (!timestampValue) return true; // pas de timestamp → on accepte
-  const ts = typeof timestampValue === "number"
-    ? timestampValue * 1000
-    : new Date(timestampValue as string).getTime();
+export function verifyWebhookTimestamp(timestamp: string | null): boolean {
+  if (!timestamp) return true;
+  const ts = Number(timestamp) * 1000;
+  if (isNaN(ts)) return false;
   return Math.abs(Date.now() - ts) <= 5 * 60 * 1000;
 }
