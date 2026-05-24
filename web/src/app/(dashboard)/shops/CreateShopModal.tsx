@@ -36,10 +36,26 @@ const CSS = `
 .sm-slug-ok   { color:#0A8F45; font-size:12px; font-weight:600; }
 .sm-slug-err  { color:#EF4444; font-size:12px; font-weight:600; }
 .sm-slug-chk  { color:#98A2B3; font-size:12px; }
+.sm-phone-row { display:flex; gap:8px; }
+.sm-phone-row .sm-input { flex:1; min-width:0; }
+.sm-phone-select { flex-shrink:0; width:140px; height:40px; padding:0 8px; border:1.5px solid #E8ECEA; border-radius:10px; font-size:14px; color:#1F2A24; background:#fff; outline:none; cursor:pointer; box-sizing:border-box; }
+.sm-phone-select:focus { border-color:#0A8F45; }
+.sm-main-grid { display:grid; grid-template-columns:1fr 160px; gap:24px; align-items:flex-start; }
+.sm-city-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
 @media(max-width:700px){
   .sm-body { padding:16px; }
   .sm-header { padding:16px; }
   .sm-footer { padding:12px 16px; }
+}
+@media(max-width:600px){
+  .sm-main-grid { grid-template-columns:1fr; }
+  .sm-logo-col { flex-direction:row !important; justify-content:flex-start; padding-top:0 !important; }
+}
+@media(max-width:480px){
+  .sm-phone-select { width:100px; font-size:13px; }
+  .sm-city-row { grid-template-columns:1fr; }
+  .sm-footer { flex-direction:column; }
+  .sm-footer button { width:100%; justify-content:center; }
 }
 `;
 
@@ -279,7 +295,7 @@ export default function CreateShopModal({ open, onClose, onCreated }: CreateShop
             </div>
 
             {/* Main form row: left fields + right logo */}
-            <div style={{display:"grid", gridTemplateColumns:"1fr 160px", gap:24, alignItems:"flex-start"}}>
+            <div className="sm-main-grid">
 
               {/* Left: all text fields */}
               <div style={{display:"flex", flexDirection:"column", gap:16}}>
@@ -323,8 +339,8 @@ export default function CreateShopModal({ open, onClose, onCreated }: CreateShop
                 {/* Phone */}
                 <div>
                   <label className="sm-label">Téléphone / WhatsApp <span style={{color:"#EF4444"}}>*</span></label>
-                  <div style={{display:"flex", gap:8}}>
-                    <select className="sm-select" style={{width:140, flexShrink:0}} value={phoneCode} onChange={e => setPhoneCode(e.target.value)}>
+                  <div className="sm-phone-row">
+                    <select className="sm-phone-select" value={phoneCode} onChange={e => setPhoneCode(e.target.value)}>
                       {COUNTRY_CODES.map(c => <option key={c.code} value={c.code}>{c.flag} {c.code}</option>)}
                     </select>
                     <input className="sm-input" placeholder="Ex. : 675 123 456" value={phoneNum} onChange={e => setPhoneNum(e.target.value)} />
@@ -338,7 +354,7 @@ export default function CreateShopModal({ open, onClose, onCreated }: CreateShop
                 </div>
 
                 {/* Ville + Pays */}
-                <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:12}}>
+                <div className="sm-city-row">
                   <div>
                     <label className="sm-label">Ville <span style={{color:"#EF4444"}}>*</span></label>
                     <input className="sm-input" placeholder="Ex. : Douala" value={city} onChange={e => setCity(e.target.value)} />
@@ -359,7 +375,7 @@ export default function CreateShopModal({ open, onClose, onCreated }: CreateShop
               </div>
 
               {/* Right: logo upload */}
-              <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:8,paddingTop:26}}>
+              <div className="sm-logo-col" style={{display:"flex",flexDirection:"column",alignItems:"center",gap:8,paddingTop:26}}>
                 <label className="sm-upload-logo">
                   {logoPreview ? (
                     <img src={logoPreview} alt="logo" style={{width:"100%",height:"100%",objectFit:"cover"}} />
