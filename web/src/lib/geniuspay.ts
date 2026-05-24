@@ -62,7 +62,7 @@ export async function initiatePayment(
   return {
     checkoutUrl:       (data.checkout_url ?? data.payment_url ?? "") as string,
     providerReference: (data.reference ?? "") as string,
-    providerPaymentId: (data.id ?? "") as string,
+    providerPaymentId: data.id != null ? String(data.id) : "",
   };
 }
 

@@ -114,7 +114,7 @@ async function handlePaymentSuccess(
       data: {
         status:            "paid",
         providerReference: geniusPayRef ?? transaction.providerReference,
-        providerPaymentId: (txData.id as string | undefined) ?? transaction.providerPaymentId,
+        providerPaymentId: txData.id != null ? String(txData.id) : transaction.providerPaymentId,
         webhookPayload:    txData,
       },
     }),
@@ -129,7 +129,7 @@ async function handlePaymentSuccess(
         expiresAt,
         provider:          "geniuspay",
         providerReference: geniusPayRef,
-        providerPaymentId: (txData.id as string | undefined) ?? null,
+        providerPaymentId: txData.id != null ? String(txData.id) : null,
       },
       update: {
         planId:            transaction.planId,
@@ -139,7 +139,7 @@ async function handlePaymentSuccess(
         expiresAt,
         provider:          "geniuspay",
         providerReference: geniusPayRef,
-        providerPaymentId: (txData.id as string | undefined) ?? null,
+        providerPaymentId: txData.id != null ? String(txData.id) : null,
       },
     }),
   ]);
