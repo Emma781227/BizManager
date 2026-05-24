@@ -130,7 +130,11 @@ export default function BillingSuccessPage() {
               {data.billingCycle === "yearly" ? " — facturation annuelle" : " — facturation mensuelle"}
             </div>
           )}
-          <button className="bs-btn bs-btn-primary" onClick={() => router.push("/dashboard")}>
+          <button className="bs-btn bs-btn-primary" onClick={() => router.push("/shops")}>
+            Créer ma première boutique →
+          </button>
+          <br />
+          <button className="bs-btn bs-btn-secondary" onClick={() => router.push("/dashboard")}>
             Accéder au tableau de bord
           </button>
         </div>

@@ -244,6 +244,25 @@ export default function LoginPage() {
         return;
       }
 
+      // Après inscription avec plan payant → rediriger vers GeniusPay
+      if (mode === "register" && (selectedPlan === "business" || selectedPlan === "premium")) {
+        setInfo("Compte créé ! Redirection vers le paiement sécurisé…");
+        const checkoutRes = await fetch("/api/billing/create-checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ planName: selectedPlan, billingCycle: "monthly" }),
+        });
+        const checkoutData = await checkoutRes.json() as { checkoutUrl?: string; error?: string };
+        if (checkoutRes.ok && checkoutData.checkoutUrl) {
+          window.location.href = checkoutData.checkoutUrl;
+          return;
+        }
+        setError(checkoutData.error ?? "Erreur lors de la création du paiement. Accédez à votre tableau de bord pour réessayer.");
+        setIsLoading(false);
+        router.push("/dashboard");
+        return;
+      }
+
       router.push("/dashboard");
       router.refresh();
     } finally {
