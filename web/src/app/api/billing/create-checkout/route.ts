@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
       planId:      targetPlan.id,
       billingCycle,
       amount,
-      currency:    "XOF",
+      currency:    "XAF",
       status:      "pending",
       provider:    "geniuspay",
     },
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
   try {
     const result = await initiatePayment({
       amount,
-      currency:    "XOF",
+      currency:    "XAF",
       description: `Abonnement BizManager ${targetPlan.displayName} (${billingCycle === "yearly" ? "annuel" : "mensuel"})`,
       customer: {
         name:  user.fullName,

@@ -172,7 +172,7 @@ model PaymentTransaction {
   planId            String
   billingCycle      BillingCycle             @default(monthly)
   amount            Decimal                  @db.Decimal(12, 2)
-  currency          String                   @default("XOF")
+  currency          String                   @default("XAF")
   status            PaymentTransactionStatus @default(pending)
   provider          String                   @default("geniuspay")
   providerReference String?                  @unique
