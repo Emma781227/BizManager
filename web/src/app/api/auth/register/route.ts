@@ -47,10 +47,23 @@ export async function POST(request: Request) {
   }
 
   const planName = result.data.plan ?? "starter";
-  const plan = await resolvePlan(planName);
+  const isPaidPlan = planName === "business" || planName === "premium";
 
-  const user = await prisma.user.create({
-    data: {
+  // Pour les plans payants, on crée le compte sans subscription active.
+  // La subscription sera activée par le webhook GeniusPay après paiement.
+  // Pour le plan starter (gratuit), activation immédiate.
+  let userData: Parameters<typeof prisma.user.create>[0]["data"];
+
+  if (isPaidPlan) {
+    userData = {
+      fullName: pending.fullName,
+      email,
+      passwordHash: pending.passwordHash,
+      role: "merchant",
+    };
+  } else {
+    const plan = await resolvePlan(planName);
+    userData = {
       fullName: pending.fullName,
       email,
       passwordHash: pending.passwordHash,
@@ -58,7 +71,11 @@ export async function POST(request: Request) {
       subscription: {
         create: { planId: plan.id, status: "active" },
       },
-    },
+    };
+  }
+
+  const user = await prisma.user.create({
+    data: userData,
     select: { id: true, email: true, fullName: true, role: true },
   });
 

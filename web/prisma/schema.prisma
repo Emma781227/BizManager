@@ -71,6 +71,19 @@ enum WhatsappLogType {
   template
 }
 
+enum PaymentTransactionStatus {
+  pending
+  paid
+  failed
+  cancelled
+  expired
+}
+
+enum BillingCycle {
+  monthly
+  yearly
+}
+
 // ─── Auth & Identity ──────────────────────────────────────────────────────────
 
 model User {
@@ -85,6 +98,7 @@ model User {
 
   shops        Shop[]
   subscription Subscription?
+  transactions PaymentTransaction[]
 
   @@index([createdAt])
 }
@@ -127,22 +141,69 @@ model Plan {
   createdAt    DateTime       @default(now())
 
   subscriptions Subscription[]
+  transactions  PaymentTransaction[]
 }
 
 model Subscription {
-  id        String             @id @default(cuid())
-  userId    String             @unique
-  planId    String
-  status    SubscriptionStatus @default(active)
-  startedAt DateTime           @default(now())
-  expiresAt DateTime?
-  createdAt DateTime           @default(now())
-  updatedAt DateTime           @updatedAt
+  id                String             @id @default(cuid())
+  userId            String             @unique
+  planId            String
+  status            SubscriptionStatus @default(active)
+  billingCycle      BillingCycle       @default(monthly)
+  startedAt         DateTime           @default(now())
+  expiresAt         DateTime?
+  provider          String?
+  providerReference String?
+  providerPaymentId String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  plan Plan @relation(fields: [planId], references: [id])
+  user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan         Plan                 @relation(fields: [planId], references: [id])
+  transactions PaymentTransaction[]
 
   @@index([planId])
+}
+
+model PaymentTransaction {
+  id                String                   @id @default(cuid())
+  userId            String
+  subscriptionId    String?
+  planId            String
+  billingCycle      BillingCycle             @default(monthly)
+  amount            Decimal                  @db.Decimal(12, 2)
+  currency          String                   @default("XOF")
+  status            PaymentTransactionStatus @default(pending)
+  provider          String                   @default("geniuspay")
+  providerReference String?                  @unique
+  providerPaymentId String?
+  checkoutUrl       String?
+  webhookPayload    Json?
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscription Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+  plan         Plan          @relation(fields: [planId], references: [id])
+
+  @@index([userId])
+  @@index([subscriptionId])
+  @@index([planId])
+  @@index([providerReference])
+}
+
+model WebhookEvent {
+  id                String    @id @default(cuid())
+  provider          String
+  eventType         String
+  providerReference String?
+  payload           Json
+  processed         Boolean   @default(false)
+  processedAt       DateTime?
+  createdAt         DateTime  @default(now())
+
+  @@index([provider, eventType])
+  @@index([providerReference])
 }
 
 // ─── Shops ────────────────────────────────────────────────────────────────────
