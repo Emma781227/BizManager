@@ -94,7 +94,7 @@ async function handlePaymentSuccess(
 
   // Vérifications de sécurité
   const paidAmount   = Number(txData.amount ?? 0);
-  const paidCurrency = ((txData.currency ?? "XOF") as string).toUpperCase();
+  const paidCurrency = ((txData.currency ?? "XAF") as string).toUpperCase();
 
   if (paidCurrency !== transaction.currency.toUpperCase()) {
     throw new Error(`Devise incorrecte: reçu ${paidCurrency}, attendu ${transaction.currency}`);

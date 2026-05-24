@@ -92,7 +92,7 @@ export default async function ProductLayout({
         offers: {
           "@type": "Offer",
           price: parseFloat(String(product.unitPrice)).toFixed(0),
-          priceCurrency: "XOF",
+          priceCurrency: "XAF",
           availability:
             product.stock > 0
               ? "https://schema.org/InStock"

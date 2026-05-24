@@ -14,7 +14,7 @@ function cleanPhone(phone: string) {
 function toMoney(value: number) {
   return new Intl.NumberFormat("fr-FR", {
     style: "currency",
-    currency: "XOF",
+    currency: "XAF",
     maximumFractionDigits: 0,
   }).format(value);
 }
