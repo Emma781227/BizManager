@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { verifyWebhookSignature, verifyWebhookTimestamp } from "@/lib/geniuspay";
+
+function toJson(v: unknown): Prisma.InputJsonValue {
+  return v as unknown as Prisma.InputJsonValue;
+}
 
 export async function POST(request: NextRequest) {
   const rawBody = await request.text();
@@ -42,7 +47,7 @@ export async function POST(request: NextRequest) {
       provider:  "geniuspay",
       eventType,
       providerReference: providerReference || null,
-      payload,
+      payload: toJson(payload),
       processed: false,
     },
   });
@@ -115,7 +120,7 @@ async function handlePaymentSuccess(
         status:            "paid",
         providerReference: geniusPayRef ?? transaction.providerReference,
         providerPaymentId: txData.id != null ? String(txData.id) : transaction.providerPaymentId,
-        webhookPayload:    txData,
+        webhookPayload:    toJson(txData),
       },
     }),
     prisma.subscription.upsert({
