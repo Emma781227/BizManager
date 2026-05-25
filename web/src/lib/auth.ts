@@ -12,7 +12,7 @@ export type SessionPayload = {
   role?: "merchant" | "admin";
 };
 
-const defaultAdminEmails = ["merchant@test.local"];
+const defaultAdminEmails: string[] = [];
 
 function getAdminEmails() {
   const raw = process.env.PLATFORM_ADMIN_EMAILS ?? "";
@@ -25,14 +25,9 @@ function getAdminEmails() {
 }
 
 export function isPlatformAdmin(session: SessionPayload | null) {
-  if (!session) {
-    return false;
-  }
-
-  if (session.role === "admin") {
-    return true;
-  }
-
+  if (!session) return false;
+  if (session.role === "merchant") return false;
+  if (session.role === "admin") return true;
   return getAdminEmails().includes(session.email.toLowerCase());
 }
 
