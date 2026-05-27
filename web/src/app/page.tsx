@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import React from "react";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import { getSessionFromCookieStore } from "@/lib/auth";
 
 export const metadata: Metadata = {
   title: "BizManager — Créez votre boutique en ligne en Afrique",
@@ -106,7 +109,11 @@ const card = {
   boxShadow: "0 2px 12px rgba(16,24,40,0.06)",
 } as React.CSSProperties;
 
-export default function HomePage() {
+export default async function HomePage() {
+  const cookieStore = await cookies();
+  const session = await getSessionFromCookieStore(cookieStore);
+  if (session) redirect("/dashboard");
+
   return (
     <>
       <style>{LP_CSS}</style>

@@ -4,6 +4,7 @@ import type React from "react";
 import { useActiveShop } from "@/hooks/useActiveShop";
 import CreateShopModal from "../shops/CreateShopModal";
 import { Camera, Package, Tag, Search, Info, Image, Film, Lock, Check, Pencil, Copy, Eye, Trash2, ChevronLeft, ChevronRight, Store, AlertCircle, AlertTriangle, RefreshCw, Upload, Download, BarChart2, User, ChevronDown, MessageCircle, BookOpen, X, Loader2, Shirt, Sparkles, ShoppingBag } from "lucide-react";
+import NextImage from "next/image";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Shop = {
@@ -1738,7 +1739,7 @@ export default function ProductsPage() {
                         <div className="pr-prod-cell">
                           <div className="pr-prod-av" style={{ padding: p.imageUrl ? 0 : undefined, overflow:"hidden" }}>
                             {p.imageUrl
-                              ? <img src={p.imageUrl} alt={p.name} style={{ width:"100%", height:"100%", objectFit:"cover", borderRadius:10 }} />
+                              ? <NextImage src={p.imageUrl} alt={p.name} width={36} height={36} style={{ objectFit:"cover", width:"100%", height:"100%", borderRadius:10 }} />
                               : <ProductIcon category={p.category ?? ""} />}
                           </div>
                           <div>

@@ -364,6 +364,26 @@ export default function DashboardPage() {
             </div>
           </div>
 
+          {activeShop && (
+            <a
+              href={`/shop/${activeShop.slug}`}
+              target="_blank"
+              rel="noreferrer"
+              title={activeShop.isPublished ? undefined : "Boutique non publiée — aperçu uniquement"}
+              style={{
+                display:"inline-flex", alignItems:"center", gap:6,
+                background: activeShop.isPublished ? "#EAF7EF" : "#F2F4F7",
+                border: `1px solid ${activeShop.isPublished ? "#C3E6D3" : "#E8ECEA"}`,
+                color: activeShop.isPublished ? "#0A8F45" : "#98A2B3",
+                borderRadius:10, padding:"6px 12px", fontSize:13, fontWeight:600,
+                textDecoration:"none", whiteSpace:"nowrap",
+              }}>
+              <Globe size={14} />
+              {activeShop.isPublished ? "Voir ma boutique" : "Aperçu"}
+              {!activeShop.isPublished && <span style={{fontSize:10,marginLeft:2,opacity:0.7}}>(brouillon)</span>}
+            </a>
+          )}
+
           {sub && (
             <div style={{ display:"flex", alignItems:"center", gap:8, background:"#EAF7EF", border:"1px solid #C3E6D3", borderRadius:10, padding:"6px 14px" }}>
               <span style={{ fontSize:13, fontWeight:600, color:"#0A8F45" }}>Plan {sub.plan.displayName}</span>

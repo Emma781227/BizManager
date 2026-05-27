@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { checkRateLimit, getClientIp, logAbuse } from "@/lib/ratelimit";
 import { sendNewOrderNotification, sendStockZeroNotifications, sendLowStockNotification, LOW_STOCK_THRESHOLD } from "@/lib/notifications";
 
 type RouteParams = {
@@ -33,10 +34,53 @@ const publicOrderSchema = z.object({
 
 export async function POST(request: NextRequest, context: RouteParams) {
   const { slug } = await context.params;
+  const ip = getClientIp(request);
+  const ua = request.headers.get("user-agent") ?? undefined;
+
+  // 1. Rate limit: 3 req/min by IP (burst protection)
+  const rl1 = checkRateLimit(`order:ip:${ip}:min`, 3, 60_000);
+  if (!rl1.allowed) {
+    logAbuse({ ip, slug, reason: "rate_limit_ip_min", ua });
+    return NextResponse.json(
+      { error: "Trop de tentatives. Veuillez patienter avant de réessayer." },
+      { status: 429, headers: { "Retry-After": String(rl1.retryAfter) } },
+    );
+  }
+
+  // 2. Rate limit: 10 req/hour by IP
+  const rl2 = checkRateLimit(`order:ip:${ip}:hour`, 10, 3_600_000);
+  if (!rl2.allowed) {
+    logAbuse({ ip, slug, reason: "rate_limit_ip_hour", ua });
+    return NextResponse.json(
+      { error: "Limite horaire atteinte. Veuillez réessayer dans une heure." },
+      { status: 429, headers: { "Retry-After": String(rl2.retryAfter) } },
+    );
+  }
+
+  // 3. Rate limit: 5 req/hour by IP+shop
+  const rl3 = checkRateLimit(`order:ip:${ip}:shop:${slug}`, 5, 3_600_000);
+  if (!rl3.allowed) {
+    logAbuse({ ip, slug, reason: "rate_limit_ip_shop_hour", ua });
+    return NextResponse.json(
+      { error: "Limite atteinte pour cette boutique. Veuillez réessayer plus tard." },
+      { status: 429, headers: { "Retry-After": String(rl3.retryAfter) } },
+    );
+  }
 
   const body = await request.json().catch(() => null);
-  const result = publicOrderSchema.safeParse(body);
 
+  // 4. Honeypot check — bots fill hidden fields, humans don't
+  if (body && typeof body._hp === "string" && body._hp.length > 0) {
+    logAbuse({ ip, slug, reason: "honeypot_triggered", ua });
+    // Fake success to avoid tipping off bots
+    return NextResponse.json(
+      { data: { orderId: "00000000", totalAmount: 0, shopName: "", whatsappNumber: null } },
+      { status: 200 },
+    );
+  }
+
+  // 5. Validate payload
+  const result = publicOrderSchema.safeParse(body);
   if (!result.success) {
     const firstIssue = result.error.issues[0];
     const path = firstIssue?.path?.join(".") ?? "payload";
@@ -44,12 +88,26 @@ export async function POST(request: NextRequest, context: RouteParams) {
     return NextResponse.json({ error: `${path}: ${message}` }, { status: 400 });
   }
 
+  const { customerName, customerPhone, customerAddress, paymentMethod, notes, items } = result.data;
+
+  // 6. Anti double-submit: same phone + shop within 30s
+  const dedupKey = `order:dedup:${slug}:${customerPhone.replace(/\D/g, "")}`;
+  const dedup = checkRateLimit(dedupKey, 1, 30_000);
+  if (!dedup.allowed) {
+    return NextResponse.json(
+      { error: "Une commande similaire vient d'être envoyée. Veuillez patienter avant de réessayer." },
+      { status: 429, headers: { "Retry-After": String(dedup.retryAfter) } },
+    );
+  }
+
+  // 7. Resolve shop (with altSlug fallback)
   let shop = await prisma.shop.findUnique({
     where: { slug: slug.toLowerCase() },
     select: {
       id: true,
       name: true,
       isPublished: true,
+      status: true,
       whatsappNumber: true,
       notificationEmail: true,
     },
@@ -59,7 +117,7 @@ export async function POST(request: NextRequest, context: RouteParams) {
     const altSlug = `${slug}a`.toLowerCase();
     const alt = await prisma.shop.findUnique({
       where: { slug: altSlug },
-      select: { id: true, name: true, isPublished: true, whatsappNumber: true, notificationEmail: true },
+      select: { id: true, name: true, isPublished: true, status: true, whatsappNumber: true, notificationEmail: true },
     });
     if (alt && alt.isPublished) {
       shop = alt;
@@ -68,7 +126,13 @@ export async function POST(request: NextRequest, context: RouteParams) {
     }
   }
 
-  const { customerName, customerPhone, customerAddress, paymentMethod, notes, items } = result.data;
+  // 8. Check shop is operational
+  if (shop.status !== "active") {
+    return NextResponse.json(
+      { error: "Cette boutique n'accepte pas de commandes pour le moment." },
+      { status: 403 },
+    );
+  }
 
   const productIds = items.map((item) => item.productId);
 
@@ -88,7 +152,7 @@ export async function POST(request: NextRequest, context: RouteParams) {
     },
   });
 
-  // Validate products and variants; resolve unit prices
+  // 9. Validate products, variants, and stock; resolve unit prices
   const resolvedItems: Array<{ productId: string; variantId?: string; variantLabel?: string; quantity: number; unitPrice: number }> = [];
 
   for (const item of items) {

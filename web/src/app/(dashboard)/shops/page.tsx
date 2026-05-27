@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useActiveShop } from "@/hooks/useActiveShop";
 import CreateShopModal from "./CreateShopModal";
 import { Store, Star, Globe, Package, ShoppingCart, Users, Tag, Check } from "lucide-react";
+import Image from "next/image";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type ApiShop = {
@@ -129,25 +130,24 @@ export default function ShopsPage() {
         {!loading && shops.length > 0 && (
           <div className="bs-grid">
             {shops.map(shop => (
-              <a
+              <div
                 key={shop.id}
-                href={`/shop/${shop.slug}`}
-                target="_blank"
-                rel="noreferrer"
                 className="bs-card"
+                onClick={() => setActiveShopId(shop.id)}
                 style={{
-                  textDecoration:"none", display:"block",
                   ...(activeShopId === shop.id ? {border:"2px solid #0A8F45"} : {}),
                 }}>
                 {shop.coverUrl ? (
-                  <img src={shop.coverUrl} alt={shop.name} className="bs-cover" />
+                  <div style={{ position: "relative", height: 100, overflow: "hidden", background: "#EAF7EF" }}>
+                    <Image src={shop.coverUrl} alt={shop.name} fill style={{ objectFit: "cover" }} sizes="(max-width: 700px) 100vw, 340px" />
+                  </div>
                 ) : (
                   <div className="bs-cover-placeholder" style={{display:"flex",alignItems:"center",justifyContent:"center",color:"#98A2B3"}}><Store size={32} /></div>
                 )}
                 <div className="bs-card-body">
                   <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
                     <div className="bs-logo">
-                      {shop.logoUrl ? <img src={shop.logoUrl} alt="logo" style={{width:"100%",height:"100%",objectFit:"cover"}} /> : <Tag size={20} color="#98A2B3" />}
+                      {shop.logoUrl ? <Image src={shop.logoUrl} alt={`Logo ${shop.name}`} width={44} height={44} style={{ objectFit: "cover", width: "100%", height: "100%" }} /> : <Tag size={20} color="#98A2B3" />}
                     </div>
                     <div style={{flex:1,minWidth:0}}>
                       <div style={{fontWeight:700,fontSize:14,color:"#1F2A24",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{shop.name}</div>
@@ -170,14 +170,29 @@ export default function ShopsPage() {
 
                   {/* Footer row */}
                   <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}>
-                    <span style={{fontSize:11,color:"#98A2B3",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                    <span style={{fontSize:10,color:"#98A2B3",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",flex:1}}>
                       {shop.slug}.bizmanager.shop
                     </span>
-                    <span style={{fontSize:11,fontWeight:600,color:"#0A8F45",flexShrink:0,display:"flex",alignItems:"center",gap:4}}>
-                      {shop.isPublished ? "Voir ↗" : (
-                        <span style={{color:"#98A2B3"}}>Aperçu ↗</span>
-                      )}
-                    </span>
+                    <div style={{display:"flex",gap:6,flexShrink:0}}>
+                      <a
+                        href="/settings"
+                        onClick={e => { e.stopPropagation(); setActiveShopId(shop.id); }}
+                        style={{fontSize:11,fontWeight:600,color:"#667085",background:"#F2F4F7",borderRadius:6,padding:"4px 10px",textDecoration:"none"}}>
+                        Gérer
+                      </a>
+                      <a
+                        href={`/shop/${shop.slug}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        onClick={e => e.stopPropagation()}
+                        title={!shop.isPublished ? "Boutique non publiée — aperçu uniquement" : undefined}
+                        style={{fontSize:11,fontWeight:600,
+                          color: shop.isPublished ? "#0A8F45" : "#98A2B3",
+                          background: shop.isPublished ? "#EAF7EF" : "#F2F4F7",
+                          borderRadius:6,padding:"4px 10px",textDecoration:"none"}}>
+                        {shop.isPublished ? "Voir la boutique ↗" : "Aperçu ↗"}
+                      </a>
+                    </div>
                   </div>
 
                   {activeShopId === shop.id && (
@@ -191,7 +206,7 @@ export default function ShopsPage() {
                     </div>
                   )}
                 </div>
-              </a>
+              </div>
             ))}
           </div>
         )}

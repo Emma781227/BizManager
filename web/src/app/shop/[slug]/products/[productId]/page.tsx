@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import {
   ArrowLeft, Search, Heart, MessageCircle,
   Package, CheckCircle, X, ChevronLeft, ChevronRight,
@@ -1145,10 +1146,13 @@ export default function ProductDetailPage() {
           <div>
             <div className="pdp-gallery-main">
               {mainImage ? (
-                <img
+                <Image
                   src={mainImage}
                   alt={product.name}
+                  fill
                   className="pdp-gallery-img"
+                  priority
+                  sizes="(max-width: 768px) 100vw, 460px"
                   onClick={() => openLightbox(currentIdx < 0 ? 0 : currentIdx)}
                   role="button"
                   tabIndex={0}
@@ -1195,7 +1199,7 @@ export default function ProductDetailPage() {
               <div className="pdp-thumbs">
                 {gallery.map((img, i) => (
                   <button key={i} className={`pdp-thumb${img === (mainImage) ? " active" : ""}`} onClick={() => setSelectedImage(img)}>
-                    <img src={img} alt={`Vue ${i + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    <Image src={img} alt={`Vue ${i + 1}`} width={68} height={68} style={{ objectFit: "cover", width: "100%", height: "100%" }} />
                   </button>
                 ))}
               </div>
@@ -1593,7 +1597,7 @@ export default function ProductDetailPage() {
                 <Link key={p.id} href={`/shop/${slug}/products/${p.id}`} className="pdp-reco-card">
                   <div className="pdp-reco-img-wrap">
                     {p.imageUrl
-                      ? <img src={p.imageUrl} alt={p.name} className="pdp-reco-img" />
+                      ? <Image src={p.imageUrl} alt={p.name} fill className="pdp-reco-img" sizes="(max-width: 768px) 45vw, 20vw" />
                       : <div className="pdp-reco-placeholder">📦</div>
                     }
                   </div>

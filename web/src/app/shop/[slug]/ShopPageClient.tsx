@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Heart, Home, MessageCircle, Plus, Search, ShoppingBag, X } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 
 interface Shop {
   id: string;
@@ -149,7 +150,7 @@ const CSS = `
   }
   .sp-shop-avatar {
     width: 90px; height: 90px; border-radius: 16px; background: #fff;
-    overflow: hidden; flex-shrink: 0;
+    overflow: hidden; flex-shrink: 0; position: relative;
     display: flex; align-items: center; justify-content: center;
     box-shadow: 0 0 0 3px rgba(255,255,255,.2); margin-bottom: 4px;
   }
@@ -675,7 +676,13 @@ export default function ShopPageClient({ initialShop, initialProducts }: ShopPag
 
         <div className="sp-card-img-wrap">
           {product.imageUrl
-            ? <img src={product.imageUrl} alt="" className="sp-card-img" />
+            ? <Image
+                src={product.imageUrl}
+                alt={product.name}
+                fill
+                className="sp-card-img"
+                sizes="(max-width: 480px) 50vw, (max-width: 900px) 50vw, (max-width: 1200px) 33vw, 25vw"
+              />
             : <div className="sp-card-img" style={{ background: '#F0F2F1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32 }}>📦</div>
           }
           <div className="sp-card-overlay" aria-hidden>
@@ -887,7 +894,7 @@ export default function ShopPageClient({ initialShop, initialProducts }: ShopPag
                   >
                     <div className="sp-suggest-thumb">
                       {p.imageUrl
-                        ? <img src={p.imageUrl} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ? <Image src={p.imageUrl} alt={p.name} width={38} height={38} style={{ objectFit: 'cover', width: '100%', height: '100%' }} />
                         : <span style={{ fontSize: 18 }}>📦</span>
                       }
                     </div>
@@ -962,7 +969,7 @@ export default function ShopPageClient({ initialShop, initialProducts }: ShopPag
           <div className="sp-hero-content">
             <div className="sp-shop-avatar">
               {shop.logoUrl
-                ? <img src={shop.logoUrl} alt={shop.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ? <Image src={shop.logoUrl} alt={shop.name} fill style={{ objectFit: 'cover' }} sizes="90px" />
                 : <span style={{ fontSize: 28, fontWeight: 800, color: '#0A8F45' }}>{shop.name[0]}</span>
               }
             </div>
@@ -1285,7 +1292,7 @@ export default function ShopPageClient({ initialShop, initialProducts }: ShopPag
                   <div key={item.productId} style={{ display: 'flex', gap: 12, padding: '12px 0', borderBottom: '1px solid #F4F6F5' }}>
                     <div style={{ width: 56, height: 56, borderRadius: 10, background: '#F8FAF9', overflow: 'hidden', flexShrink: 0 }}>
                       {item.imageUrl
-                        ? <img src={item.imageUrl} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ? <Image src={item.imageUrl} alt={item.name} width={56} height={56} style={{ objectFit: 'cover', width: '100%', height: '100%' }} />
                         : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>📦</div>
                       }
                     </div>
@@ -1404,13 +1411,17 @@ function CheckoutModal({ cart, cartTotal, slug, onClose, onSuccess }: {
   const [address, setAddress] = useState('');
   const [payment, setPayment] = useState<'cash' | 'mobile_money' | 'bank_transfer' | 'cod'>('cod');
   const [notes, setNotes] = useState('');
+  const [honeypot, setHoneypot] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const submittingRef = useRef(false);
 
   async function handleSubmit() {
+    if (submittingRef.current) return;
     if (!name.trim()) { setError('Veuillez entrer votre nom.'); return; }
     if (!phone.trim() || phone.trim().length < 8) { setError('Numéro de téléphone invalide.'); return; }
     if (cart.length === 0) { setError('Votre panier est vide.'); return; }
+    submittingRef.current = true;
     setLoading(true); setError('');
     try {
       const res = await fetch(`/api/public/shop/${slug}/orders`, {
@@ -1422,16 +1433,22 @@ function CheckoutModal({ cart, cartTotal, slug, onClose, onSuccess }: {
           customerAddress: address.trim() || undefined,
           paymentMethod: payment,
           notes: notes.trim() || undefined,
+          _hp: honeypot,
           items: cart.map(i => ({ productId: i.productId, quantity: i.quantity })),
         }),
       });
       const json = await res.json();
+      if (res.status === 429) {
+        setError(json.error ?? 'Trop de tentatives. Veuillez patienter avant de réessayer.');
+        return;
+      }
       if (!res.ok) { setError(json.error ?? 'Erreur lors de la commande.'); return; }
       onSuccess(json.data);
     } catch {
       setError('Erreur réseau. Veuillez réessayer.');
     } finally {
       setLoading(false);
+      submittingRef.current = false;
     }
   }
 
@@ -1526,6 +1543,16 @@ function CheckoutModal({ cart, cartTotal, slug, onClose, onSuccess }: {
               style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #E8ECEA', borderRadius: 10, fontSize: 13, color: '#1F2A24', outline: 'none', resize: 'vertical', fontFamily: 'inherit', boxSizing: 'border-box', minHeight: 72 }}
             />
           </div>
+
+          {/* Honeypot — invisible to humans, filled only by bots */}
+          <input
+            type="text"
+            tabIndex={-1}
+            aria-hidden="true"
+            value={honeypot}
+            onChange={e => setHoneypot(e.target.value)}
+            style={{ position: 'absolute', left: '-9999px', top: '-9999px', opacity: 0, pointerEvents: 'none', width: 1, height: 1 }}
+          />
 
           {error && (
             <div style={{ background: '#FDE8E8', border: '1px solid #F9BDBD', borderRadius: 10, padding: '10px 14px', fontSize: 13, color: '#C02020' }}>
