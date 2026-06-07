@@ -4,7 +4,9 @@ import { prisma } from "@/lib/prisma";
 import { getSessionFromRequest } from "@/lib/auth";
 import { productSchema } from "@/lib/validators";
 import { resolveShop, checkProductQuota } from "@/lib/shop";
+import { hasPermission } from "@/lib/permissions";
 import { uploadMedia } from "@/lib/cloudinary";
+import { parsePaginationParams, buildPaginatedResponse } from "@/lib/pagination";
 
 export const runtime = "nodejs";
 
@@ -42,51 +44,99 @@ async function saveProductMedia(file: File): Promise<string | null> {
   return uploadMedia(file);
 }
 
-// GET /api/products?shopId=xxx&q=...&category=...&stock=...
+const PRODUCT_SORT_ORDERS = {
+  name_asc:     { name:       "asc"  as const },
+  name_desc:    { name:       "desc" as const },
+  price_asc:    { unitPrice:  "asc"  as const },
+  price_desc:   { unitPrice:  "desc" as const },
+  stock_asc:    { stock:      "asc"  as const },
+  stock_desc:   { stock:      "desc" as const },
+  created_asc:  { createdAt:  "asc"  as const },
+  created_desc: { createdAt:  "desc" as const },
+} as const;
+type ProductSortKey = keyof typeof PRODUCT_SORT_ORDERS;
+
+// GET /api/products?shopId=xxx&q=...&category=...&stock=...&status=...&sort=...&page=...&limit=...
 export async function GET(request: NextRequest) {
   const session = await getSessionFromRequest(request);
   if (!session) return NextResponse.json({ error: "Non authentifie" }, { status: 401 });
 
-  const shopId   = request.nextUrl.searchParams.get("shopId")?.trim();
-  const search   = request.nextUrl.searchParams.get("q")?.trim() ?? "";
-  const category = request.nextUrl.searchParams.get("category")?.trim() ?? "";
-  const stockStatus = request.nextUrl.searchParams.get("stock")?.trim() ?? "";
+  const sp          = request.nextUrl.searchParams;
+  const shopId      = sp.get("shopId")?.trim();
+  const search      = sp.get("q")?.trim() ?? "";
+  const category    = sp.get("category")?.trim() ?? "";
+  const stockStatus = sp.get("stock")?.trim() ?? "";
+  const statusParam = sp.get("status")?.trim() ?? "";
+  const rawSort     = sp.get("sort")?.trim() ?? "created_desc";
+  const { page, limit, skip } = parsePaginationParams(sp);
 
-  // Résoudre la boutique (propriétaire vérifié)
   const shop = await resolveShop(session.userId, shopId);
   if (!shop) return NextResponse.json({ error: "Boutique introuvable" }, { status: 404 });
 
+  const sortKey: ProductSortKey = (rawSort in PRODUCT_SORT_ORDERS) ? rawSort as ProductSortKey : "created_desc";
+  const orderBy = PRODUCT_SORT_ORDERS[sortKey];
+
   let stockCondition: { gt: number; lte?: number } | { equals: number } | undefined;
-  if (stockStatus === "low")          stockCondition = { gt: 0, lte: 8 };
-  else if (stockStatus === "in_stock")     stockCondition = { gt: 8 };
-  else if (stockStatus === "out_of_stock") stockCondition = { equals: 0 };
+  if (stockStatus === "low")           stockCondition = { gt: 0, lte: 8 };
+  else if (stockStatus === "in_stock")      stockCondition = { gt: 8 };
+  else if (stockStatus === "out_of_stock")  stockCondition = { equals: 0 };
 
-  const products = await prisma.product.findMany({
-    where: {
-      shopId: shop.id,
-      ...(category ? { OR: [{ category: { equals: category, mode: "insensitive" } }, { categories: { has: category } }] } : {}),
-      ...(stockCondition ? { stock: stockCondition } : {}),
-      ...(search ? { OR: [
-        { name:       { contains: search, mode: "insensitive" } },
-        { sku:        { contains: search, mode: "insensitive" } },
-        { category:   { contains: search, mode: "insensitive" } },
-        { categories: { has: search } },
-      ]} : {}),
-    },
-    orderBy: { createdAt: "desc" },
-    include: { variants: { orderBy: { createdAt: "asc" } } },
-  });
+  const andClauses: object[] = [];
+  if (category) {
+    andClauses.push({ OR: [
+      { category: { equals: category, mode: "insensitive" } },
+      { categories: { has: category } },
+    ]});
+  }
+  if (search) {
+    andClauses.push({ OR: [
+      { name:       { contains: search, mode: "insensitive" } },
+      { sku:        { contains: search, mode: "insensitive" } },
+      { category:   { contains: search, mode: "insensitive" } },
+      { categories: { has: search } },
+    ]});
+  }
 
-  const categorySource = await prisma.product.findMany({
-    where: { shopId: shop.id },
-    select: { category: true, categories: true },
-  });
+  const where = {
+    shopId: shop.id,
+    ...(stockCondition           ? { stock:    stockCondition } : {}),
+    ...(statusParam === "active" ? { isActive: true  }         : {}),
+    ...(statusParam === "draft"  ? { isActive: false }         : {}),
+    ...(andClauses.length > 0   ? { AND: andClauses }          : {}),
+  };
+
+  const [items, total, allProducts] = await Promise.all([
+    prisma.product.findMany({
+      where,
+      orderBy,
+      skip,
+      take: limit,
+      include: { variants: { orderBy: { createdAt: "asc" } } },
+    }),
+    prisma.product.count({ where }),
+    prisma.product.findMany({
+      where: { shopId: shop.id },
+      select: { isActive: true, stock: true, lowStockThreshold: true, category: true, categories: true },
+    }),
+  ]);
+
+  const stats = {
+    total:      allProducts.length,
+    active:     allProducts.filter(p => p.isActive).length,
+    outOfStock: allProducts.filter(p => p.stock === 0).length,
+    lowStock:   allProducts.filter(p => p.stock > 0 && p.stock <= (p.lowStockThreshold ?? 5)).length,
+    draft:      allProducts.filter(p => !p.isActive).length,
+  };
+
   const availableCategories = Array.from(new Set(
-    categorySource.flatMap(p => [...(p.categories ?? []), p.category ?? ""])
+    allProducts.flatMap(p => [...(p.categories ?? []), p.category ?? ""])
       .map(v => v.trim()).filter(Boolean),
   )).sort((a, b) => a.localeCompare(b, "fr"));
 
-  return NextResponse.json({ data: products, meta: { categories: availableCategories, shopId: shop.id } });
+  return NextResponse.json({
+    ...buildPaginatedResponse(items, page, limit, total),
+    meta: { shopId: shop.id, categories: availableCategories, stats },
+  });
 }
 
 // POST /api/products
@@ -97,6 +147,10 @@ export async function POST(request: NextRequest) {
   const shopId = request.nextUrl.searchParams.get("shopId")?.trim();
   const shop   = await resolveShop(session.userId, shopId);
   if (!shop) return NextResponse.json({ error: "Boutique introuvable" }, { status: 404 });
+
+  if (!hasPermission(shop._staffRole, "canManageProducts")) {
+    return NextResponse.json({ error: "Accès refusé — droits insuffisants" }, { status: 403 });
+  }
 
   // Vérification quota produits
   const quotaError = await checkProductQuota(shop.id);

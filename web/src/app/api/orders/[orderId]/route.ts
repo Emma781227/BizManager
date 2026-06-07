@@ -3,6 +3,8 @@ import type { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSessionFromRequest } from "@/lib/auth";
 import { updateOrderSchema } from "@/lib/validators";
+import { resolveShop } from "@/lib/shop";
+import { hasPermission } from "@/lib/permissions";
 
 type RouteParams = {
   params: Promise<{ orderId: string }>;
@@ -23,14 +25,33 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
     return NextResponse.json({ error: "Payload invalide" }, { status: 400 });
   }
 
-  // Vérifier ownership via la boutique
-  const existing = await prisma.order.findFirst({
-    where: { id: orderId, shop: { userId: session.userId } },
-    select: { id: true, status: true },
+  const existing = await prisma.order.findUnique({
+    where: { id: orderId },
+    select: { id: true, status: true, shopId: true },
   });
 
   if (!existing) {
     return NextResponse.json({ error: "Commande introuvable" }, { status: 404 });
+  }
+
+  const shop = await resolveShop(session.userId, existing.shopId);
+  if (!shop) {
+    return NextResponse.json({ error: "Commande introuvable" }, { status: 404 });
+  }
+
+  // Staff can update order status only (canUpdateStock covers operational updates);
+  // full payment fields require canManageOrders (manager+)
+  const updatingPayment =
+    result.data.paymentStatus !== undefined ||
+    result.data.paymentMethod !== undefined ||
+    result.data.paidAmount !== undefined;
+
+  if (updatingPayment && !hasPermission(shop._staffRole, "canManageOrders")) {
+    return NextResponse.json({ error: "Accès refusé — droits insuffisants pour modifier le paiement" }, { status: 403 });
+  }
+
+  if (!hasPermission(shop._staffRole, "canUpdateStock") && !hasPermission(shop._staffRole, "canManageOrders")) {
+    return NextResponse.json({ error: "Accès refusé — droits insuffisants" }, { status: 403 });
   }
 
   const updated = await prisma.$transaction(async tx => {

@@ -255,8 +255,8 @@ export default function DashboardPage() {
       ]);
       const [kpiD, ordD, prdD] = await Promise.all([kpiRes.json(), ordRes.json(), prdRes.json()]);
       if (kpiRes.ok) setKpi(kpiD as KpiData);
-      setOrders((Array.isArray(ordD.data) ? ordD.data : []).slice(0, 5) as Order[]);
-      setProducts((Array.isArray(prdD.data) ? prdD.data : []).slice(0, 5) as Product[]);
+      setOrders((Array.isArray(ordD.items) ? ordD.items : (Array.isArray(ordD.data) ? ordD.data : [])).slice(0, 5) as Order[]);
+      setProducts((Array.isArray(prdD.items) ? prdD.items : (Array.isArray(prdD.data) ? prdD.data : [])).slice(0, 5) as Product[]);
     } catch {}
     setLoading(false);
   }

@@ -311,14 +311,15 @@ function DetailModal({
 }
 
 // ─── Donut Chart ──────────────────────────────────────────────────────────────
-function DonutChart({ orders }: { orders: Order[] }) {
-  const total = orders.length || 1;
-  const counts = { whatsapp: 0, online: 0, manual: 0 };
-  orders.forEach(o => counts[o.channel]++);
+function DonutChart({ total, channelCounts }: {
+  total: number;
+  channelCounts: { whatsapp: number; online: number; manual: number };
+}) {
+  const t = total || 1;
   const data = [
-    { label:"WhatsApp", pct: Math.round(counts.whatsapp / total * 100), color:"#0A8F45" },
-    { label:"En ligne",  pct: Math.round(counts.online  / total * 100), color:"#3B82F6" },
-    { label:"Manuel",   pct: Math.round(counts.manual  / total * 100), color:"#98A2B3" },
+    { label:"WhatsApp", count: channelCounts.whatsapp, pct: Math.round(channelCounts.whatsapp / t * 100), color:"#0A8F45" },
+    { label:"En ligne",  count: channelCounts.online,  pct: Math.round(channelCounts.online  / t * 100), color:"#3B82F6" },
+    { label:"Manuel",   count: channelCounts.manual,   pct: Math.round(channelCounts.manual  / t * 100), color:"#98A2B3" },
   ];
   const r = 38; const cx = 46; const cy = 46; const circ = 2 * Math.PI * r;
   let off = 0;
@@ -331,7 +332,7 @@ function DonutChart({ orders }: { orders: Order[] }) {
   return (
     <div className="or-donut-wrap">
       <svg width="92" height="92" viewBox="0 0 92 92" style={{ flexShrink:0 }}>
-        {orders.length === 0 ? (
+        {total === 0 ? (
           <circle cx={cx} cy={cy} r={r} fill="none" stroke="#E8ECEA" strokeWidth="12" />
         ) : data.map((d, i) => (
           <circle key={d.label} cx={cx} cy={cy} r={r} fill="none" stroke={d.color} strokeWidth="12"
@@ -339,7 +340,7 @@ function DonutChart({ orders }: { orders: Order[] }) {
             strokeDashoffset={-slices[i].offset}
             style={{ transform:"rotate(-90deg)", transformOrigin:"46px 46px" }} />
         ))}
-        <text x="46" y="43" textAnchor="middle" fontSize="12" fill="#1F2A24" fontWeight="700">{orders.length}</text>
+        <text x="46" y="43" textAnchor="middle" fontSize="12" fill="#1F2A24" fontWeight="700">{total}</text>
         <text x="46" y="56" textAnchor="middle" fontSize="9" fill="#98A2B3">cmd</text>
       </svg>
       <div className="or-donut-legend">
@@ -380,7 +381,7 @@ function NewOrderModal({
     fetch(`/api/products?shopId=${shopId}`)
       .then(r => r.json())
       .then(data => {
-        const list = Array.isArray(data.data) ? data.data : [];
+        const list = Array.isArray(data.items) ? data.items : (Array.isArray(data.data) ? data.data : []);
         setShopProducts(
           list
             .filter((p: { isActive?: boolean; stock?: number }) => p.isActive !== false && Number(p.stock ?? 0) > 0)
@@ -595,14 +596,14 @@ function downloadCSV(rows: string[][], filename: string) {
 }
 
 // ─── Paginator ────────────────────────────────────────────────────────────────
-const PAGE_SIZE = 25;
-function Paginator({ page, total, onChange }: { page: number; total: number; onChange: (p: number) => void }) {
-  const pages = Math.ceil(total / PAGE_SIZE);
-  if (pages <= 1) return (
-    <div className="pag"><span className="pag-info">{total} résultat{total !== 1 ? "s" : ""}</span></div>
-  );
-  const start = (page - 1) * PAGE_SIZE + 1;
-  const end   = Math.min(page * PAGE_SIZE, total);
+function Paginator({ page, total, limit, onPageChange, onLimitChange }: {
+  page: number; total: number; limit: number;
+  onPageChange: (p: number) => void;
+  onLimitChange: (l: number) => void;
+}) {
+  const pages = total > 0 ? Math.ceil(total / limit) : 1;
+  const start = total > 0 ? (page - 1) * limit + 1 : 0;
+  const end   = Math.min(page * limit, total);
   const range = Array.from(new Set([1, pages, page - 1, page, page + 1].filter(n => n >= 1 && n <= pages))).sort((a,b) => a-b);
   const nums: (number|"…")[] = [];
   for (let i = 0; i < range.length; i++) {
@@ -611,17 +612,34 @@ function Paginator({ page, total, onChange }: { page: number; total: number; onC
   }
   return (
     <div className="pag">
-      <span className="pag-info">{start}–{end} sur {total}</span>
+      <span className="pag-info">
+        {total > 0 ? `Affichage de ${start} à ${end} sur ${total}` : "0 résultat"}
+      </span>
       <div className="pag-btns">
-        <button className="pag-btn" disabled={page <= 1} onClick={() => onChange(page - 1)}>‹</button>
+        <button className="pag-btn" disabled={page <= 1} onClick={() => onPageChange(page - 1)}>‹</button>
         {nums.map((n, i) => n === "…"
           ? <span key={`e${i}`} style={{ padding:"0 4px", color:"#98A2B3", fontSize:12 }}>…</span>
-          : <button key={n} className={`pag-btn${n === page ? " active" : ""}`} onClick={() => onChange(n as number)}>{n}</button>
+          : <button key={n} className={`pag-btn${n === page ? " active" : ""}`} onClick={() => onPageChange(n as number)}>{n}</button>
         )}
-        <button className="pag-btn" disabled={page >= pages} onClick={() => onChange(page + 1)}>›</button>
+        <button className="pag-btn" disabled={page >= pages} onClick={() => onPageChange(page + 1)}>›</button>
       </div>
+      <select className="sel" style={{ height:28, fontSize:12, padding:"0 8px" }}
+        value={limit} onChange={e => { onLimitChange(Number(e.target.value)); onPageChange(1); }}>
+        <option value={10}>10 / page</option>
+        <option value={20}>20 / page</option>
+        <option value={50}>50 / page</option>
+      </select>
     </div>
   );
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function getDateRange(dateF: string): { dateFrom: string; dateTo: string } {
+  const today = new Date().toISOString().slice(0, 10);
+  if (dateF === "today") return { dateFrom: today,                                                                  dateTo: today };
+  if (dateF === "7d")    return { dateFrom: new Date(Date.now() - 7  * 86400_000).toISOString().slice(0, 10),      dateTo: today };
+  if (dateF === "30d")   return { dateFrom: new Date(Date.now() - 30 * 86400_000).toISOString().slice(0, 10),      dateTo: today };
+  return { dateFrom: "", dateTo: "" };
 }
 
 // ─── Main component ────────────────────────────────────────────────────────────
@@ -630,18 +648,23 @@ export default function OrdersPage() {
   const [shops, setShops]               = useState<ApiShop[]>([]);
   const [orders, setOrders]             = useState<Order[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
+  const [searchInput, setSearchInput]   = useState("");
   const [search, setSearch]             = useState("");
   const [statusF, setStatusF]           = useState("all");
   const [payF, setPayF]                 = useState("all");
   const [channelF, setChannelF]         = useState("all");
   const [dateF, setDateF]               = useState("all");
+  const [sortBy, setSortBy]             = useState("created_desc");
+  const [page, setPage]                 = useState(1);
+  const [limit, setLimit]               = useState(20);
+  const [paginationTotal, setPaginationTotal] = useState(0);
+  const [globalStats, setGlobalStats]   = useState({ total: 0, pending: 0, delivered: 0, revenue: 0, unpaid: 0 });
+  const [channelCounts, setChannelCounts] = useState({ whatsapp: 0, online: 0, manual: 0 });
   const [newOrderOpen, setNewOrderOpen]   = useState(false);
   const [newBadge, setNewBadge]           = useState(0);
-  const [page, setPage]                   = useState(1);
   const [cancelOrderId, setCancelOrderId] = useState<string | null>(null);
   const [detailOrder, setDetailOrder]     = useState<Order | null>(null);
-  const [sortBy,  setSortBy]  = useState<"date"|"amount">("date");
-  const [sortDir, setSortDir] = useState<"desc"|"asc">("desc");
+  const [refreshKey, setRefreshKey]       = useState(0);
   const knownIds = useRef<Set<string>>(new Set());
 
   const activeShop = shops.find(s => s.id === activeShopId) ?? null;
@@ -661,56 +684,68 @@ export default function OrdersPage() {
       .catch(() => {});
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Load orders when active shop changes
+  // Debounce search input → refetch at page 1
+  useEffect(() => {
+    const t = setTimeout(() => { setSearch(searchInput); setPage(1); }, 300);
+    return () => clearTimeout(t);
+  }, [searchInput]);
+
+  // Backend-paginated orders fetch
   useEffect(() => {
     if (!activeShopId) return;
-    fetchOrders(activeShopId);
-  }, [activeShopId]); // eslint-disable-line react-hooks/exhaustive-deps
+    setOrdersLoading(true);
+    const params = new URLSearchParams({ shopId: activeShopId, page: String(page), limit: String(limit) });
+    if (search)             params.set("q", search);
+    if (statusF !== "all")  params.set("status", statusF);
+    if (payF !== "all")     params.set("paymentStatus", payF);
+    if (channelF !== "all") params.set("channel", channelF);
+    const { dateFrom, dateTo } = getDateRange(dateF);
+    if (dateFrom) params.set("dateFrom", dateFrom);
+    if (dateTo)   params.set("dateTo", dateTo);
+    if (sortBy !== "created_desc") params.set("sort", sortBy);
+    fetch(`/api/orders?${params}`)
+      .then(r => r.json())
+      .then(data => {
+        const raw = (data.items ?? []) as ApiOrder[];
+        const mapped = raw.map(apiToDisplay);
+        setOrders(mapped);
+        knownIds.current = new Set(mapped.map(o => o.id));
+        setPaginationTotal(data.total ?? 0);
+        setGlobalStats(data.meta?.stats ?? { total: 0, pending: 0, delivered: 0, revenue: 0, unpaid: 0 });
+        setChannelCounts(data.meta?.channelCounts ?? { whatsapp: 0, online: 0, manual: 0 });
+        setDetailOrder(prev => prev ? (mapped.find(o => o.id === prev.id) ?? prev) : null);
+      })
+      .catch(() => {})
+      .finally(() => setOrdersLoading(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeShopId, page, limit, search, statusF, payF, channelF, dateF, sortBy, refreshKey]);
 
-  // Poll every 30s for new orders
+  // Poll every 30s — check first page for new orders only
   useEffect(() => {
     if (!activeShopId) return;
     const iv = setInterval(async () => {
       try {
-        const res  = await fetch(`/api/orders?shopId=${activeShopId}`);
+        const res  = await fetch(`/api/orders?shopId=${activeShopId}&limit=10&page=1`);
         const data = await res.json();
-        if (!Array.isArray(data.data)) return;
-        const fetched = (data.data as ApiOrder[]).map(apiToDisplay);
+        if (!Array.isArray(data.items)) return;
+        const fetched = (data.items as ApiOrder[]).map(apiToDisplay);
         const brandNew = fetched.filter(o => !knownIds.current.has(o.id) && o.status === "new");
         if (brandNew.length > 0) {
-          setOrders(fetched);
           fetched.forEach(o => knownIds.current.add(o.id));
           setNewBadge(c => c + brandNew.length);
+          setRefreshKey(k => k + 1);
         }
       } catch {}
     }, 30_000);
     return () => clearInterval(iv);
   }, [activeShopId]);
 
-  async function fetchOrders(shopId: string) {
-    if (!shopId) return;
-    setOrdersLoading(true);
-    try {
-      const res  = await fetch(`/api/orders?shopId=${shopId}`);
-      const data = await res.json();
-      if (Array.isArray(data.data)) {
-        const mapped = (data.data as ApiOrder[]).map(apiToDisplay);
-        setOrders(mapped);
-        knownIds.current = new Set(mapped.map(o => o.id));
-        setDetailOrder(prev => prev ? (mapped.find(o => o.id === prev.id) ?? prev) : null);
-      }
-    } catch {}
-    setOrdersLoading(false);
-  }
-
   function handleExportCSV() {
     const shopName = activeShop?.name ?? "boutique";
     const date     = new Date().toISOString().slice(0, 10);
     const headers  = ["Référence", "Client", "Téléphone", "Canal", "Produits", "Montant (FCFA)", "Paiement", "Mode paiement", "Statut", "Date"];
-    const rows     = filtered.map(o => [
-      o.ref,
-      o.client,
-      o.phone,
+    const rows     = orders.map(o => [
+      o.ref, o.client, o.phone,
       CHANNEL_LABELS[o.channel],
       o.items.map(i => `${i.name} ×${i.qty}`).join(" | "),
       String(o.amount),
@@ -739,50 +774,6 @@ export default function OrdersPage() {
     } catch {}
   }
 
-  const filtered = useMemo(() => {
-    const today   = new Date().toISOString().slice(0, 10);
-    const d7ago   = new Date(Date.now() - 7  * 86400_000).toISOString().slice(0, 10);
-    const d30ago  = new Date(Date.now() - 30 * 86400_000).toISOString().slice(0, 10);
-    let list = [...orders];
-    if (search) {
-      const q = search.toLowerCase();
-      list = list.filter(o =>
-        o.ref.toLowerCase().includes(q) || o.client.toLowerCase().includes(q) || o.phone.includes(q)
-      );
-    }
-    if (statusF  !== "all") list = list.filter(o => o.status        === statusF);
-    if (payF     !== "all") list = list.filter(o => o.paymentStatus === payF);
-    if (channelF !== "all") list = list.filter(o => o.channel       === channelF);
-    if (dateF === "today") list = list.filter(o => o.date === today);
-    if (dateF === "7d")    list = list.filter(o => o.date >= d7ago);
-    if (dateF === "30d")   list = list.filter(o => o.date >= d30ago);
-    return list;
-  }, [orders, search, statusF, payF, channelF, dateF]);
-
-  // Reset to page 1 when filters/sort change
-  useEffect(() => { setPage(1); }, [search, statusF, payF, channelF, dateF, sortBy, sortDir]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const sorted = useMemo(() => {
-    const list = [...filtered];
-    if (sortBy === "amount") {
-      list.sort((a, b) => sortDir === "asc" ? a.amount - b.amount : b.amount - a.amount);
-    } else {
-      list.sort((a, b) => sortDir === "asc"
-        ? a.date.localeCompare(b.date)
-        : b.date.localeCompare(a.date));
-    }
-    return list;
-  }, [filtered, sortBy, sortDir]);
-
-  const paginated = sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-
-  // KPIs
-  const pendingCount   = orders.filter(o => o.status === "new" || o.status === "pending").length;
-  const deliveredCount = orders.filter(o => o.status === "delivered").length;
-  const revenue        = orders.filter(o => o.status !== "cancelled").reduce((s, o) => s + o.amount, 0);
-  const unpaidCount    = orders.filter(o => o.paymentStatus === "unpaid" && o.status !== "cancelled").length;
-  const waPendingCount = orders.filter(o => o.channel === "whatsapp" && (o.status === "new" || o.status === "pending")).length;
-
   return (
     <>
       <style>{CSS}</style>
@@ -791,7 +782,7 @@ export default function OrdersPage() {
           shopId={activeShopId}
           shopName={activeShop?.name ?? ""}
           onClose={() => setNewOrderOpen(false)}
-          onCreated={() => { setNewOrderOpen(false); fetchOrders(activeShopId); }}
+          onCreated={() => { setNewOrderOpen(false); setRefreshKey(k => k + 1); }}
         />
       )}
 
@@ -843,7 +834,7 @@ export default function OrdersPage() {
               {newBadge} nouvelle{newBadge > 1 ? "s" : ""} commande{newBadge > 1 ? "s" : ""} reçue{newBadge > 1 ? "s" : ""} !
             </span>
             <button className="btn-primary" style={{ marginLeft:"auto", height:30, fontSize:11 }}
-              onClick={() => { setNewBadge(0); fetchOrders(activeShopId); }}>
+              onClick={() => { setNewBadge(0); setRefreshKey(k => k + 1); }}>
               Voir maintenant
             </button>
             <button style={{ border:"none", background:"none", color:"#98A2B3", cursor:"pointer", display:"flex", alignItems:"center" }}
@@ -858,16 +849,16 @@ export default function OrdersPage() {
             <select className="sel"
               style={{ fontWeight:700, color:"#0A8F45", borderColor:"#0A8F45", minWidth:155 }}
               value={activeShopId}
-              onChange={e => setActiveShopId(e.target.value)}>
+              onChange={e => { setActiveShopId(e.target.value); setPage(1); }}>
               {shops.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
           </div>
           <div style={{ fontSize:12, color:"#1F2A24" }}>
             <span style={{ fontWeight:500 }}>{shops.length} boutique{shops.length > 1 ? "s" : ""}</span>
-            <span style={{ color:"#98A2B3" }}> · {orders.length} commande{orders.length !== 1 ? "s" : ""}</span>
+            <span style={{ color:"#98A2B3" }}> · {globalStats.total} commande{globalStats.total !== 1 ? "s" : ""}</span>
           </div>
           <div className="or-ctx-r">
-            <button className="btn-secondary" onClick={() => fetchOrders(activeShopId)} disabled={ordersLoading}
+            <button className="btn-secondary" onClick={() => setRefreshKey(k => k + 1)} disabled={ordersLoading}
               style={{ display:"flex", alignItems:"center", gap:5 }}>
               {ordersLoading ? "…" : <><RefreshCw size={12} /> Actualiser</>}
             </button>
@@ -885,10 +876,10 @@ export default function OrdersPage() {
         {/* KPIs */}
         <div className="or-kpi">
           {[
-            { icon:<ShoppingCart size={16} color="#0A8F45" />, l:"Total commandes",       v: String(orders.length),                              tc:"#0A8F45" },
-            { icon:<Clock size={16} color="#F08A24" />,        l:"Nouvelles / En attente", v: String(pendingCount),                               tc:"#F08A24" },
-            { icon:<CheckCircle size={16} color="#0A8F45" />,  l:"Livrées",                v: String(deliveredCount),                             tc:"#0A8F45" },
-            { icon:<TrendingUp size={16} color="#0A8F45" />,   l:"Chiffre d'affaires",     v: revenue.toLocaleString("fr-FR") + " FCFA",         tc:"#0A8F45" },
+            { icon:<ShoppingCart size={16} color="#0A8F45" />, l:"Total commandes",        v: String(globalStats.total),                              tc:"#0A8F45" },
+            { icon:<Clock size={16} color="#F08A24" />,        l:"Nouvelles / En attente", v: String(globalStats.pending),                            tc:"#F08A24" },
+            { icon:<CheckCircle size={16} color="#0A8F45" />,  l:"Livrées",                v: String(globalStats.delivered),                          tc:"#0A8F45" },
+            { icon:<TrendingUp size={16} color="#0A8F45" />,   l:"Chiffre d'affaires",     v: globalStats.revenue.toLocaleString("fr-FR") + " FCFA", tc:"#0A8F45" },
           ].map((k, idx) => (
             <div key={idx} style={{ background:"#fff", border:"1px solid #E8ECEA", borderRadius:16,
               padding:"16px 18px", boxShadow:"0 2px 10px rgba(16,24,40,.04)" }}>
@@ -920,21 +911,21 @@ export default function OrdersPage() {
               </div>
               <div className="or-tacts">
                 <button className="btn-secondary" onClick={handleExportCSV}
-                  disabled={filtered.length === 0}
+                  disabled={orders.length === 0}
                   style={{ display:"flex", alignItems:"center", gap:5 }}
-                  title={`Exporter ${filtered.length} commande${filtered.length !== 1 ? "s" : ""} en CSV`}>
+                  title={`Exporter la page actuelle en CSV`}>
                   <Download size={13} /> Exporter
                 </button>
                 <button className="btn-primary" onClick={() => setNewOrderOpen(true)}>+ Nouvelle commande</button>
-                <button className="btn-secondary" onClick={() => fetchOrders(activeShopId)}>{ordersLoading ? "…" : <RefreshCw size={14} />}</button>
+                <button className="btn-secondary" onClick={() => setRefreshKey(k => k + 1)}>{ordersLoading ? "…" : <RefreshCw size={14} />}</button>
               </div>
             </div>
 
             {/* Filters */}
             <div className="or-ftrow">
               <input className="inp" placeholder="🔍 Référence, client, téléphone…"
-                style={{ flex:1, minWidth:130 }} value={search} onChange={e => setSearch(e.target.value)} />
-              <select className="sel" value={statusF} onChange={e => setStatusF(e.target.value)}>
+                style={{ flex:1, minWidth:130 }} value={searchInput} onChange={e => setSearchInput(e.target.value)} />
+              <select className="sel" value={statusF} onChange={e => { setStatusF(e.target.value); setPage(1); }}>
                 <option value="all">Statut</option>
                 <option value="new">Nouvelle</option>
                 <option value="confirmed">Confirmée</option>
@@ -943,23 +934,29 @@ export default function OrdersPage() {
                 <option value="delivered">Livrée</option>
                 <option value="cancelled">Annulée</option>
               </select>
-              <select className="sel" value={payF} onChange={e => setPayF(e.target.value)}>
+              <select className="sel" value={payF} onChange={e => { setPayF(e.target.value); setPage(1); }}>
                 <option value="all">Paiement</option>
                 <option value="paid">Payée</option>
                 <option value="unpaid">Non payée</option>
                 <option value="partial">Partielle</option>
               </select>
-              <select className="sel" value={channelF} onChange={e => setChannelF(e.target.value)}>
+              <select className="sel" value={channelF} onChange={e => { setChannelF(e.target.value); setPage(1); }}>
                 <option value="all">Canal</option>
                 <option value="whatsapp">WhatsApp</option>
                 <option value="online">En ligne</option>
                 <option value="manual">Manuel</option>
               </select>
-              <select className="sel" value={dateF} onChange={e => setDateF(e.target.value)}>
+              <select className="sel" value={dateF} onChange={e => { setDateF(e.target.value); setPage(1); }}>
                 <option value="all">Date</option>
                 <option value="today">Aujourd&apos;hui</option>
                 <option value="7d">7 derniers jours</option>
                 <option value="30d">30 derniers jours</option>
+              </select>
+              <select className="sel" value={sortBy} onChange={e => { setSortBy(e.target.value); setPage(1); }}>
+                <option value="created_desc">Date ↓</option>
+                <option value="created_asc">Date ↑</option>
+                <option value="amount_desc">Montant ↓</option>
+                <option value="amount_asc">Montant ↑</option>
               </select>
             </div>
 
@@ -975,21 +972,15 @@ export default function OrdersPage() {
                       <th>Client</th>
                       <th>Canal</th>
                       <th>Produits</th>
-                      <th onClick={() => { if (sortBy === "amount") setSortDir(d => d === "asc" ? "desc" : "asc"); else { setSortBy("amount"); setSortDir("desc"); } }}
-                        style={{ cursor:"pointer", userSelect:"none", whiteSpace:"nowrap" }}>
-                        Montant {sortBy === "amount" ? (sortDir === "asc" ? "↑" : "↓") : "↕"}
-                      </th>
+                      <th>Montant</th>
                       <th>Paiement</th>
                       <th>Statut</th>
-                      <th onClick={() => { if (sortBy === "date") setSortDir(d => d === "asc" ? "desc" : "asc"); else { setSortBy("date"); setSortDir("desc"); } }}
-                        style={{ cursor:"pointer", userSelect:"none", whiteSpace:"nowrap" }}>
-                        Date {sortBy === "date" ? (sortDir === "asc" ? "↑" : "↓") : "↕"}
-                      </th>
+                      <th>Date</th>
                       <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {paginated.map(o => {
+                    {orders.map(o => {
                       const nextStatus = NEXT_STATUS[o.status];
                       const nextLabel  = NEXT_STATUS_LABEL[o.status];
                       return (
@@ -1042,12 +1033,18 @@ export default function OrdersPage() {
                         </tr>
                       );
                     })}
-                    {filtered.length === 0 && (
+                    {!ordersLoading && orders.length === 0 && (
                       <tr>
                         <td colSpan={9} style={{ textAlign:"center", padding:32, color:"#98A2B3" }}>
-                          {orders.length === 0
+                          {globalStats.total === 0
                             ? "Aucune commande pour cette boutique."
-                            : "Aucune commande correspond à vos filtres."}
+                            : <span>Aucune commande correspond à vos filtres.{" "}
+                                <button onClick={() => { setSearchInput(""); setStatusF("all"); setPayF("all"); setChannelF("all"); setDateF("all"); setPage(1); }}
+                                  style={{ color:"#0A8F45", background:"none", border:"none", cursor:"pointer", fontSize:13, fontWeight:600 }}>
+                                  Réinitialiser les filtres
+                                </button>
+                              </span>
+                          }
                         </td>
                       </tr>
                     )}
@@ -1056,7 +1053,11 @@ export default function OrdersPage() {
               </div>
             )}
 
-            <Paginator page={page} total={sorted.length} onChange={setPage} />
+            <Paginator
+              page={page} total={paginationTotal} limit={limit}
+              onPageChange={setPage}
+              onLimitChange={(l) => { setLimit(l); setPage(1); }}
+            />
           </div>
 
           {/* Right sidebar */}
@@ -1079,10 +1080,10 @@ export default function OrdersPage() {
                   </div>
                   <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6 }}>
                     {[
-                      { l:"Commandes",  v: activeShop._count.orders },
+                      { l:"Commandes",  v: globalStats.total },
                       { l:"Produits",   v: activeShop._count.products },
                       { l:"Clients",    v: activeShop._count.customers },
-                      { l:"Livrées",    v: deliveredCount },
+                      { l:"Livrées",    v: globalStats.delivered },
                     ].map(r => (
                       <div key={r.l} style={{ background:"#F8FAF9", borderRadius:8, padding:"7px 10px" }}>
                         <div style={{ fontSize:15, fontWeight:700, color:"#1F2A24" }}>{r.v}</div>
@@ -1105,7 +1106,7 @@ export default function OrdersPage() {
                 <div key={s.id} className="or-shop-row"
                   style={{ background: s.id === activeShopId ? "#EAF7EF" : "transparent",
                     borderRadius:8, cursor:"pointer" }}
-                  onClick={() => setActiveShopId(s.id)}>
+                  onClick={() => { setActiveShopId(s.id); setPage(1); }}>
                   <div className="or-shop-av" style={{ background: SHOP_COLORS[i % SHOP_COLORS.length] }}>
                     {s.name.slice(0, 2).toUpperCase()}
                   </div>
@@ -1128,28 +1129,22 @@ export default function OrdersPage() {
             {/* Alerts */}
             <div className="or-card">
               <div style={{ fontSize:13, fontWeight:700, color:"#1F2A24", marginBottom:10 }}>Alertes</div>
-              {pendingCount === 0 && unpaidCount === 0 && waPendingCount === 0 ? (
+              {globalStats.pending === 0 && globalStats.unpaid === 0 ? (
                 <div style={{ fontSize:12, color:"#98A2B3", textAlign:"center", padding:"8px 0" }}>
-                  {orders.length === 0 ? "Aucune commande" : "Aucune alerte en cours ✓"}
+                  {globalStats.total === 0 ? "Aucune commande" : "Aucune alerte en cours ✓"}
                 </div>
               ) : (
                 <>
-                  {pendingCount > 0 && (
+                  {globalStats.pending > 0 && (
                     <div className="or-alert-row">
                       <span style={{ fontSize:15 }}>⏳</span>
-                      <span style={{ color:"#F08A24", fontWeight:500 }}>{pendingCount} commande{pendingCount > 1 ? "s" : ""} en attente</span>
+                      <span style={{ color:"#F08A24", fontWeight:500 }}>{globalStats.pending} commande{globalStats.pending > 1 ? "s" : ""} en attente</span>
                     </div>
                   )}
-                  {unpaidCount > 0 && (
+                  {globalStats.unpaid > 0 && (
                     <div className="or-alert-row">
                       <span style={{ fontSize:15 }}>💳</span>
-                      <span style={{ color:"#3B82F6", fontWeight:500 }}>{unpaidCount} paiement{unpaidCount > 1 ? "s" : ""} non reçu{unpaidCount > 1 ? "s" : ""}</span>
-                    </div>
-                  )}
-                  {waPendingCount > 0 && (
-                    <div className="or-alert-row">
-                      <span style={{ fontSize:15 }}>💬</span>
-                      <span style={{ color:"#0A8F45", fontWeight:500 }}>{waPendingCount} WhatsApp à relancer</span>
+                      <span style={{ color:"#3B82F6", fontWeight:500 }}>{globalStats.unpaid} paiement{globalStats.unpaid > 1 ? "s" : ""} non reçu{globalStats.unpaid > 1 ? "s" : ""}</span>
                     </div>
                   )}
                 </>
@@ -1159,7 +1154,7 @@ export default function OrdersPage() {
             {/* Donut */}
             <div className="or-card">
               <div style={{ fontSize:13, fontWeight:700, color:"#1F2A24", marginBottom:12 }}>Répartition par canal</div>
-              <DonutChart orders={orders} />
+              <DonutChart total={globalStats.total} channelCounts={channelCounts} />
             </div>
 
           </div>

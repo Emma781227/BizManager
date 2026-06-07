@@ -4,7 +4,9 @@ import { prisma } from "@/lib/prisma";
 import { getSessionFromRequest } from "@/lib/auth";
 import { orderSchema } from "@/lib/validators";
 import { resolveShop } from "@/lib/shop";
+import { hasPermission } from "@/lib/permissions";
 import { sendNewOrderNotification } from "@/lib/notifications";
+import { parsePaginationParams, buildPaginatedResponse } from "@/lib/pagination";
 
 const allowedStatuses = ["pending","new","confirmed","in_progress","ready","delivered","cancelled"] as const;
 type AllowedOrderStatus = (typeof allowedStatuses)[number];
@@ -12,18 +14,35 @@ type AllowedOrderStatus = (typeof allowedStatuses)[number];
 const allowedChannels = ["whatsapp","online","manual"] as const;
 type AllowedChannel = (typeof allowedChannels)[number];
 
-// GET /api/orders?shopId=xxx&status=...&channel=...
+const allowedPaymentStatuses = ["unpaid","partial","paid","refunded"] as const;
+type AllowedPaymentStatus = (typeof allowedPaymentStatuses)[number];
+
+const ORDER_SORT_ORDERS = {
+  created_asc:  { createdAt:   "asc"  as const },
+  created_desc: { createdAt:   "desc" as const },
+  amount_asc:   { totalAmount: "asc"  as const },
+  amount_desc:  { totalAmount: "desc" as const },
+} as const;
+type OrderSortKey = keyof typeof ORDER_SORT_ORDERS;
+
+// GET /api/orders?shopId=xxx&status=...&channel=...&paymentStatus=...&dateFrom=...&dateTo=...&sort=...&page=...&limit=...
 export async function GET(request: NextRequest) {
   const session = await getSessionFromRequest(request);
   if (!session) return NextResponse.json({ error: "Non authentifie" }, { status: 401 });
 
-  const shopId    = request.nextUrl.searchParams.get("shopId")?.trim();
+  const sp = request.nextUrl.searchParams;
+  const shopId    = sp.get("shopId")?.trim();
   const shop      = await resolveShop(session.userId, shopId);
   if (!shop) return NextResponse.json({ error: "Boutique introuvable" }, { status: 404 });
 
-  const statusFilter  = request.nextUrl.searchParams.get("status")?.trim();
-  const channelFilter = request.nextUrl.searchParams.get("channel")?.trim();
-  const searchQuery   = request.nextUrl.searchParams.get("q")?.trim() ?? "";
+  const statusFilter        = sp.get("status")?.trim();
+  const channelFilter       = sp.get("channel")?.trim();
+  const paymentStatusFilter = sp.get("paymentStatus")?.trim();
+  const searchQuery         = sp.get("q")?.trim() ?? "";
+  const dateFrom            = sp.get("dateFrom")?.trim() ?? "";
+  const dateTo              = sp.get("dateTo")?.trim() ?? "";
+  const rawSort             = sp.get("sort")?.trim() ?? "created_desc";
+  const { page, limit, skip } = parsePaginationParams(sp);
 
   const parsedStatus: AllowedOrderStatus | null =
     statusFilter && (allowedStatuses as readonly string[]).includes(statusFilter)
@@ -33,31 +52,72 @@ export async function GET(request: NextRequest) {
     channelFilter && (allowedChannels as readonly string[]).includes(channelFilter)
       ? (channelFilter as AllowedChannel) : null;
 
-  const orders = await prisma.order.findMany({
-    where: {
-      shopId: shop.id,
-      ...(parsedStatus  ? { status:  parsedStatus  } : {}),
-      ...(parsedChannel ? { channel: parsedChannel } : {}),
-      ...(searchQuery ? { OR: [
-        { id: { contains: searchQuery, mode: "insensitive" } },
-        { customer: { fullName: { contains: searchQuery, mode: "insensitive" } } },
-        { customer: { phone:    { contains: searchQuery } } },
-      ]} : {}),
-    },
-    include: {
-      customer: { select: { id: true, fullName: true, phone: true } },
-      items: {
-        select: {
-          id: true, quantity: true, unitPrice: true, lineTotal: true,
-          product: { select: { id: true, name: true } },
-        },
-      },
-      statusHistory: { orderBy: { changedAt: "asc" } },
-    },
-    orderBy: { createdAt: "desc" },
-  });
+  const parsedPaymentStatus: AllowedPaymentStatus | null =
+    paymentStatusFilter && (allowedPaymentStatuses as readonly string[]).includes(paymentStatusFilter)
+      ? (paymentStatusFilter as AllowedPaymentStatus) : null;
 
-  return NextResponse.json({ data: orders });
+  const dateFilter: { gte?: Date; lte?: Date } = {};
+  if (dateFrom) { const d = new Date(dateFrom); if (!isNaN(d.getTime())) dateFilter.gte = d; }
+  if (dateTo)   { const d = new Date(dateTo);   if (!isNaN(d.getTime())) { d.setHours(23, 59, 59, 999); dateFilter.lte = d; } }
+
+  const sortKey: OrderSortKey = (rawSort in ORDER_SORT_ORDERS) ? rawSort as OrderSortKey : "created_desc";
+  const orderBy = ORDER_SORT_ORDERS[sortKey];
+
+  const where = {
+    shopId: shop.id,
+    ...(parsedStatus        ? { status:        parsedStatus        } : {}),
+    ...(parsedChannel       ? { channel:       parsedChannel       } : {}),
+    ...(parsedPaymentStatus ? { paymentStatus: parsedPaymentStatus } : {}),
+    ...(Object.keys(dateFilter).length > 0 ? { createdAt: dateFilter } : {}),
+    ...(searchQuery ? { OR: [
+      { id:       { contains: searchQuery, mode: "insensitive" as const } },
+      { customer: { fullName: { contains: searchQuery, mode: "insensitive" as const } } },
+      { customer: { phone:    { contains: searchQuery } } },
+    ]} : {}),
+  };
+
+  const [items, total, allOrders] = await Promise.all([
+    prisma.order.findMany({
+      where,
+      orderBy,
+      skip,
+      take: limit,
+      include: {
+        customer: { select: { id: true, fullName: true, phone: true } },
+        items: {
+          select: {
+            id: true, quantity: true, unitPrice: true, lineTotal: true,
+            product: { select: { id: true, name: true } },
+          },
+        },
+        statusHistory: { orderBy: { changedAt: "asc" } },
+      },
+    }),
+    prisma.order.count({ where }),
+    prisma.order.findMany({
+      where: { shopId: shop.id },
+      select: { status: true, paymentStatus: true, channel: true, totalAmount: true },
+    }),
+  ]);
+
+  const stats = {
+    total:     allOrders.length,
+    pending:   allOrders.filter(o => o.status === "pending" || o.status === "new").length,
+    delivered: allOrders.filter(o => o.status === "delivered").length,
+    revenue:   allOrders.filter(o => o.paymentStatus === "paid").reduce((s, o) => s + Number(o.totalAmount), 0),
+    unpaid:    allOrders.filter(o => o.paymentStatus === "unpaid").length,
+  };
+
+  const channelCounts = {
+    whatsapp: allOrders.filter(o => o.channel === "whatsapp").length,
+    online:   allOrders.filter(o => o.channel === "online").length,
+    manual:   allOrders.filter(o => o.channel === "manual").length,
+  };
+
+  return NextResponse.json({
+    ...buildPaginatedResponse(items, page, limit, total),
+    meta: { stats, channelCounts },
+  });
 }
 
 // POST /api/orders
@@ -68,6 +128,10 @@ export async function POST(request: NextRequest) {
   const shopId = request.nextUrl.searchParams.get("shopId")?.trim();
   const shop   = await resolveShop(session.userId, shopId);
   if (!shop) return NextResponse.json({ error: "Boutique introuvable" }, { status: 404 });
+
+  if (!hasPermission(shop._staffRole, "canManageOrders")) {
+    return NextResponse.json({ error: "Accès refusé — droits insuffisants" }, { status: 403 });
+  }
 
   const body   = await request.json().catch(() => null);
   const result = orderSchema.safeParse(body);

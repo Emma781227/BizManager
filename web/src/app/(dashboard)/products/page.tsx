@@ -1341,14 +1341,14 @@ function DeleteConfirmModal({ product, shopId, onClose, onDeleted }: DeleteConfi
 }
 
 // ─── Paginator ────────────────────────────────────────────────────────────────
-const PAGE_SIZE = 25;
-function Paginator({ page, total, onChange }: { page: number; total: number; onChange: (p: number) => void }) {
-  const pages = Math.ceil(total / PAGE_SIZE);
-  if (pages <= 1) return (
-    <div className="pag"><span className="pag-info">{total} résultat{total !== 1 ? "s" : ""}</span></div>
-  );
-  const start = (page - 1) * PAGE_SIZE + 1;
-  const end   = Math.min(page * PAGE_SIZE, total);
+function Paginator({ page, total, limit, onPageChange, onLimitChange }: {
+  page: number; total: number; limit: number;
+  onPageChange: (p: number) => void;
+  onLimitChange: (l: number) => void;
+}) {
+  const pages = total > 0 ? Math.ceil(total / limit) : 1;
+  const start = total > 0 ? (page - 1) * limit + 1 : 0;
+  const end   = Math.min(page * limit, total);
   const range = Array.from(new Set([1, pages, page - 1, page, page + 1].filter(n => n >= 1 && n <= pages))).sort((a,b) => a-b);
   const nums: (number|"…")[] = [];
   for (let i = 0; i < range.length; i++) {
@@ -1357,15 +1357,23 @@ function Paginator({ page, total, onChange }: { page: number; total: number; onC
   }
   return (
     <div className="pag">
-      <span className="pag-info">{start}–{end} sur {total}</span>
+      <span className="pag-info">
+        {total > 0 ? `Affichage de ${start} à ${end} sur ${total}` : "0 résultat"}
+      </span>
       <div className="pag-btns">
-        <button className="pag-btn" disabled={page <= 1} onClick={() => onChange(page - 1)}>‹</button>
+        <button className="pag-btn" disabled={page <= 1} onClick={() => onPageChange(page - 1)}>‹</button>
         {nums.map((n, i) => n === "…"
           ? <span key={`e${i}`} style={{ padding:"0 4px", color:"#98A2B3", fontSize:12 }}>…</span>
-          : <button key={n} className={`pag-btn${n === page ? " active" : ""}`} onClick={() => onChange(n as number)}>{n}</button>
+          : <button key={n} className={`pag-btn${n === page ? " active" : ""}`} onClick={() => onPageChange(n as number)}>{n}</button>
         )}
-        <button className="pag-btn" disabled={page >= pages} onClick={() => onChange(page + 1)}>›</button>
+        <button className="pag-btn" disabled={page >= pages} onClick={() => onPageChange(page + 1)}>›</button>
       </div>
+      <select className="sel" style={{ height:28, fontSize:12, padding:"0 8px" }}
+        value={limit} onChange={e => { onLimitChange(Number(e.target.value)); onPageChange(1); }}>
+        <option value={10}>10 / page</option>
+        <option value={20}>20 / page</option>
+        <option value={50}>50 / page</option>
+      </select>
     </div>
   );
 }
@@ -1373,15 +1381,19 @@ function Paginator({ page, total, onChange }: { page: number; total: number; onC
 // ─── Main component ────────────────────────────────────────────────────────────
 export default function ProductsPage() {
   const [activeShopId, setActiveShopId] = useActiveShop("");
+  const [searchInput, setSearchInput]   = useState("");
   const [search, setSearch]             = useState("");
   const [catFilter, setCatFilter]       = useState("all");
   const [stockFilter, setStockFilter]   = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [sortBy, setSortBy]             = useState("name");
+  const [sortBy, setSortBy]             = useState("created_desc");
   const [page, setPage]                 = useState(1);
+  const [limit, setLimit]               = useState(20);
   const [realShops, setRealShops]       = useState<Shop[]>([]);
   const [rawProducts, setRawProducts]   = useState<ApiProduct[]>([]);
   const [products, setProducts]         = useState<MockProduct[]>([]);
+  const [paginationTotal, setPaginationTotal] = useState(0);
+  const [globalStats, setGlobalStats]   = useState({ total: 0, active: 0, outOfStock: 0, lowStock: 0, draft: 0 });
   const [productsLoading, setProductsLoading] = useState(false);
   const [apiCategories, setApiCategories] = useState<string[]>([]);
   const [quota, setQuota]               = useState<QuotaInfo | null>(null);
@@ -1393,6 +1405,7 @@ export default function ProductsPage() {
   const [deleteProduct, setDeleteProduct] = useState<MockProduct | null>(null);
   const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ msg: string; hiding: boolean } | null>(null);
+  const [refreshKey, setRefreshKey]     = useState(0);
 
   function showToast(msg: string) {
     setToast({ msg, hiding: false });
@@ -1409,51 +1422,26 @@ export default function ProductsPage() {
   const shopColors = ["#0A8F45","#3B82F6","#F08A24","#8B5CF6","#EC4899","#14B8A6"];
 
   const catalogDistribution = useMemo<CatalogSlice[]>(() => {
-    const counts = new Map<string, number>();
-    for (const product of products) {
-      const label = (product.category || "Sans catégorie").trim() || "Sans catégorie";
-      counts.set(label, (counts.get(label) ?? 0) + 1);
-    }
-
-    const total = products.length;
-    const slices = [...counts.entries()]
-      .map(([label, count], index) => ({
-        label,
-        count,
-        pct: total > 0 ? Math.round((count / total) * 100) : 0,
-        color: shopColors[index % shopColors.length],
-      }))
-      .sort((a, b) => b.count - a.count);
-
-    if (slices.length <= 5) return slices;
-
-    const top = slices.slice(0, 4);
-    const restCount = slices.slice(4).reduce((sum, slice) => sum + slice.count, 0);
+    const total = globalStats.total;
+    if (total === 0) return [];
     return [
-      ...top,
-      {
-        label: "Autres",
-        count: restCount,
-        pct: total > 0 ? Math.round((restCount / total) * 100) : 0,
-        color: "#98A2B3",
-      },
-    ];
-  }, [products]);
+      { label: "Actifs",       count: globalStats.active,     color: "#0A8F45" },
+      { label: "Stock faible", count: globalStats.lowStock,   color: "#F08A24" },
+      { label: "Rupture",      count: globalStats.outOfStock, color: "#EF4444" },
+      { label: "Brouillons",   count: globalStats.draft,      color: "#98A2B3" },
+    ]
+      .filter(s => s.count > 0)
+      .map(s => ({ ...s, pct: Math.round((s.count / total) * 100) }));
+  }, [globalStats]);
 
-  // Calculate catalog alerts based on real products data
   const catalogAlerts = useMemo(() => {
-    const ruptures = products.filter(p => p.stock === 0).length;
-    const stockFaible = products.filter(p => p.stock > 0 && p.stock <= 5).length;
-    const nonSync = products.filter(p => p.sync !== "ok").length;
-    const sansCategorie = products.filter(p => !p.category || p.category.trim() === "").length;
-    
+    const ruptures    = globalStats.outOfStock;
+    const stockFaible = globalStats.lowStock;
     return [
-      { icon:<AlertCircle size={14} />, label:`${ruptures} produit${ruptures !== 1 ? "s" : ""} en rupture`,             color:"#EF4444" },
-      { icon:<AlertTriangle size={14} />, label:`${stockFaible} produit${stockFaible !== 1 ? "s" : ""} avec stock faible`,      color:"#F08A24" },
-      { icon:<RefreshCw size={14} />, label:`${nonSync} produit${nonSync !== 1 ? "s" : ""} non synchronisé${nonSync !== 1 ? "s" : ""}`,       color:"#667085" },
-      { icon:<Tag size={14} />, label:`${sansCategorie} produit${sansCategorie !== 1 ? "s" : ""} sans catégorie`,        color:"#98A2B3" },
+      { icon:<AlertCircle size={14} />,   label:`${ruptures} produit${ruptures !== 1 ? "s" : ""} en rupture`,              color:"#EF4444" },
+      { icon:<AlertTriangle size={14} />, label:`${stockFaible} produit${stockFaible !== 1 ? "s" : ""} avec stock faible`, color:"#F08A24" },
     ];
-  }, [products]);
+  }, [globalStats]);
 
   // Fetch real shops on mount
   useEffect(() => {
@@ -1462,7 +1450,6 @@ export default function ProductsPage() {
       .then(d => {
         const list: Shop[] = d.data ?? [];
         setRealShops(list);
-        // If no stored ID matches, use first shop
         if (list.length > 0 && !list.find(s => s.id === activeShopId)) {
           setActiveShopId(list[0].id);
         }
@@ -1471,21 +1458,40 @@ export default function ProductsPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Fetch products whenever active shop changes
+  // Debounce search input → trigger refetch at page 1
+  useEffect(() => {
+    const t = setTimeout(() => { setSearch(searchInput); setPage(1); }, 300);
+    return () => clearTimeout(t);
+  }, [searchInput]);
+
+  // Backend-paginated products fetch
   useEffect(() => {
     if (!activeShopId) return;
     setProductsLoading(true);
-    fetch(`/api/products?shopId=${activeShopId}`)
+    const params = new URLSearchParams({ shopId: activeShopId, page: String(page), limit: String(limit) });
+    if (search)              params.set("q", search);
+    if (catFilter !== "all") params.set("category", catFilter);
+    const stockMap: Record<string, string> = { ok: "in_stock", low: "low", out: "out_of_stock" };
+    if (stockFilter !== "all" && stockMap[stockFilter]) params.set("stock", stockMap[stockFilter]);
+    if (statusFilter === "active")     params.set("status", "active");
+    else if (statusFilter === "draft") params.set("status", "draft");
+    else if (statusFilter === "low")   params.set("stock", "low");
+    else if (statusFilter === "out")   params.set("stock", "out_of_stock");
+    if (sortBy !== "created_desc") params.set("sort", sortBy);
+    fetch(`/api/products?${params}`)
       .then(r => r.json())
       .then(d => {
-        const raw: ApiProduct[] = d.data ?? [];
+        const raw: ApiProduct[] = d.items ?? [];
         setRawProducts(raw);
         setProducts(raw.map(apiToDisplay));
+        setPaginationTotal(d.total ?? 0);
         setApiCategories(d.meta?.categories ?? []);
+        setGlobalStats(d.meta?.stats ?? { total: 0, active: 0, outOfStock: 0, lowStock: 0, draft: 0 });
       })
       .catch(() => {})
       .finally(() => setProductsLoading(false));
-  }, [activeShopId]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeShopId, page, limit, search, catFilter, stockFilter, statusFilter, sortBy, refreshKey]);
 
   // Fetch quota when shop changes
   useEffect(() => {
@@ -1496,39 +1502,7 @@ export default function ProductsPage() {
       .catch(() => {});
   }, [activeShopId]);
 
-  function refreshProducts() {
-    if (!activeShopId) return;
-    fetch(`/api/products?shopId=${activeShopId}`)
-      .then(r => r.json())
-      .then(d => {
-        const raw: ApiProduct[] = d.data ?? [];
-        setRawProducts(raw);
-        setProducts(raw.map(apiToDisplay));
-        setApiCategories(d.meta?.categories ?? []);
-      })
-      .catch(() => {});
-  }
-
-  const filtered = useMemo(() => {
-    let p = [...products];
-    if (search) p = p.filter(x => x.name.toLowerCase().includes(search.toLowerCase()) || x.sku.toLowerCase().includes(search.toLowerCase()));
-    if (catFilter   !== "all") p = p.filter(x => x.category === catFilter);
-    if (stockFilter !== "all") {
-      if (stockFilter === "ok")  p = p.filter(x => x.stock > 5);
-      if (stockFilter === "low") p = p.filter(x => x.stock > 0 && x.stock <= 5);
-      if (stockFilter === "out") p = p.filter(x => x.stock === 0);
-    }
-    if (statusFilter !== "all") p = p.filter(x => x.status === statusFilter);
-    if (sortBy === "price-asc")  p.sort((a,b) => a.price - b.price);
-    if (sortBy === "price-desc") p.sort((a,b) => b.price - a.price);
-    if (sortBy === "stock")      p.sort((a,b) => a.stock - b.stock);
-    if (sortBy === "name")       p.sort((a,b) => a.name.localeCompare(b.name));
-    return p;
-  }, [products, search, catFilter, stockFilter, statusFilter, sortBy]);
-
-  useEffect(() => { setPage(1); }, [search, catFilter, stockFilter, statusFilter, sortBy]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  function refreshProducts() { setRefreshKey(k => k + 1); }
 
   async function handleDuplicate(p: MockProduct) {
     if (!activeShopId) return;
@@ -1557,7 +1531,7 @@ export default function ProductsPage() {
           <div style={{ display:"flex", alignItems:"center", gap:8 }}>
             <span style={{ fontSize:12, color:"#667085", fontWeight:500 }}>Boutique active</span>
             <select className="sel" style={{ fontWeight:700, color:"#0A8F45", borderColor:"#0A8F45", minWidth:160 }}
-              value={activeShopId} onChange={e => setActiveShopId(e.target.value)}
+              value={activeShopId} onChange={e => { setActiveShopId(e.target.value); setPage(1); }}
               disabled={realShops.length === 0}>
               {realShops.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
@@ -1600,10 +1574,10 @@ export default function ProductsPage() {
         {/* ── KPI row ── */}
         <div className="pr-kpi">
           {([
-            { label:"Produits actifs", val:String(products.filter(p=>p.status==="active").length), sub:"produits",  icon:<Package size={16} color="#0A8F45" />, color:"#DDF6E7", tc:"#0A8F45" },
-            { label:"Stock faible",    val:String(products.filter(p=>p.status==="low").length),    sub:"produits",  icon:<AlertTriangle size={16} color="#F08A24" />, color:"#FFF1E5", tc:"#F08A24" },
-            { label:"En rupture",      val:String(products.filter(p=>p.status==="out").length),    sub:"produits",  icon:<AlertCircle size={16} color="#EF4444" />, color:"#FDE8E8", tc:"#EF4444" },
-            { label:"Total catalogue", val:String(products.length),                                sub:"produits",  icon:<BarChart2 size={16} color="#0A8F45" />, color:"#EAF7EF", tc:"#0A8F45" },
+            { label:"Produits actifs", val:String(globalStats.active),     sub:"produits", icon:<Package size={16} color="#0A8F45" />,       color:"#DDF6E7", tc:"#0A8F45" },
+            { label:"Stock faible",    val:String(globalStats.lowStock),   sub:"produits", icon:<AlertTriangle size={16} color="#F08A24" />,  color:"#FFF1E5", tc:"#F08A24" },
+            { label:"En rupture",      val:String(globalStats.outOfStock), sub:"produits", icon:<AlertCircle size={16} color="#EF4444" />,    color:"#FDE8E8", tc:"#EF4444" },
+            { label:"Total catalogue", val:String(globalStats.total),      sub:"produits", icon:<BarChart2 size={16} color="#0A8F45" />,      color:"#EAF7EF", tc:"#0A8F45" },
           ] as { label:string; val:string; sub:string; icon:React.ReactNode; color:string; tc:string }[]).map(k => (
             <div key={k.label} style={{ background:"#fff", border:"1px solid #E8ECEA", borderRadius:16,
               padding:"16px 18px", boxShadow:"0 2px 10px rgba(16,24,40,.04)" }}>
@@ -1638,7 +1612,7 @@ export default function ProductsPage() {
               <span className="pr-hier-sep">→</span>
               <span style={{ fontWeight:600 }}>{activeShop?.name ?? "—"}</span>
               <span className="pr-hier-sep">→</span>
-              <span style={{ color:"#667085" }}>{products.length} produits</span>
+              <span style={{ color:"#667085" }}>{globalStats.total} produits</span>
             </div>
             <div style={{ fontSize:11, color:"#98A2B3", marginTop:6 }}>Marchand → Boutique → Produits</div>
           </div>
@@ -1686,29 +1660,32 @@ export default function ProductsPage() {
             {/* filters */}
             <div className="pr-ftrow">
               <input className="inp" placeholder="Rechercher un produit ou SKU…" style={{ flex:1, minWidth:160 }}
-                value={search} onChange={e => setSearch(e.target.value)} />
-              <select className="sel" value={catFilter} onChange={e => setCatFilter(e.target.value)}>
+                value={searchInput} onChange={e => setSearchInput(e.target.value)} />
+              <select className="sel" value={catFilter} onChange={e => { setCatFilter(e.target.value); setPage(1); }}>
                 <option value="all">Catégories</option>
                 {apiCategories.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
-              <select className="sel" value={stockFilter} onChange={e => setStockFilter(e.target.value)}>
+              <select className="sel" value={stockFilter} onChange={e => { setStockFilter(e.target.value); setPage(1); }}>
                 <option value="all">Stock</option>
                 <option value="ok">OK</option>
                 <option value="low">Faible</option>
                 <option value="out">Rupture</option>
               </select>
-              <select className="sel" value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
+              <select className="sel" value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setPage(1); }}>
                 <option value="all">Statut</option>
                 <option value="active">Actif</option>
                 <option value="draft">Brouillon</option>
                 <option value="low">Stock faible</option>
                 <option value="out">Rupture</option>
               </select>
-              <select className="sel" value={sortBy} onChange={e => setSortBy(e.target.value)}>
-                <option value="name">Trier : Nom</option>
-                <option value="price-asc">Prix ↑</option>
-                <option value="price-desc">Prix ↓</option>
-                <option value="stock">Stock ↑</option>
+              <select className="sel" value={sortBy} onChange={e => { setSortBy(e.target.value); setPage(1); }}>
+                <option value="created_desc">Trier : Récents</option>
+                <option value="name_asc">Nom A→Z</option>
+                <option value="name_desc">Nom Z→A</option>
+                <option value="price_asc">Prix ↑</option>
+                <option value="price_desc">Prix ↓</option>
+                <option value="stock_asc">Stock ↑</option>
+                <option value="stock_desc">Stock ↓</option>
               </select>
               <div className="inp" style={{ display:"flex", alignItems:"center", gap:6, color:"#98A2B3", fontSize:12, cursor:"default", minWidth:130 }}>
                 <Lock size={12} /> {activeShop?.name ?? "—"}
@@ -1733,7 +1710,7 @@ export default function ProductsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {paginated.map(p => (
+                  {products.map(p => (
                     <tr key={p.id}>
                       <td>
                         <div className="pr-prod-cell">
@@ -1781,16 +1758,28 @@ export default function ProductsPage() {
                       Chargement…
                     </td></tr>
                   )}
-                  {!productsLoading && filtered.length === 0 && (
+                  {!productsLoading && products.length === 0 && (
                     <tr><td colSpan={10} style={{ textAlign:"center", padding:32, color:"#98A2B3" }}>
-                      {products.length === 0 ? "Aucun produit dans cette boutique. Créez votre premier produit !" : "Aucun produit trouvé."}
+                      {globalStats.total === 0
+                        ? "Aucun produit dans cette boutique. Créez votre premier produit !"
+                        : <span>Aucun produit trouvé.{" "}
+                            <button onClick={() => { setSearchInput(""); setCatFilter("all"); setStockFilter("all"); setStatusFilter("all"); setPage(1); }}
+                              style={{ color:"#0A8F45", background:"none", border:"none", cursor:"pointer", fontSize:13, fontWeight:600 }}>
+                              Réinitialiser les filtres
+                            </button>
+                          </span>
+                      }
                     </td></tr>
                   )}
                 </tbody>
               </table>
             </div>
 
-            <Paginator page={page} total={filtered.length} onChange={setPage} />
+            <Paginator
+              page={page} total={paginationTotal} limit={limit}
+              onPageChange={setPage}
+              onLimitChange={(l) => { setLimit(l); setPage(1); }}
+            />
           </div>
 
           {/* Right col */}
@@ -1810,7 +1799,7 @@ export default function ProductsPage() {
                 </div>
               </div>
               {[
-                { l:"Produits",   v: products.length },
+                { l:"Produits",   v: globalStats.total },
                 { l:"Catégories", v: apiCategories.length },
                 { l:"Commandes",  v: activeShop?._count?.orders ?? "—" },
                 { l:"Clients",    v: activeShop?._count?.customers ?? "—" },
@@ -1840,7 +1829,7 @@ export default function ProductsPage() {
               {realShops.map((s, i) => (
                 <div key={s.id} className="pr-shop-row"
                   style={{ background: s.id === activeShopId ? "#EAF7EF" : "transparent", borderRadius:10, padding:"8px 10px" }}
-                  onClick={() => setActiveShopId(s.id)}>
+                  onClick={() => { setActiveShopId(s.id); setPage(1); }}>
                   <div className="pr-shop-av" style={{ background: shopColors[i % shopColors.length] }}>
                     {s.name.slice(0,2).toUpperCase()}
                   </div>
@@ -1906,7 +1895,7 @@ export default function ProductsPage() {
             {/* Répartition catalogue */}
             <div className="pr-card">
               <div style={{ fontSize:13, fontWeight:700, color:"#1F2A24", marginBottom:12 }}>Répartition du catalogue</div>
-              <DonutChart data={catalogDistribution} total={products.length} />
+              <DonutChart data={catalogDistribution} total={globalStats.total} />
             </div>
 
           </div>

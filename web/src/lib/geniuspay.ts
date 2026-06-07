@@ -48,14 +48,27 @@ export async function initiatePayment(
     }),
   });
 
+  const rawText = await res.text();
+  const isJson  = res.headers.get("content-type")?.includes("application/json") ?? false;
+
+  let json: Record<string, unknown> = {};
+  if (rawText.trim()) {
+    try { json = JSON.parse(rawText) as Record<string, unknown>; }
+    catch { /* not JSON */ }
+  }
+
   if (!res.ok) {
-    const err = await res.json().catch(() => ({})) as Record<string, unknown>;
-    const errObj = err.error as Record<string, unknown> | undefined;
-    const msg = (errObj?.message ?? err.message ?? err.error ?? "Erreur GeniusPay") as string;
+    const errObj = json.error as Record<string, unknown> | undefined;
+    const msg = isJson
+      ? ((errObj?.message ?? json.message ?? json.error ?? "Erreur GeniusPay") as string)
+      : `GeniusPay HTTP ${res.status} — réponse non-JSON reçue`;
     throw new Error(msg);
   }
 
-  const json = await res.json() as Record<string, unknown>;
+  if (!isJson || Object.keys(json).length === 0) {
+    throw new Error(`GeniusPay HTTP ${res.status} — réponse non-JSON reçue`);
+  }
+
   // La réponse peut être { data: {...} } ou directement l'objet
   const data = (json.data ?? json) as Record<string, unknown>;
 

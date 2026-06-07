@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getSessionFromRequest } from "@/lib/auth";
 import { customerSchema } from "@/lib/validators";
 import { resolveShop } from "@/lib/shop";
+import { hasPermission } from "@/lib/permissions";
 
 // GET /api/customers?shopId=xxx&q=...
 export async function GET(request: NextRequest) {
@@ -39,6 +40,10 @@ export async function POST(request: NextRequest) {
   const shopId = request.nextUrl.searchParams.get("shopId")?.trim();
   const shop   = await resolveShop(session.userId, shopId);
   if (!shop) return NextResponse.json({ error: "Boutique introuvable" }, { status: 404 });
+
+  if (!hasPermission(shop._staffRole, "canManageCustomers")) {
+    return NextResponse.json({ error: "Accès refusé — droits insuffisants" }, { status: 403 });
+  }
 
   const body   = await request.json().catch(() => null);
   const result = customerSchema.safeParse(body);

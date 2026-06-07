@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { getSessionFromRequest } from "@/lib/auth";
 import { productSchema } from "@/lib/validators";
 import { uploadMedia } from "@/lib/cloudinary";
+import { resolveShop } from "@/lib/shop";
+import { hasPermission } from "@/lib/permissions";
 
 export const runtime = "nodejs";
 
@@ -97,19 +99,22 @@ export async function GET(
     return NextResponse.json({ error: "Non authentifie" }, { status: 401 });
   }
 
-  const product = await prisma.product.findFirst({
-    where: {
-      id: productId,
-      shop: { userId: session.userId },
-    },
+  const product = await prisma.product.findUnique({
+    where: { id: productId },
     include: { variants: { orderBy: { createdAt: "asc" } } },
   });
 
   if (!product) {
-    return NextResponse.json(
-      { error: "Produit non trouve" },
-      { status: 404 }
-    );
+    return NextResponse.json({ error: "Produit non trouve" }, { status: 404 });
+  }
+
+  const shop = await resolveShop(session.userId, product.shopId);
+  if (!shop) {
+    return NextResponse.json({ error: "Produit non trouve" }, { status: 404 });
+  }
+
+  if (!hasPermission(shop._staffRole, "canViewProducts")) {
+    return NextResponse.json({ error: "Accès refusé — droits insuffisants" }, { status: 403 });
   }
 
   return NextResponse.json({ data: product });
@@ -126,18 +131,19 @@ export async function PUT(
     return NextResponse.json({ error: "Non authentifie" }, { status: 401 });
   }
 
-  const product = await prisma.product.findFirst({
-    where: {
-      id: productId,
-      shop: { userId: session.userId },
-    },
-  });
+  const product = await prisma.product.findUnique({ where: { id: productId } });
 
   if (!product) {
-    return NextResponse.json(
-      { error: "Produit non trouve" },
-      { status: 404 }
-    );
+    return NextResponse.json({ error: "Produit non trouve" }, { status: 404 });
+  }
+
+  const shop = await resolveShop(session.userId, product.shopId);
+  if (!shop) {
+    return NextResponse.json({ error: "Produit non trouve" }, { status: 404 });
+  }
+
+  if (!hasPermission(shop._staffRole, "canManageProducts")) {
+    return NextResponse.json({ error: "Accès refusé — droits insuffisants" }, { status: 403 });
   }
 
   const contentType = request.headers.get("content-type") ?? "";
@@ -311,18 +317,19 @@ export async function DELETE(
     return NextResponse.json({ error: "Non authentifie" }, { status: 401 });
   }
 
-  const product = await prisma.product.findFirst({
-    where: {
-      id: productId,
-      shop: { userId: session.userId },
-    },
-  });
+  const product = await prisma.product.findUnique({ where: { id: productId } });
 
   if (!product) {
-    return NextResponse.json(
-      { error: "Produit non trouve" },
-      { status: 404 }
-    );
+    return NextResponse.json({ error: "Produit non trouve" }, { status: 404 });
+  }
+
+  const shop = await resolveShop(session.userId, product.shopId);
+  if (!shop) {
+    return NextResponse.json({ error: "Produit non trouve" }, { status: 404 });
+  }
+
+  if (!hasPermission(shop._staffRole, "canManageProducts")) {
+    return NextResponse.json({ error: "Accès refusé — droits insuffisants" }, { status: 403 });
   }
 
   try {
