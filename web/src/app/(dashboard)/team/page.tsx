@@ -1,6 +1,6 @@
 "use client";
-import { useEffect, useState, useCallback } from "react";
-import { Users, UserPlus, Mail, Shield, Store, Clock, CheckCircle, XCircle, AlertCircle, Pencil, Trash2, RefreshCw, X, Check, ChevronDown, Lock, Send } from "lucide-react";
+import { useEffect, useState, useCallback, useRef } from "react";
+import { Users, UserPlus, Mail, Shield, Store, Clock, CheckCircle, XCircle, AlertCircle, Pencil, Trash2, RefreshCw, X, Check, ChevronDown, Lock, Send, MoreHorizontal } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type StaffRole = "owner" | "manager" | "staff";
@@ -152,12 +152,66 @@ const CSS = `
 @keyframes spin { from{transform:rotate(0)} to{transform:rotate(360deg)} }
 .spin { animation:spin .7s linear infinite; display:inline-flex; }
 
+@keyframes toast-in { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+/* Skeleton */
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position:  400px 0; }
+}
+.tm-skeleton {
+  background: linear-gradient(90deg, #E8ECEA 25%, #F4F6F5 50%, #E8ECEA 75%);
+  background-size: 800px 100%;
+  animation: shimmer 1.4s infinite linear;
+  border-radius: 6px;
+}
+.tm-skeleton-card { background:#fff; border:1px solid #E8ECEA; border-radius:16px; padding:18px 20px;
+                    box-shadow:0 2px 10px rgba(16,24,40,.04); }
+.tm-skeleton-row { display:flex; align-items:center; gap:12px; padding:12px 14px; border-bottom:1px solid #F4F6F5; }
+.tm-skeleton-row:last-child { border-bottom:none; }
+
+/* Action dropdown */
+.tm-dot-btn { border:none; background:none; cursor:pointer; padding:5px 7px;
+              border-radius:7px; color:#667085; transition:background .15s;
+              display:flex; align-items:center; justify-content:center; }
+.tm-dot-btn:hover { background:#F4F6F5; }
+.tm-dropdown { position:absolute; right:0; top:calc(100% + 4px); background:#fff;
+               border:1px solid #E8ECEA; border-radius:12px; min-width:170px;
+               box-shadow:0 8px 24px rgba(16,24,40,.10); z-index:100;
+               overflow:hidden; }
+.tm-dropdown-item { display:flex; align-items:center; gap:9px; width:100%; padding:9px 14px;
+                    font-size:13px; font-weight:500; color:#1F2A24; background:none;
+                    border:none; cursor:pointer; text-align:left; transition:background .12s; }
+.tm-dropdown-item:hover { background:#F8FAF9; }
+.tm-dropdown-item.danger { color:#EF4444; }
+.tm-dropdown-item.warning { color:#F08A24; }
+.tm-dropdown-item.success { color:#0A8F45; }
+.tm-dropdown-sep { height:1px; background:#F4F6F5; margin:4px 0; }
+
+/* Search input */
+.tm-search { height:32px; padding:0 10px 0 32px; border:1.5px solid #E8ECEA; border-radius:8px;
+             font-size:13px; color:#1F2A24; background:#fff; outline:none; width:180px;
+             box-sizing:border-box; }
+.tm-search:focus { border-color:#0A8F45; box-shadow:0 0 0 3px rgba(10,143,69,.06); }
+
+/* Mobile member cards */
+.tm-member-cards { display:none; }
+
 @media(max-width:900px){
   .tm-kpi { grid-template-columns:1fr 1fr; }
   .tm-wrap { padding:14px 12px; }
 }
-@media(max-width:600px){
+@media(max-width:640px){
   .tm-kpi { grid-template-columns:1fr 1fr; }
+  .tm-header { flex-direction:column; }
+  .tm-member-table-wrap { display:none; }
+  .tm-member-cards { display:flex; flex-direction:column; gap:10px; padding:12px; }
+  .tm-member-card { background:#fff; border:1px solid #E8ECEA; border-radius:14px; padding:14px; }
+  .tm-member-card-head { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+  .tm-member-card-body { display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+  .tm-member-card-footer { display:flex; align-items:center; justify-content:space-between; margin-top:10px; padding-top:10px; border-top:1px solid #F4F6F5; }
+}
+@media(max-width:600px){
   .tm-header { flex-direction:column; }
 }
 `;
@@ -168,6 +222,93 @@ function initials(name: string) {
 }
 function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
+}
+function isExpiringSoon(iso: string) {
+  return new Date(iso) < new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
+}
+
+// ─── Skeleton ─────────────────────────────────────────────────────────────────
+function KpiSkeleton() {
+  return (
+    <div className="tm-kpi">
+      {[0,1,2,3].map(i => (
+        <div key={i} className="tm-skeleton-card">
+          <div style={{ display:"flex", justifyContent:"space-between", marginBottom:12 }}>
+            <div className="tm-skeleton" style={{ width:80, height:12 }} />
+            <div className="tm-skeleton" style={{ width:28, height:28, borderRadius:8 }} />
+          </div>
+          <div className="tm-skeleton" style={{ width:48, height:28, marginBottom:6 }} />
+          <div className="tm-skeleton" style={{ width:120, height:10 }} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function TableSkeleton() {
+  return (
+    <div>
+      {[0,1,2,3,4].map(i => (
+        <div key={i} className="tm-skeleton-row">
+          <div className="tm-skeleton" style={{ width:36, height:36, borderRadius:10, flexShrink:0 }} />
+          <div style={{ flex:1, display:"flex", flexDirection:"column", gap:6 }}>
+            <div className="tm-skeleton" style={{ width:"40%", height:11 }} />
+            <div className="tm-skeleton" style={{ width:"28%", height:9 }} />
+          </div>
+          <div className="tm-skeleton" style={{ width:60, height:20, borderRadius:20 }} />
+          <div className="tm-skeleton" style={{ width:80, height:20, borderRadius:6 }} />
+          <div className="tm-skeleton" style={{ width:60, height:11 }} />
+          <div className="tm-skeleton" style={{ width:28, height:28, borderRadius:7 }} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── ActionMenu ───────────────────────────────────────────────────────────────
+type ActionMenuItem = {
+  label: string;
+  icon: React.ReactNode;
+  onClick: () => void;
+  variant?: "default" | "warning" | "danger" | "success";
+};
+
+function ActionMenu({ items }: { items: ActionMenuItem[] }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function handler(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  return (
+    <div ref={ref} style={{ position:"relative", display:"inline-flex" }}>
+      <button className="tm-dot-btn" onClick={() => setOpen(o => !o)} title="Actions">
+        <MoreHorizontal size={15} />
+      </button>
+      {open && (
+        <div className="tm-dropdown">
+          {items.map((item, idx) => (
+            <button
+              key={idx}
+              className={`tm-dropdown-item${item.variant === "danger" ? " danger" : item.variant === "warning" ? " warning" : item.variant === "success" ? " success" : ""}`}
+              onClick={() => { item.onClick(); setOpen(false); }}
+            >
+              {item.icon}
+              {item.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 // ─── Invite Modal ─────────────────────────────────────────────────────────────
@@ -460,13 +601,30 @@ function ConfirmModal({ open, title, message, confirmLabel, confirmColor, onConf
   confirmColor: string; onConfirm: () => void; onClose: () => void; loading: boolean;
 }) {
   if (!open) return null;
+
+  // Colored icon based on confirmColor
+  const isGreen  = confirmColor === "#0A8F45";
+  const isOrange = confirmColor === "#F08A24";
+  const iconEl = isGreen
+    ? <CheckCircle size={26} color="#0A8F45" strokeWidth={2} />
+    : isOrange
+    ? <AlertCircle size={26} color="#F08A24" strokeWidth={2} />
+    : <Trash2 size={26} color="#EF4444" strokeWidth={2} />;
+  const iconBg = isGreen ? "#DDF6E7" : isOrange ? "#FFF1E5" : "#FDE8E8";
+
   return (
     <div className="tm-overlay" onClick={onClose}>
       <div style={{ background:"#fff", borderRadius:20, padding:"28px 24px", maxWidth:380, width:"100%",
                     boxShadow:"0 12px 40px rgba(16,24,40,.14)" }}
            onClick={e => e.stopPropagation()}>
-        <h3 style={{ fontSize:18, fontWeight:800, color:"#1F2A24", margin:"0 0 10px" }}>{title}</h3>
-        <p style={{ fontSize:14, color:"#667085", lineHeight:1.6, margin:"0 0 22px" }}>{message}</p>
+        <div style={{ display:"flex", justifyContent:"center", marginBottom:16 }}>
+          <div style={{ width:48, height:48, borderRadius:"50%", background:iconBg,
+                        display:"flex", alignItems:"center", justifyContent:"center" }}>
+            {iconEl}
+          </div>
+        </div>
+        <h3 style={{ fontSize:18, fontWeight:800, color:"#1F2A24", margin:"0 0 10px", textAlign:"center" }}>{title}</h3>
+        <p style={{ fontSize:14, color:"#667085", lineHeight:1.6, margin:"0 0 22px", textAlign:"center" }}>{message}</p>
         <div style={{ display:"flex", gap:10 }}>
           <button className="btn-secondary" style={{ flex:1 }} onClick={onClose} disabled={loading}>Annuler</button>
           <button onClick={onConfirm} disabled={loading}
@@ -499,6 +657,12 @@ export default function TeamPage() {
   const [actionLoading, setActionLoading] = useState(false);
 
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
+
+  // Search filter for members table
+  const [memberSearch, setMemberSearch] = useState("");
+
+  // Per-invitation resend loading
+  const [resendingId, setResendingId] = useState<string | null>(null);
 
   function showToast(msg: string, ok = true) {
     setToast({ msg, ok });
@@ -536,6 +700,14 @@ export default function TeamPage() {
   const pendingCount     = invitations.filter(i => i.status === "pending").length;
   const atLimit = quota && quota.plan.maxTeamMembers > 0 &&
     (activeMembers.length + suspendedMembers.length) >= quota.plan.maxTeamMembers;
+
+  // Client-side search filter
+  const filteredMembers = memberSearch.trim()
+    ? members.filter(m =>
+        m.user.fullName.toLowerCase().includes(memberSearch.toLowerCase()) ||
+        m.user.email.toLowerCase().includes(memberSearch.toLowerCase())
+      )
+    : members;
 
   async function handleConfirmAction() {
     if (!confirmAction) return;
@@ -576,6 +748,7 @@ export default function TeamPage() {
   }
 
   async function handleResend(invitationId: string) {
+    setResendingId(invitationId);
     try {
       const res = await fetch(`/api/team/invitations/${invitationId}`, {
         method: "PATCH",
@@ -586,7 +759,43 @@ export default function TeamPage() {
       showToast("Invitation renvoyée.");
     } catch {
       showToast("Erreur réseau.", false);
+    } finally {
+      setResendingId(null);
     }
+  }
+
+  // Build ActionMenu items for a member row
+  function memberMenuItems(m: Member): ActionMenuItem[] {
+    const items: ActionMenuItem[] = [
+      {
+        label: "Modifier",
+        icon: <Pencil size={13} />,
+        onClick: () => setEditMember(m),
+      },
+    ];
+    if (m.status === "active") {
+      items.push({
+        label: "Suspendre l'accès",
+        icon: <XCircle size={13} />,
+        onClick: () => setConfirmAction({ type:"suspend", id:m.id, label:m.user.fullName }),
+        variant: "warning",
+      });
+    }
+    if (m.status === "suspended") {
+      items.push({
+        label: "Réactiver",
+        icon: <CheckCircle size={13} />,
+        onClick: () => setConfirmAction({ type:"activate", id:m.id, label:m.user.fullName }),
+        variant: "success",
+      });
+    }
+    items.push({
+      label: "Révoquer",
+      icon: <Trash2 size={13} />,
+      onClick: () => setConfirmAction({ type:"revoke", id:m.id, label:m.user.fullName }),
+      variant: "danger",
+    });
+    return items;
   }
 
   return (
@@ -629,40 +838,42 @@ export default function TeamPage() {
         )}
 
         {/* ── KPI ── */}
-        <div className="tm-kpi">
-          {[
-            { label:"Membres actifs",    val: activeMembers.length,    icon:<CheckCircle size={16} color="#0A8F45" />,  bg:"#DDF6E7", tc:"#0A8F45" },
-            { label:"Suspendus",          val: suspendedMembers.length, icon:<AlertCircle size={16} color="#F08A24" />,  bg:"#FFF1E5", tc:"#F08A24" },
-            { label:"Invitations en attente", val: pendingCount,        icon:<Clock size={16} color="#3B82F6" />,        bg:"#EFF8FF", tc:"#175CD3" },
-            { label:"Total membres",      val: members.length,          icon:<Users size={16} color="#667085" />,        bg:"#F2F4F7", tc:"#667085" },
-          ].map(k => (
-            <div key={k.label} className="tm-card">
-              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
-                <span style={{ fontSize:12, color:"#667085", fontWeight:500 }}>{k.label}</span>
-                <span style={{ background:k.bg, padding:"5px 7px", borderRadius:9, display:"flex" }}>{k.icon}</span>
-              </div>
-              <div style={{ fontSize:28, fontWeight:800, color:"#1F2A24", margin:"8px 0 4px" }}>{k.val}</div>
-              {quota && k.label === "Membres actifs" && (
-                <>
-                  <div style={{ fontSize:11, color:k.tc }}>
-                    {quota.plan.maxTeamMembers === 0 ? "Plan Starter — non disponible"
-                      : quota.plan.maxTeamMembers === -1 ? "Illimité"
-                      : `${k.val} / ${quota.plan.maxTeamMembers} (plan ${quota.plan.displayName})`}
-                  </div>
-                  {quota.plan.maxTeamMembers > 0 && quota.plan.maxTeamMembers !== -1 && (
-                    <div className="tm-quota-bar">
-                      <div className="tm-quota-fill"
-                        style={{
-                          width:`${Math.min(100, (k.val / quota.plan.maxTeamMembers) * 100)}%`,
-                          background: (k.val / quota.plan.maxTeamMembers) >= 1 ? "#EF4444" : "#0A8F45",
-                        }} />
+        {loading ? <KpiSkeleton /> : (
+          <div className="tm-kpi">
+            {[
+              { label:"Membres actifs",    val: activeMembers.length,    icon:<CheckCircle size={16} color="#0A8F45" />,  bg:"#DDF6E7", tc:"#0A8F45" },
+              { label:"Suspendus",          val: suspendedMembers.length, icon:<AlertCircle size={16} color="#F08A24" />,  bg:"#FFF1E5", tc:"#F08A24" },
+              { label:"Invitations en attente", val: pendingCount,        icon:<Clock size={16} color="#3B82F6" />,        bg:"#EFF8FF", tc:"#175CD3" },
+              { label:"Total membres",      val: members.length,          icon:<Users size={16} color="#667085" />,        bg:"#F2F4F7", tc:"#667085" },
+            ].map(k => (
+              <div key={k.label} className="tm-card">
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
+                  <span style={{ fontSize:12, color:"#667085", fontWeight:500 }}>{k.label}</span>
+                  <span style={{ background:k.bg, padding:"5px 7px", borderRadius:9, display:"flex" }}>{k.icon}</span>
+                </div>
+                <div style={{ fontSize:28, fontWeight:800, color:"#1F2A24", margin:"8px 0 4px" }}>{k.val}</div>
+                {quota && k.label === "Membres actifs" && (
+                  <>
+                    <div style={{ fontSize:11, color:k.tc }}>
+                      {quota.plan.maxTeamMembers === 0 ? "Plan Starter — non disponible"
+                        : quota.plan.maxTeamMembers === -1 ? "Illimité"
+                        : `${k.val} / ${quota.plan.maxTeamMembers} (plan ${quota.plan.displayName})`}
                     </div>
-                  )}
-                </>
-              )}
-            </div>
-          ))}
-        </div>
+                    {quota.plan.maxTeamMembers > 0 && quota.plan.maxTeamMembers !== -1 && (
+                      <div className="tm-quota-bar">
+                        <div className="tm-quota-fill"
+                          style={{
+                            width:`${Math.min(100, (k.val / quota.plan.maxTeamMembers) * 100)}%`,
+                            background: (k.val / quota.plan.maxTeamMembers) >= 1 ? "#EF4444" : "#0A8F45",
+                          }} />
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* ── Empty state (no members at all) ── */}
         {!loading && members.length === 0 && invitations.length === 0 && (
@@ -697,6 +908,21 @@ export default function TeamPage() {
                   </span>
                 )}
               </span>
+              {/* Search input */}
+              {!loading && members.length > 0 && (
+                <div style={{ position:"relative", display:"inline-flex", alignItems:"center" }}>
+                  <span style={{ position:"absolute", left:9, color:"#98A2B3", display:"flex", pointerEvents:"none" }}>
+                    <Users size={12} />
+                  </span>
+                  <input
+                    className="tm-search"
+                    type="text"
+                    placeholder="Rechercher…"
+                    value={memberSearch}
+                    onChange={e => setMemberSearch(e.target.value)}
+                  />
+                </div>
+              )}
               <button className="btn-secondary" style={{ marginLeft:"auto", height:30, padding:"0 10px", fontSize:12 }}
                 onClick={refresh}>
                 <RefreshCw size={11} /> Actualiser
@@ -704,98 +930,114 @@ export default function TeamPage() {
             </div>
 
             {loading ? (
-              <div style={{ textAlign:"center", padding:40, color:"#98A2B3", fontSize:13 }}>Chargement…</div>
-            ) : members.length === 0 ? (
+              <TableSkeleton />
+            ) : filteredMembers.length === 0 ? (
               <div className="tm-empty">
                 <div className="tm-empty-icon"><Users size={36} color="#E8ECEA" /></div>
-                <div>Aucun collaborateur actif.</div>
+                <div>{memberSearch ? "Aucun résultat pour cette recherche." : "Aucun collaborateur actif."}</div>
               </div>
             ) : (
-              <div style={{ overflowX:"auto" }}>
-                <table className="tm-table">
-                  <thead>
-                    <tr>
-                      <th>Collaborateur</th>
-                      <th>Rôle</th>
-                      <th>Boutiques autorisées</th>
-                      <th>Statut</th>
-                      <th>Ajouté le</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {members.map(m => (
-                      <tr key={m.id}>
-                        <td>
-                          <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-                            <div className="tm-avatar">{initials(m.user.fullName)}</div>
-                            <div>
-                              <div style={{ fontWeight:600, fontSize:13 }}>{m.user.fullName}</div>
-                              <div style={{ fontSize:11, color:"#98A2B3" }}>{m.user.email}</div>
-                            </div>
-                          </div>
-                        </td>
-                        <td>
-                          <span style={{
-                            display:"inline-flex", alignItems:"center", gap:5,
-                            padding:"3px 9px", borderRadius:20, fontSize:11, fontWeight:600,
-                            background: ROLE_BG[m.role], color: ROLE_COLORS[m.role],
-                          }}>
-                            <Shield size={10} /> {ROLE_LABELS[m.role]}
-                          </span>
-                        </td>
-                        <td>
-                          <div style={{ display:"flex", flexWrap:"wrap", gap:4 }}>
-                            {m.shopAccess.length === 0 ? (
-                              <span style={{ fontSize:11, color:"#98A2B3" }}>Aucune boutique</span>
-                            ) : m.shopAccess.map(sa => (
-                              <span key={sa.id} style={{
-                                fontSize:10, fontWeight:600, background:"#EAF7EF", color:"#0A8F45",
-                                borderRadius:6, padding:"2px 7px",
-                              }}>
-                                {sa.shop.name}
-                              </span>
-                            ))}
-                          </div>
-                        </td>
-                        <td>
-                          <span className={`badge ${STATUS_BADGE[m.status]}`}>
-                            {STATUS_LABELS[m.status]}
-                          </span>
-                        </td>
-                        <td style={{ fontSize:11, color:"#98A2B3" }}>{fmtDate(m.createdAt)}</td>
-                        <td>
-                          <div className="tm-act-btns">
-                            <button className="tm-act-btn" title="Modifier"
-                              onClick={() => setEditMember(m)}>
-                              <Pencil size={13} />
-                            </button>
-                            {m.status === "active" && (
-                              <button className="tm-act-btn" title="Suspendre l'accès"
-                                style={{ color:"#F08A24" }}
-                                onClick={() => setConfirmAction({ type:"suspend", id:m.id, label:m.user.fullName })}>
-                                <XCircle size={13} />
-                              </button>
-                            )}
-                            {m.status === "suspended" && (
-                              <button className="tm-act-btn" title="Réactiver l'accès"
-                                style={{ color:"#0A8F45" }}
-                                onClick={() => setConfirmAction({ type:"activate", id:m.id, label:m.user.fullName })}>
-                                <CheckCircle size={13} />
-                              </button>
-                            )}
-                            <button className="tm-act-btn" title="Révoquer définitivement"
-                              style={{ color:"#EF4444" }}
-                              onClick={() => setConfirmAction({ type:"revoke", id:m.id, label:m.user.fullName })}>
-                              <Trash2 size={13} />
-                            </button>
-                          </div>
-                        </td>
+              <>
+                {/* Desktop / tablet table */}
+                <div className="tm-member-table-wrap" style={{ overflowX:"auto" }}>
+                  <table className="tm-table">
+                    <thead>
+                      <tr>
+                        <th>Collaborateur</th>
+                        <th>Rôle</th>
+                        <th>Boutiques autorisées</th>
+                        <th>Statut</th>
+                        <th>Ajouté le</th>
+                        <th>Actions</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {filteredMembers.map(m => (
+                        <tr key={m.id}>
+                          <td>
+                            <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                              <div className="tm-avatar">{initials(m.user.fullName)}</div>
+                              <div>
+                                <div style={{ fontWeight:600, fontSize:13 }}>{m.user.fullName}</div>
+                                <div style={{ fontSize:11, color:"#98A2B3" }}>{m.user.email}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td>
+                            <span style={{
+                              display:"inline-flex", alignItems:"center", gap:5,
+                              padding:"3px 9px", borderRadius:20, fontSize:11, fontWeight:600,
+                              background: ROLE_BG[m.role], color: ROLE_COLORS[m.role],
+                            }}>
+                              <Shield size={10} /> {ROLE_LABELS[m.role]}
+                            </span>
+                          </td>
+                          <td>
+                            <div style={{ display:"flex", flexWrap:"wrap", gap:4 }}>
+                              {m.shopAccess.length === 0 ? (
+                                <span style={{ fontSize:11, color:"#98A2B3" }}>Aucune boutique</span>
+                              ) : m.shopAccess.map(sa => (
+                                <span key={sa.id} style={{
+                                  fontSize:10, fontWeight:600, background:"#EAF7EF", color:"#0A8F45",
+                                  borderRadius:6, padding:"2px 7px",
+                                }}>
+                                  {sa.shop.name}
+                                </span>
+                              ))}
+                            </div>
+                          </td>
+                          <td>
+                            <span className={`badge ${STATUS_BADGE[m.status]}`}>
+                              {STATUS_LABELS[m.status]}
+                            </span>
+                          </td>
+                          <td style={{ fontSize:11, color:"#98A2B3" }}>{fmtDate(m.createdAt)}</td>
+                          <td>
+                            <ActionMenu items={memberMenuItems(m)} />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile cards */}
+                <div className="tm-member-cards">
+                  {filteredMembers.map(m => (
+                    <div key={m.id} className="tm-member-card">
+                      <div className="tm-member-card-head">
+                        <div className="tm-avatar" style={{ width:40, height:40, fontSize:14 }}>{initials(m.user.fullName)}</div>
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <div style={{ fontWeight:700, fontSize:14, color:"#1F2A24", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{m.user.fullName}</div>
+                          <div style={{ fontSize:11, color:"#98A2B3", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{m.user.email}</div>
+                        </div>
+                      </div>
+                      <div className="tm-member-card-body">
+                        <span style={{
+                          display:"inline-flex", alignItems:"center", gap:4,
+                          padding:"3px 9px", borderRadius:20, fontSize:11, fontWeight:600,
+                          background: ROLE_BG[m.role], color: ROLE_COLORS[m.role],
+                        }}>
+                          <Shield size={10} /> {ROLE_LABELS[m.role]}
+                        </span>
+                        <span className={`badge ${STATUS_BADGE[m.status]}`}>{STATUS_LABELS[m.status]}</span>
+                        {m.shopAccess.map(sa => (
+                          <span key={sa.id} style={{
+                            fontSize:10, fontWeight:600, background:"#EAF7EF", color:"#0A8F45",
+                            borderRadius:6, padding:"2px 7px",
+                          }}>
+                            {sa.shop.name}
+                          </span>
+                        ))}
+                      </div>
+                      <div className="tm-member-card-footer">
+                        <span style={{ fontSize:11, color:"#98A2B3" }}>Ajouté le {fmtDate(m.createdAt)}</span>
+                        <ActionMenu items={memberMenuItems(m)} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
             )}
           </div>
         )}
@@ -858,15 +1100,36 @@ export default function TeamPage() {
                           })}
                         </div>
                       </td>
-                      <td style={{ fontSize:11, color: new Date(inv.expiresAt) < new Date() ? "#EF4444" : "#98A2B3" }}>
-                        {fmtDate(inv.expiresAt)}
+                      <td>
+                        <div style={{ display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>
+                          <span style={{ fontSize:11, color: new Date(inv.expiresAt) < new Date() ? "#EF4444" : "#98A2B3" }}>
+                            {fmtDate(inv.expiresAt)}
+                          </span>
+                          {isExpiringSoon(inv.expiresAt) && new Date(inv.expiresAt) >= new Date() && (
+                            <span style={{
+                              display:"inline-flex", alignItems:"center", gap:3,
+                              background:"#FFF1E5", color:"#F08A24",
+                              borderRadius:20, fontSize:10, fontWeight:700,
+                              padding:"2px 7px", whiteSpace:"nowrap",
+                            }}>
+                              <AlertCircle size={9} /> Expire bientôt
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td>
                         <div className="tm-act-btns">
-                          <button className="tm-act-btn" title="Renvoyer l'invitation"
-                            style={{ color:"#3B82F6" }}
-                            onClick={() => handleResend(inv.id)}>
-                            <Send size={12} />
+                          <button
+                            className="tm-act-btn"
+                            title="Renvoyer l'invitation"
+                            style={{ color: resendingId === inv.id ? "#98A2B3" : "#3B82F6" }}
+                            onClick={() => handleResend(inv.id)}
+                            disabled={resendingId === inv.id}
+                          >
+                            {resendingId === inv.id
+                              ? <span className="spin"><RefreshCw size={12} /></span>
+                              : <Send size={12} />
+                            }
                           </button>
                           <button className="tm-act-btn" title="Annuler l'invitation"
                             style={{ color:"#EF4444" }}

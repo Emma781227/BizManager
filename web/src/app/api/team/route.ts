@@ -126,7 +126,7 @@ export async function POST(request: NextRequest) {
       to:           email,
       ownerName:    owner?.fullName ?? "Un marchand",
       role,
-      inviteUrl:    `${appUrl}/auth/accept-invitation?token=${token}`,
+      inviteUrl:    `${appUrl}/accept-invitation?token=${token}`,
       expiresAt,
     });
   } catch {

@@ -13,7 +13,7 @@ async function main() {
     update: { role: "admin" },
     create: {
       email: "merchant@test.local",
-      fullName: "Jean Dupont",
+      fullName: "Emmanuel",
       phone: "+237655000000",
       passwordHash: passwordHash,
       role: "admin",

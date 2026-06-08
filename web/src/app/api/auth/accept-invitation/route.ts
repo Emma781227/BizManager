@@ -138,7 +138,7 @@ export async function POST(request: NextRequest) {
     entityId:    invitation.id,
   });
 
-  const sessionToken = await signSession({ userId: resolvedUser.id, email: resolvedUser.email, role: "merchant" });
+  const sessionToken = await signSession({ userId: resolvedUser.id, email: resolvedUser.email, role: "merchant", sessionVersion: resolvedUser.sessionVersion });
   const response = NextResponse.json({ success: true, redirectTo: "/dashboard" });
   setSessionCookie(response, sessionToken);
   return response;

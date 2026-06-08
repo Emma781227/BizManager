@@ -129,7 +129,7 @@ export default function ShopsPage() {
         {/* Shop grid */}
         {!loading && shops.length > 0 && (
           <div className="bs-grid">
-            {shops.map(shop => (
+            {shops.map((shop, idx) => (
               <div
                 key={shop.id}
                 className="bs-card"
@@ -139,7 +139,7 @@ export default function ShopsPage() {
                 }}>
                 {shop.coverUrl ? (
                   <div style={{ position: "relative", height: 100, overflow: "hidden", background: "#EAF7EF" }}>
-                    <Image src={shop.coverUrl} alt={shop.name} fill style={{ objectFit: "cover" }} sizes="(max-width: 700px) 100vw, 340px" />
+                    <Image src={shop.coverUrl} alt={shop.name} fill priority={idx === 0} style={{ objectFit: "cover" }} sizes="(max-width: 700px) 100vw, 340px" />
                   </div>
                 ) : (
                   <div className="bs-cover-placeholder" style={{display:"flex",alignItems:"center",justifyContent:"center",color:"#98A2B3"}}><Store size={32} /></div>

@@ -76,12 +76,12 @@ export async function POST(request: Request) {
 
   const user = await prisma.user.create({
     data: userData,
-    select: { id: true, email: true, fullName: true, role: true },
+    select: { id: true, email: true, fullName: true, role: true, sessionVersion: true },
   });
 
   await prisma.pendingRegistration.delete({ where: { email } });
 
-  const token = await signSession({ userId: user.id, email: user.email, role: user.role });
+  const token = await signSession({ userId: user.id, email: user.email, role: user.role, sessionVersion: user.sessionVersion });
   const response = NextResponse.json({ data: user }, { status: 201 });
   setSessionCookie(response, token);
 

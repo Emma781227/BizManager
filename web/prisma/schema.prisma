@@ -116,6 +116,8 @@ model User {
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
+  sessionVersion Int @default(1)
+
   shops        Shop[]
   subscription Subscription?
   transactions PaymentTransaction[]

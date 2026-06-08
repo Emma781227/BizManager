@@ -70,6 +70,14 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     },
   });
 
+  // Invalider immédiatement les sessions actives si accès retiré
+  if (body.status === "suspended" || body.status === "revoked") {
+    await prisma.user.update({
+      where: { id: membership.userId },
+      data: { sessionVersion: { increment: 1 } },
+    });
+  }
+
   await logAudit({
     actorUserId: session.userId,
     ownerUserId: session.userId,
@@ -97,6 +105,12 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
   await prisma.teamMembership.update({
     where: { id: memberId },
     data:  { status: "revoked" },
+  });
+
+  // Invalider immédiatement toutes les sessions de cet utilisateur
+  await prisma.user.update({
+    where: { id: membership.userId },
+    data: { sessionVersion: { increment: 1 } },
   });
 
   await logAudit({

@@ -1,5 +1,6 @@
 import { SignJWT, jwtVerify } from "jose";
 import type { NextRequest, NextResponse } from "next/server";
+import { prisma } from "./prisma";
 
 const secret = new TextEncoder().encode(process.env.JWT_SECRET ?? "dev-secret");
 
@@ -10,6 +11,7 @@ export type SessionPayload = {
   userId: string;
   email: string;
   role?: "merchant" | "admin";
+  sessionVersion?: number;
 };
 
 const defaultAdminEmails: string[] = [];
@@ -48,6 +50,44 @@ export async function verifySession(token: string) {
   return payload as SessionPayload;
 }
 
+/**
+ * Vérifie que sessionVersion du JWT correspond à celle en DB.
+ * Les anciens tokens sans sessionVersion sont acceptés (rétrocompatibilité)
+ * mais ne bénéficient pas de l'invalidation immédiate.
+ */
+async function checkSessionVersion(payload: SessionPayload): Promise<boolean> {
+  if (payload.sessionVersion === undefined) return true;
+  const user = await prisma.user.findUnique({
+    where: { id: payload.userId },
+    select: { sessionVersion: true },
+  });
+  return user !== null && user.sessionVersion === payload.sessionVersion;
+}
+
+export async function getSessionFromRequest(request: NextRequest) {
+  const token = request.cookies.get(SESSION_COOKIE_NAME)?.value;
+  if (!token) return null;
+  try {
+    const payload = await verifySession(token);
+    if (!(await checkSessionVersion(payload))) return null;
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
+export async function getSessionFromCookieStore(cookieStore: CookieReader) {
+  const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
+  if (!token) return null;
+  try {
+    const payload = await verifySession(token);
+    if (!(await checkSessionVersion(payload))) return null;
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
 export function setSessionCookie(response: NextResponse, token: string) {
   response.cookies.set(SESSION_COOKIE_NAME, token, {
     httpOnly: true,
@@ -66,32 +106,4 @@ export function clearSessionCookie(response: NextResponse) {
     path: "/",
     maxAge: 0,
   });
-}
-
-export async function getSessionFromRequest(request: NextRequest) {
-  const token = request.cookies.get(SESSION_COOKIE_NAME)?.value;
-
-  if (!token) {
-    return null;
-  }
-
-  try {
-    return await verifySession(token);
-  } catch {
-    return null;
-  }
-}
-
-export async function getSessionFromCookieStore(cookieStore: CookieReader) {
-  const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
-
-  if (!token) {
-    return null;
-  }
-
-  try {
-    return await verifySession(token);
-  } catch {
-    return null;
-  }
 }

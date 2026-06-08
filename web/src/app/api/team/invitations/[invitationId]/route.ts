@@ -45,7 +45,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         to:        invitation.email,
         ownerName: owner?.fullName ?? "Un marchand",
         role:      invitation.role,
-        inviteUrl: `${appUrl}/auth/accept-invitation?token=${token}`,
+        inviteUrl: `${appUrl}/accept-invitation?token=${token}`,
         expiresAt,
       });
     } catch { /* email non bloquant */ }

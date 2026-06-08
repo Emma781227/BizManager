@@ -2,6 +2,7 @@ import { prisma } from "./prisma";
 import type { Shop } from "@prisma/client";
 import { getPermissions } from "./permissions";
 import type { Permission } from "./permissions";
+import { ensureDefaultPlans } from "./subscription";
 
 export type ResolvedShop = Shop & {
   _staffRole: "owner" | "manager" | "staff";
@@ -153,6 +154,7 @@ export async function checkProductQuota(shopId: string): Promise<string | null> 
  * Vérifie les quotas du plan pour inviter un collaborateur.
  */
 export async function checkTeamQuota(ownerUserId: string): Promise<string | null> {
+  await ensureDefaultPlans();
   let sub: { plan?: { maxTeamMembers: number; displayName: string } } | null = null;
   try {
     sub = await prisma.subscription.findUnique({ where: { userId: ownerUserId }, include: { plan: true } });

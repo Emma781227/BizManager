@@ -40,7 +40,7 @@ export async function POST(request: Request) {
 
   await ensureUserSubscription(user.id);
 
-  const token = await signSession({ userId: user.id, email: user.email, role: user.role });
+  const token = await signSession({ userId: user.id, email: user.email, role: user.role, sessionVersion: user.sessionVersion });
   const response = NextResponse.json(
     {
       data: { id: user.id, email: user.email, fullName: user.fullName, role: user.role },
