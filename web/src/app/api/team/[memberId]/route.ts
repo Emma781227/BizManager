@@ -102,24 +102,25 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
   });
   if (!membership) return NextResponse.json({ error: "Membre introuvable" }, { status: 404 });
 
-  await prisma.teamMembership.update({
-    where: { id: memberId },
-    data:  { status: "revoked" },
-  });
-
-  // Invalider immédiatement toutes les sessions de cet utilisateur
+  // Invalider les sessions avant suppression
   await prisma.user.update({
     where: { id: membership.userId },
     data: { sessionVersion: { increment: 1 } },
   });
 
+  // Supprimer les accès boutiques puis le membership
+  await prisma.$transaction([
+    prisma.teamMembershipShop.deleteMany({ where: { membershipId: memberId } }),
+    prisma.teamMembership.delete({ where: { id: memberId } }),
+  ]);
+
   await logAudit({
     actorUserId: session.userId,
     ownerUserId: session.userId,
-    action:      "team.revoke",
+    action:      "team.delete",
     entityType:  "team_membership",
     entityId:    memberId,
-    metadata:    { revokedUserId: membership.userId },
+    metadata:    { deletedUserId: membership.userId },
   });
 
   return NextResponse.json({ success: true });

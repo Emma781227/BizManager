@@ -5,7 +5,11 @@ import { getSessionFromRequest } from "@/lib/auth";
 import { checkTeamQuota } from "@/lib/shop";
 import { logAudit } from "@/lib/audit";
 import { hasPermission } from "@/lib/permissions";
-import { randomBytes } from "crypto";
+import { createHash, randomBytes } from "crypto";
+
+function hashToken(raw: string): string {
+  return createHash("sha256").update(raw).digest("hex");
+}
 
 const ALLOWED_ROLES = ["manager", "staff"] as const;
 type InviteRole = (typeof ALLOWED_ROLES)[number];
@@ -98,7 +102,7 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  const token     = randomBytes(32).toString("hex");
+  const rawToken  = randomBytes(32).toString("hex");
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 jours
 
   const invitation = await prisma.teamInvitation.create({
@@ -106,7 +110,7 @@ export async function POST(request: NextRequest) {
       email,
       role,
       ownerUserId: session.userId,
-      token,
+      token:     hashToken(rawToken),  // seul le hash est stocké
       shopIds:    body.shopIds,
       expiresAt,
       invitedBy:  session.userId,
@@ -126,7 +130,7 @@ export async function POST(request: NextRequest) {
       to:           email,
       ownerName:    owner?.fullName ?? "Un marchand",
       role,
-      inviteUrl:    `${appUrl}/accept-invitation?token=${token}`,
+      inviteUrl:    `${appUrl}/accept-invitation?token=${rawToken}`,  // token brut dans l'email
       expiresAt,
     });
   } catch {

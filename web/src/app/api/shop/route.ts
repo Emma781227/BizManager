@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getSessionFromRequest } from "@/lib/auth";
 import { shopSchema, createShopSchema } from "@/lib/validators";
 import { z } from "zod";
-import { resolveShop, checkShopQuota } from "@/lib/shop";
+import { resolveShop, checkShopQuota, getUserShops } from "@/lib/shop";
 import { uploadMedia } from "@/lib/cloudinary";
 
 export const runtime = "nodejs";
@@ -18,20 +18,25 @@ export async function GET(request: NextRequest) {
     const all = request.nextUrl.searchParams.get("all") === "1";
 
     if (all) {
-      const shops = await prisma.shop.findMany({
-        where: { userId: session.userId },
-        orderBy: { createdAt: "asc" },
-        include: { _count: { select: { products: true, orders: true, customers: true } } },
-      });
-      return NextResponse.json({ data: shops });
+      const shops = await getUserShops(session.userId);
+      // Indique si l'utilisateur accède à ces boutiques en tant que membre d'équipe
+      const isTeamMember = shops.length > 0 && shops.every(s => s.userId !== session.userId);
+      return NextResponse.json({ data: shops, isTeamMember });
     }
 
-    // Rétrocompatibilité : retourne la première boutique
+    // Rétrocompatibilité : retourne la première boutique accessible (owned ou via membership)
     const shop = await prisma.shop.findFirst({
       where: { userId: session.userId },
       orderBy: { createdAt: "asc" },
     });
-    return NextResponse.json({ data: shop });
+    if (shop) return NextResponse.json({ data: shop });
+
+    // Fallback membre d'équipe : première boutique accessible
+    const membership = await prisma.teamMembership.findFirst({
+      where: { userId: session.userId, status: "active" },
+      include: { shopAccess: { include: { shop: true }, take: 1, orderBy: { createdAt: "asc" } } },
+    });
+    return NextResponse.json({ data: membership?.shopAccess[0]?.shop ?? null });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Erreur serveur" }, { status: 500 });
   }

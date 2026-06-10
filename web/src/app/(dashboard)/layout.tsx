@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getSessionFromCookieStore, isPlatformAdmin } from "@/lib/auth";
 import MerchantNav from "./MerchantNav";
+import TeamWelcomeBanner from "./TeamWelcomeBanner";
 
 const links = [
   { href: "/dashboard", label: "Tableau de bord", short: "DB" },
@@ -44,7 +45,10 @@ export default async function DashboardLayout({
         <MerchantNav links={navLinks} email={session.email} />
       </aside>
 
-      <div className="app-main dashboard-main">{children}</div>
+      <div className="app-main dashboard-main">
+        <TeamWelcomeBanner userId={session.userId} />
+        {children}
+      </div>
     </section>
   );
 }

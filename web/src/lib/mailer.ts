@@ -224,3 +224,44 @@ export async function sendTeamInvitationEmail(params: {
     `,
   });
 }
+
+export async function sendTeamMemberJoinedEmail(params: {
+  to:          string;
+  memberName:  string;
+  memberEmail: string;
+  role:        string;
+  teamPageUrl: string;
+}): Promise<void> {
+  const roleLabels: Record<string, string> = {
+    manager: "Manager",
+    staff:   "Employe",
+  };
+  const roleLabel = roleLabels[params.role] ?? params.role;
+
+  await sendEmail({
+    to:      params.to,
+    subject: `${params.memberName} a rejoint votre equipe BizManager`,
+    text: [
+      `Bonjour,`,
+      ``,
+      `${params.memberName} (${params.memberEmail}) a accepte votre invitation et a rejoint votre equipe en tant que ${roleLabel}.`,
+      ``,
+      `Gerez votre equipe ici : ${params.teamPageUrl}`,
+    ].join("\n"),
+    html: `
+      <div style="font-family:system-ui,sans-serif;max-width:520px;margin:0 auto;padding:32px 24px;background:#fff;">
+        <div style="text-align:center;margin-bottom:28px;">
+          <div style="display:inline-flex;align-items:center;justify-content:center;width:48px;height:48px;background:#0A8F45;border-radius:12px;color:#fff;font-weight:800;font-size:20px;">BM</div>
+        </div>
+        <h1 style="font-size:22px;font-weight:800;color:#1F2A24;margin:0 0 12px;">Nouveau membre dans votre equipe !</h1>
+        <p style="font-size:15px;color:#667085;line-height:1.6;margin:0 0 8px;">
+          <strong style="color:#1F2A24">${params.memberName}</strong> a accepte votre invitation et a rejoint votre equipe en tant que <strong style="color:#0A8F45">${roleLabel}</strong>.
+        </p>
+        <p style="font-size:13px;color:#98A2B3;margin:0 0 24px;">${params.memberEmail}</p>
+        <a href="${params.teamPageUrl}" style="display:block;text-align:center;background:#0A8F45;color:#fff;padding:14px 0;border-radius:12px;font-size:15px;font-weight:700;text-decoration:none;">
+          Voir mon equipe
+        </a>
+      </div>
+    `,
+  });
+}

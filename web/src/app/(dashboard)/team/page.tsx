@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState, useCallback, useRef } from "react";
-import { Users, UserPlus, Mail, Shield, Store, Clock, CheckCircle, XCircle, AlertCircle, Pencil, Trash2, RefreshCw, X, Check, ChevronDown, Lock, Send, MoreHorizontal } from "lucide-react";
+import { Users, UserPlus, Mail, Shield, Store, Clock, CheckCircle, XCircle, AlertCircle, Pencil, Trash2, RefreshCw, X, Check, ChevronDown, Lock, Send, MoreHorizontal, Activity } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type StaffRole = "owner" | "manager" | "staff";
@@ -33,6 +33,16 @@ type QuotaInfo = {
   plan: { name: string; displayName: string; maxTeamMembers: number };
   usage: { teamMembers: number };
 } | null;
+
+type AuditEntry = {
+  id:          string;
+  action:      string;
+  actorUserId: string;
+  actorName:   string;
+  entityId:    string | null;
+  metadata:    Record<string, unknown> | null;
+  createdAt:   string;
+};
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const ROLE_LABELS: Record<StaffRole, string> = {
@@ -197,6 +207,19 @@ const CSS = `
 /* Mobile member cards */
 .tm-member-cards { display:none; }
 
+/* Activity feed */
+.tm-activity-list { display:flex; flex-direction:column; }
+.tm-activity-item { display:flex; align-items:flex-start; gap:12px; padding:11px 20px;
+                    border-bottom:1px solid #F4F6F5; }
+.tm-activity-item:last-child { border-bottom:none; }
+.tm-activity-icon { width:32px; height:32px; border-radius:9px; flex-shrink:0;
+                    display:flex; align-items:center; justify-content:center; }
+.tm-activity-body { flex:1; min-width:0; }
+.tm-activity-text { font-size:13px; color:#1F2A24; line-height:1.5; }
+.tm-activity-time { font-size:11px; color:#98A2B3; margin-top:2px; }
+.tm-activity-more { display:flex; justify-content:center; padding:12px;
+                    border-top:1px solid #F4F6F5; }
+
 @media(max-width:900px){
   .tm-kpi { grid-template-columns:1fr 1fr; }
   .tm-wrap { padding:14px 12px; }
@@ -225,6 +248,46 @@ function fmtDate(iso: string) {
 }
 function isExpiringSoon(iso: string) {
   return new Date(iso) < new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
+}
+function timeAgo(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  if (diff < 60_000)        return "à l'instant";
+  if (diff < 3_600_000)     return `il y a ${Math.floor(diff / 60_000)} min`;
+  if (diff < 86_400_000)    return `il y a ${Math.floor(diff / 3_600_000)} h`;
+  if (diff < 7 * 86_400_000) return `il y a ${Math.floor(diff / 86_400_000)} j`;
+  return new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+}
+function describeAction(entry: AuditEntry): JSX.Element {
+  const m = entry.metadata ?? {};
+  switch (entry.action) {
+    case "team.invite":
+      return <><strong>{entry.actorName}</strong>{" a invité "}<em>{String(m.email ?? "quelqu'un")}</em>{" comme "}<strong>{ROLE_LABELS[(m.role as StaffRole)] ?? String(m.role)}</strong></>;
+    case "team.update": {
+      const changes = (m.changes ?? {}) as Record<string, unknown>;
+      if (changes.status) return <><strong>{entry.actorName}</strong>{" a modifié le statut d'un collaborateur → "}<strong>{String(changes.status)}</strong></>;
+      if (changes.role)   return <><strong>{entry.actorName}</strong>{" a changé le rôle d'un collaborateur → "}<strong>{ROLE_LABELS[(changes.role as StaffRole)] ?? String(changes.role)}</strong></>;
+      return <><strong>{entry.actorName}</strong>{" a modifié un collaborateur"}</>;
+    }
+    case "team.revoke":
+      return <><strong>{entry.actorName}</strong>{" a révoqué un collaborateur"}</>;
+    case "team.delete":
+      return <><strong>{entry.actorName}</strong>{" a supprimé un collaborateur de l'équipe"}</>;
+    case "team.invitation_accepted":
+      return <><strong>{entry.actorName}</strong>{" a rejoint l'équipe"}</>;
+    default:
+      return <><strong>{entry.actorName}</strong>{" — "}{entry.action}</>;
+  }
+}
+type ActionStyle = { bg: string; color: string; icon: JSX.Element };
+function actionStyle(action: string): ActionStyle {
+  switch (action) {
+    case "team.invite":              return { bg:"#EFF8FF", color:"#175CD3", icon:<UserPlus size={14} /> };
+    case "team.invitation_accepted": return { bg:"#DDF6E7", color:"#0A8F45", icon:<CheckCircle size={14} /> };
+    case "team.update":              return { bg:"#FFF1E5", color:"#F08A24", icon:<Pencil size={14} /> };
+    case "team.revoke":              return { bg:"#FDE8E8", color:"#EF4444", icon:<Trash2 size={14} /> };
+    case "team.delete":              return { bg:"#FDE8E8", color:"#EF4444", icon:<XCircle size={14} /> };
+    default:                         return { bg:"#F2F4F7", color:"#667085", icon:<Activity size={14} /> };
+  }
 }
 
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
@@ -425,14 +488,14 @@ function InviteModal({ open, onClose, shops, onInvited }: {
             ) : (
               <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
                 {shops.map(s => (
-                  <label key={s.id} className={`tm-shop-opt${shopIds.includes(s.id) ? " selected" : ""}`}
+                  <div key={s.id} className={`tm-shop-opt${shopIds.includes(s.id) ? " selected" : ""}`}
                     onClick={() => toggleShop(s.id)}>
                     <div className="tm-check">
                       {shopIds.includes(s.id) && <Check size={11} color="#fff" strokeWidth={3} />}
                     </div>
                     <span style={{ flex:1, fontSize:13, fontWeight:600, color:"#1F2A24" }}>{s.name}</span>
                     <span style={{ fontSize:11, color:"#98A2B3" }}>{s.slug}</span>
-                  </label>
+                  </div>
                 ))}
               </div>
             )}
@@ -561,13 +624,13 @@ function EditMemberModal({ open, onClose, member, shops, onUpdated }: {
             <label className="tm-label">Boutiques autorisées</label>
             <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
               {shops.map(s => (
-                <label key={s.id} className={`tm-shop-opt${shopIds.includes(s.id) ? " selected" : ""}`}
+                <div key={s.id} className={`tm-shop-opt${shopIds.includes(s.id) ? " selected" : ""}`}
                   onClick={() => toggleShop(s.id)}>
                   <div className="tm-check">
                     {shopIds.includes(s.id) && <Check size={11} color="#fff" strokeWidth={3} />}
                   </div>
                   <span style={{ flex:1, fontSize:13, fontWeight:600, color:"#1F2A24" }}>{s.name}</span>
-                </label>
+                </div>
               ))}
             </div>
           </div>
@@ -638,6 +701,73 @@ function ConfirmModal({ open, title, message, confirmLabel, confirmColor, onConf
   );
 }
 
+// ─── Activity Feed ────────────────────────────────────────────────────────────
+function ActivityFeed({ entries, loading }: { entries: AuditEntry[]; loading: boolean }) {
+  const [showAll, setShowAll] = useState(false);
+  const visible = showAll ? entries : entries.slice(0, 8);
+
+  return (
+    <div className="tm-tcard" style={{ marginBottom:18 }}>
+      <div className="tm-tbar">
+        <span style={{ fontWeight:700, color:"#1F2A24", fontSize:14, display:"flex", alignItems:"center", gap:8 }}>
+          <Activity size={15} color="#667085" /> Fil d'activité
+        </span>
+        {!loading && entries.length > 0 && (
+          <span className="badge badge-gray" style={{ fontSize:10 }}>{entries.length}</span>
+        )}
+      </div>
+
+      {loading ? (
+        <div style={{ padding:"8px 0" }}>
+          {[0,1,2,3].map(i => (
+            <div key={i} style={{ display:"flex", alignItems:"center", gap:12, padding:"11px 20px",
+                                  borderBottom:"1px solid #F4F6F5" }}>
+              <div className="tm-skeleton" style={{ width:32, height:32, borderRadius:9, flexShrink:0 }} />
+              <div style={{ flex:1, display:"flex", flexDirection:"column", gap:6 }}>
+                <div className="tm-skeleton" style={{ width:"55%", height:11 }} />
+                <div className="tm-skeleton" style={{ width:"22%", height:9 }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : entries.length === 0 ? (
+        <div className="tm-empty" style={{ padding:"32px 20px" }}>
+          <Activity size={30} color="#E8ECEA" style={{ marginBottom:8 }} />
+          <div>Aucune activité enregistrée pour l'instant.</div>
+        </div>
+      ) : (
+        <div className="tm-activity-list">
+          {visible.map(entry => {
+            const s = actionStyle(entry.action);
+            return (
+              <div key={entry.id} className="tm-activity-item">
+                <div className="tm-activity-icon" style={{ background:s.bg, color:s.color }}>
+                  {s.icon}
+                </div>
+                <div className="tm-activity-body">
+                  <div className="tm-activity-text">{describeAction(entry)}</div>
+                  <div className="tm-activity-time">
+                    <Clock size={9} style={{ verticalAlign:"middle", marginRight:3 }} />
+                    {timeAgo(entry.createdAt)}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+          {entries.length > 8 && (
+            <div className="tm-activity-more">
+              <button className="btn-secondary" style={{ height:28, fontSize:12, padding:"0 12px" }}
+                onClick={() => setShowAll(v => !v)}>
+                {showAll ? "Voir moins" : `Voir les ${entries.length - 8} entrées restantes`}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function TeamPage() {
   const [members, setMembers]         = useState<Member[]>([]);
@@ -651,7 +781,7 @@ export default function TeamPage() {
   const [editMember, setEditMember]   = useState<Member | null>(null);
 
   const [confirmAction, setConfirmAction] = useState<{
-    type: "suspend" | "activate" | "revoke" | "cancelInvite";
+    type: "suspend" | "activate" | "revoke" | "cancelInvite" | "delete";
     id: string; label: string;
   } | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
@@ -664,6 +794,9 @@ export default function TeamPage() {
   // Per-invitation resend loading
   const [resendingId, setResendingId] = useState<string | null>(null);
 
+  const [activity, setActivity]             = useState<AuditEntry[]>([]);
+  const [activityLoading, setActivityLoading] = useState(true);
+
   function showToast(msg: string, ok = true) {
     setToast({ msg, ok });
     setTimeout(() => setToast(null), 3000);
@@ -674,6 +807,7 @@ export default function TeamPage() {
   // Load team data
   useEffect(() => {
     setLoading(true);
+    setActivityLoading(true);
     Promise.all([
       fetch("/api/team").then(r => r.json()),
       fetch("/api/shop?all=1").then(r => r.json()),
@@ -693,6 +827,12 @@ export default function TeamPage() {
         });
       }
     }).catch(() => {}).finally(() => setLoading(false));
+
+    fetch("/api/team/activity")
+      .then(r => r.json())
+      .then(d => setActivity(d.activity ?? []))
+      .catch(() => {})
+      .finally(() => setActivityLoading(false));
   }, [refreshKey]);
 
   const activeMembers    = members.filter(m => m.status === "active");
@@ -727,7 +867,15 @@ export default function TeamPage() {
         return;
       }
 
-      const statusMap = { suspend: "suspended", activate: "active", revoke: "revoked" };
+      if (type === "delete") {
+        const res = await fetch(`/api/team/${id}`, { method: "DELETE" });
+        if (!res.ok) { const d = await res.json().catch(() => null); showToast(d?.error ?? "Erreur", false); return; }
+        showToast("Collaborateur supprimé.");
+        refresh();
+        return;
+      }
+
+      const statusMap = { suspend: "suspended", activate: "active", revoke: "revoked", delete: "revoked" };
       const res = await fetch(`/api/team/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -793,6 +941,12 @@ export default function TeamPage() {
       label: "Révoquer",
       icon: <Trash2 size={13} />,
       onClick: () => setConfirmAction({ type:"revoke", id:m.id, label:m.user.fullName }),
+      variant: "danger",
+    });
+    items.push({
+      label: "Supprimer définitivement",
+      icon: <XCircle size={13} />,
+      onClick: () => setConfirmAction({ type:"delete", id:m.id, label:m.user.fullName }),
       variant: "danger",
     });
     return items;
@@ -1146,6 +1300,9 @@ export default function TeamPage() {
           </div>
         )}
 
+        {/* ── Fil d'activité ── */}
+        <ActivityFeed entries={activity} loading={activityLoading} />
+
         {/* ── Aide sur les rôles ── */}
         <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:14, marginTop:4 }}>
           {(["owner","manager","staff"] as const).map(r => (
@@ -1205,6 +1362,7 @@ export default function TeamPage() {
           confirmAction?.type === "suspend"     ? "Suspendre l'accès ?" :
           confirmAction?.type === "activate"    ? "Réactiver l'accès ?" :
           confirmAction?.type === "revoke"      ? "Révoquer définitivement ?" :
+          confirmAction?.type === "delete"      ? "Supprimer le collaborateur ?" :
           "Annuler l'invitation ?"
         }
         message={
@@ -1214,12 +1372,15 @@ export default function TeamPage() {
             ? `${confirmAction?.label} retrouvera l'accès à ses boutiques assignées.`
             : confirmAction?.type === "revoke"
             ? `Cette action est irréversible. ${confirmAction?.label} perdra tout accès définitivement.`
+            : confirmAction?.type === "delete"
+            ? `${confirmAction?.label} sera retiré de l'équipe et toutes ses données d'accès seront supprimées. Cette action est irréversible.`
             : `L'invitation envoyée à ${confirmAction?.label} sera annulée.`
         }
         confirmLabel={
           confirmAction?.type === "suspend"     ? "Suspendre" :
           confirmAction?.type === "activate"    ? "Réactiver" :
           confirmAction?.type === "revoke"      ? "Révoquer" :
+          confirmAction?.type === "delete"      ? "Supprimer" :
           "Annuler l'invitation"
         }
         confirmColor={
