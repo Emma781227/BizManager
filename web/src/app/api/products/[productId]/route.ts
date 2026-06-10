@@ -7,6 +7,7 @@ import { productSchema } from "@/lib/validators";
 import { uploadMedia } from "@/lib/cloudinary";
 import { resolveShop } from "@/lib/shop";
 import { hasPermission } from "@/lib/permissions";
+import { logAudit } from "@/lib/audit";
 
 export const runtime = "nodejs";
 
@@ -301,6 +302,16 @@ export async function PUT(
   const updatedWithVariants = await prisma.product.findUnique({
     where: { id: productId },
     include: { variants: { orderBy: { createdAt: "asc" } } },
+  });
+
+  await logAudit({
+    actorUserId: session.userId,
+    ownerUserId: shop._ownerUserId,
+    shopId:      product.shopId,
+    action:      "product.update",
+    entityType:  "product",
+    entityId:    productId,
+    metadata:    { name: result.data.name },
   });
 
   return NextResponse.json({ data: updatedWithVariants });

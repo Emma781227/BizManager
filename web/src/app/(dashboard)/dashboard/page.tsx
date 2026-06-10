@@ -178,7 +178,8 @@ const card: React.CSSProperties = {
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function DashboardPage() {
   const [activeId, setActiveId] = useActiveShop("");
-  const [allShops,  setAllShops]  = useState<ApiShop[]>([]);
+  const [allShops,    setAllShops]    = useState<ApiShop[]>([]);
+  const [isTeamMember, setIsTeamMember] = useState(false);
   const [kpi,       setKpi]       = useState<KpiData | null>(null);
   const [sub,       setSub]       = useState<Subscription | null>(null);
   const [orders,    setOrders]    = useState<Order[]>([]);
@@ -226,6 +227,7 @@ export default function DashboardPage() {
     ]).then(([shopData, subData]) => {
       const list: ApiShop[] = Array.isArray(shopData.data) ? shopData.data : [];
       setAllShops(list);
+      if (shopData.isTeamMember) setIsTeamMember(true);
       if (list.length > 0) {
         const stored = typeof window !== "undefined" ? (localStorage.getItem("biz_active_shop_id") ?? "") : "";
         if (!stored || !list.find(s => s.id === stored)) {
@@ -307,38 +309,52 @@ export default function DashboardPage() {
             <div style={{ width:80, height:80, borderRadius:24, background:"linear-gradient(135deg, #EAF7EF 0%, #d1fae5 100%)", border:"2px solid #C3E6D3", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto" }}>
               <Store size={36} color="#0A8F45" />
             </div>
-            <div style={{ display:"grid", gap:"0.6rem" }}>
-              <h1 style={{ fontSize:22, fontWeight:800, color:"#1F2A24", margin:0, lineHeight:1.25 }}>
-                Créez votre première boutique
-              </h1>
-              <p style={{ fontSize:14, color:"#667085", margin:0, lineHeight:1.6 }}>
-                Le tableau de bord affiche les statistiques et l&apos;activité de votre boutique.
-                Vous devez en créer une pour commencer à vendre.
-              </p>
-            </div>
-            <div style={{ background:"#F8FAF9", border:"1px solid #E8ECEA", borderRadius:16, padding:"1rem 1.25rem", display:"grid", gap:"0.5rem", textAlign:"left" }}>
-              {[
-                { step:"1", text:"Créez votre boutique et personnalisez-la" },
-                { step:"2", text:"Ajoutez vos produits au catalogue" },
-                { step:"3", text:"Partagez le lien à vos clients" },
-              ].map(({ step, text }) => (
-                <div key={step} style={{ display:"flex", alignItems:"center", gap:"0.75rem" }}>
-                  <div style={{ width:24, height:24, borderRadius:"50%", background:"#0A8F45", color:"#fff", fontSize:11, fontWeight:800, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{step}</div>
-                  <span style={{ fontSize:13, color:"#3d4552" }}>{text}</span>
+            {isTeamMember ? (
+              <div style={{ display:"grid", gap:"0.6rem" }}>
+                <h1 style={{ fontSize:22, fontWeight:800, color:"#1F2A24", margin:0, lineHeight:1.25 }}>
+                  Aucune boutique assignée
+                </h1>
+                <p style={{ fontSize:14, color:"#667085", margin:0, lineHeight:1.6 }}>
+                  Votre responsable ne vous a pas encore assigné de boutique.
+                  Contactez-le pour obtenir un accès.
+                </p>
+              </div>
+            ) : (
+              <>
+                <div style={{ display:"grid", gap:"0.6rem" }}>
+                  <h1 style={{ fontSize:22, fontWeight:800, color:"#1F2A24", margin:0, lineHeight:1.25 }}>
+                    Créez votre première boutique
+                  </h1>
+                  <p style={{ fontSize:14, color:"#667085", margin:0, lineHeight:1.6 }}>
+                    Le tableau de bord affiche les statistiques et l&apos;activité de votre boutique.
+                    Vous devez en créer une pour commencer à vendre.
+                  </p>
                 </div>
-              ))}
-            </div>
-            <a href="/shops"
-              style={{ display:"inline-flex", alignItems:"center", justifyContent:"center", gap:"0.5rem", background:"linear-gradient(180deg, #228866 0%, #1d7c5f 100%)", color:"#fff", borderRadius:14, padding:"0.85rem 1.5rem", fontSize:15, fontWeight:700, textDecoration:"none", boxShadow:"0 12px 24px rgba(29,124,95,0.2)", transition:"transform 0.15s ease" }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(0)"; }}>
-              <Plus size={18} />
-              Créer ma première boutique
-            </a>
-            {sub && (
-              <p style={{ fontSize:12, color:"#98A2B3", margin:0 }}>
-                Plan <strong style={{ color:"#0A8F45" }}>{sub.plan.displayName}</strong> — jusqu&apos;à {sub.plan.maxShops} boutique{sub.plan.maxShops > 1 ? "s" : ""}
-              </p>
+                <div style={{ background:"#F8FAF9", border:"1px solid #E8ECEA", borderRadius:16, padding:"1rem 1.25rem", display:"grid", gap:"0.5rem", textAlign:"left" }}>
+                  {[
+                    { step:"1", text:"Créez votre boutique et personnalisez-la" },
+                    { step:"2", text:"Ajoutez vos produits au catalogue" },
+                    { step:"3", text:"Partagez le lien à vos clients" },
+                  ].map(({ step, text }) => (
+                    <div key={step} style={{ display:"flex", alignItems:"center", gap:"0.75rem" }}>
+                      <div style={{ width:24, height:24, borderRadius:"50%", background:"#0A8F45", color:"#fff", fontSize:11, fontWeight:800, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{step}</div>
+                      <span style={{ fontSize:13, color:"#3d4552" }}>{text}</span>
+                    </div>
+                  ))}
+                </div>
+                <a href="/shops"
+                  style={{ display:"inline-flex", alignItems:"center", justifyContent:"center", gap:"0.5rem", background:"linear-gradient(180deg, #228866 0%, #1d7c5f 100%)", color:"#fff", borderRadius:14, padding:"0.85rem 1.5rem", fontSize:15, fontWeight:700, textDecoration:"none", boxShadow:"0 12px 24px rgba(29,124,95,0.2)", transition:"transform 0.15s ease" }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(0)"; }}>
+                  <Plus size={18} />
+                  Créer ma première boutique
+                </a>
+                {sub && (
+                  <p style={{ fontSize:12, color:"#98A2B3", margin:0 }}>
+                    Plan <strong style={{ color:"#0A8F45" }}>{sub.plan.displayName}</strong> — jusqu&apos;à {sub.plan.maxShops} boutique{sub.plan.maxShops > 1 ? "s" : ""}
+                  </p>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -384,7 +400,7 @@ export default function DashboardPage() {
             </a>
           )}
 
-          {sub && (
+          {sub && !isTeamMember && (
             <div style={{ display:"flex", alignItems:"center", gap:8, background:"#EAF7EF", border:"1px solid #C3E6D3", borderRadius:10, padding:"6px 14px" }}>
               <span style={{ fontSize:13, fontWeight:600, color:"#0A8F45" }}>Plan {sub.plan.displayName}</span>
               <span style={{ width:1, height:14, background:"#C3E6D3" }} />
@@ -399,9 +415,11 @@ export default function DashboardPage() {
             <option value="90d">90 derniers jours</option>
           </select>
 
-          <a href="/settings" className="db-ctx-create" style={{ display:"inline-block", background:"#0A8F45", color:"#fff", borderRadius:10, padding:"8px 18px", fontSize:13, fontWeight:600, textDecoration:"none" }}>
-            + Créer une boutique
-          </a>
+          {!isTeamMember && (
+            <a href="/settings" className="db-ctx-create" style={{ display:"inline-block", background:"#0A8F45", color:"#fff", borderRadius:10, padding:"8px 18px", fontSize:13, fontWeight:600, textDecoration:"none" }}>
+              + Créer une boutique
+            </a>
+          )}
         </div>
 
         {/* ── Title ── */}
@@ -431,7 +449,7 @@ export default function DashboardPage() {
         </div>
 
         {/* ── Plan / quota ── */}
-        {sub && (
+        {sub && !isTeamMember && (
           <div style={{ ...card, padding:"18px 24px", marginBottom:18, display:"flex", alignItems:"center", gap:20, flexWrap:"wrap" }}>
             <div style={{ width:40, height:40, borderRadius:"50%", background:"#EAF7EF", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}><Store size={20} color="#0A8F45" /></div>
             <div style={{ flex:1, minWidth:200 }}>
@@ -530,9 +548,11 @@ export default function DashboardPage() {
                 );
               })}
             </div>
-            <a href="/settings" style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:8, marginTop:14, padding:"9px", borderRadius:10, border:"1.5px dashed #E8ECEA", color:"#0A8F45", fontSize:13, fontWeight:500, textDecoration:"none" }}>
-              + Créer une nouvelle boutique
-            </a>
+            {!isTeamMember && (
+              <a href="/settings" style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:8, marginTop:14, padding:"9px", borderRadius:10, border:"1.5px dashed #E8ECEA", color:"#0A8F45", fontSize:13, fontWeight:500, textDecoration:"none" }}>
+                + Créer une nouvelle boutique
+              </a>
+            )}
           </div>
         </div>
 

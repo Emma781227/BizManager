@@ -40,10 +40,11 @@ const CSS = `
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function ShopsPage() {
-  const [shops, setShops]           = useState<ApiShop[]>([]);
-  const [quota, setQuota]           = useState<QuotaInfo | null>(null);
-  const [loading, setLoading]       = useState(true);
-  const [showCreate, setShowCreate] = useState(false);
+  const [shops, setShops]               = useState<ApiShop[]>([]);
+  const [quota, setQuota]               = useState<QuotaInfo | null>(null);
+  const [loading, setLoading]           = useState(true);
+  const [showCreate, setShowCreate]     = useState(false);
+  const [isTeamMember, setIsTeamMember] = useState(false);
   const [activeShopId, setActiveShopId] = useActiveShop("");
 
   useEffect(() => {
@@ -53,6 +54,7 @@ export default function ShopsPage() {
     ]).then(([shopData, subData]) => {
       if (Array.isArray(shopData.data)) setShops(shopData.data);
       else if (Array.isArray(shopData)) setShops(shopData);
+      if (shopData.isTeamMember) setIsTeamMember(true);
       if (subData.plan) setQuota(subData);
     }).catch(() => {}).finally(() => setLoading(false));
   }, []);
@@ -82,12 +84,14 @@ export default function ShopsPage() {
               Gérez vos boutiques, leurs catalogues et leurs informations.
             </p>
           </div>
-          <button
-            onClick={() => setShowCreate(true)}
-            disabled={quota !== null && quota.usage.shops >= quota.plan.maxShops}
-            style={{height:40,padding:"0 20px",background:"#0A8F45",color:"#fff",border:"none",borderRadius:10,fontSize:14,fontWeight:700,cursor:"pointer",opacity: quota !== null && quota.usage.shops >= quota.plan.maxShops ? 0.5 : 1}}>
-            + Créer une boutique
-          </button>
+          {!isTeamMember && (
+            <button
+              onClick={() => setShowCreate(true)}
+              disabled={quota !== null && quota.usage.shops >= quota.plan.maxShops}
+              style={{height:40,padding:"0 20px",background:"#0A8F45",color:"#fff",border:"none",borderRadius:10,fontSize:14,fontWeight:700,cursor:"pointer",opacity: quota !== null && quota.usage.shops >= quota.plan.maxShops ? 0.5 : 1}}>
+              + Créer une boutique
+            </button>
+          )}
         </div>
 
         {/* KPI row */}
@@ -118,11 +122,17 @@ export default function ShopsPage() {
           <div style={{textAlign:"center",padding:"40px 20px",background:"#fff",borderRadius:18,border:"1px solid #E8ECEA"}}>
             <div style={{color:"#0A8F45",marginBottom:12}}><Store size={48} /></div>
             <div style={{fontSize:16,fontWeight:700,color:"#1F2A24",marginBottom:8}}>Aucune boutique pour l&apos;instant</div>
-            <p style={{fontSize:14,color:"#667085",marginBottom:20}}>Créez votre première boutique pour commencer à vendre.</p>
-            <button onClick={() => setShowCreate(true)}
-              style={{height:44,padding:"0 28px",background:"#0A8F45",color:"#fff",border:"none",borderRadius:10,fontSize:14,fontWeight:700,cursor:"pointer"}}>
-              + Créer ma première boutique
-            </button>
+            {isTeamMember ? (
+              <p style={{fontSize:14,color:"#667085"}}>Votre responsable ne vous a pas encore assigné de boutique.</p>
+            ) : (
+              <>
+                <p style={{fontSize:14,color:"#667085",marginBottom:20}}>Créez votre première boutique pour commencer à vendre.</p>
+                <button onClick={() => setShowCreate(true)}
+                  style={{height:44,padding:"0 28px",background:"#0A8F45",color:"#fff",border:"none",borderRadius:10,fontSize:14,fontWeight:700,cursor:"pointer"}}>
+                  + Créer ma première boutique
+                </button>
+              </>
+            )}
           </div>
         )}
 

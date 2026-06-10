@@ -4,6 +4,7 @@ import type React from "react";
 import { useActiveShop } from "@/hooks/useActiveShop";
 import CreateShopModal from "../shops/CreateShopModal";
 import { Camera, Package, Tag, Search, Info, Image, Film, Lock, Check, Pencil, Copy, Eye, Trash2, ChevronLeft, ChevronRight, Store, AlertCircle, AlertTriangle, RefreshCw, Upload, Download, BarChart2, User, ChevronDown, MessageCircle, BookOpen, X, Loader2, Shirt, Sparkles, ShoppingBag } from "lucide-react";
+import LastModifiedBy from "../LastModifiedBy";
 import NextImage from "next/image";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -1237,6 +1238,8 @@ function EditProductModal({ open, onClose, shopId, shopName, categories, product
             </div>
           </div>
 
+          {product && <LastModifiedBy entityType="product" entityId={product.id} />}
+
           {submitError && (
             <div style={{ background:"#FDE8E8", border:"1px solid #F9BDBD", borderRadius:10,
                           padding:"10px 14px", fontSize:13, color:"#C02020", fontWeight:500 }}>
@@ -1975,7 +1978,7 @@ export default function ProductsPage() {
         shopName={activeShop?.name ?? ""}
         categories={apiCategories}
         product={editProductId ? (rawProducts.find(p => p.id === editProductId) ?? null) : null}
-        onUpdated={() => { setEditProduct(null); setEditProductId(null); refreshProducts(); }}
+        onUpdated={() => { setEditProduct(null); setEditProductId(null); refreshProducts(); showToast("Produit modifié avec succès !"); }}
       />
 
       <DeleteConfirmModal

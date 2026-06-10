@@ -76,24 +76,31 @@ export async function resolveShop(userId: string, shopId?: string | null): Promi
  * Owner → ses boutiques. Staff/Manager → boutiques de son membership.
  */
 export async function getUserShops(userId: string) {
-  const ownedShops = await prisma.shop.findMany({
-    where: { userId },
-    orderBy: { createdAt: "asc" },
-    include: { _count: { select: { products: true, orders: true, customers: true } } },
-  });
-  if (ownedShops.length > 0) return ownedShops;
-
-  const memberships = await prisma.teamMembership.findMany({
-    where: { userId, status: "active" },
-    include: {
-      shopAccess: {
-        include: {
-          shop: { include: { _count: { select: { products: true, orders: true, customers: true } } } },
+  const [ownedShops, memberships] = await Promise.all([
+    prisma.shop.findMany({
+      where: { userId },
+      orderBy: { createdAt: "asc" },
+      include: { _count: { select: { products: true, orders: true, customers: true } } },
+    }),
+    prisma.teamMembership.findMany({
+      where: { userId, status: "active" },
+      include: {
+        shopAccess: {
+          include: {
+            shop: { include: { _count: { select: { products: true, orders: true, customers: true } } } },
+          },
         },
       },
-    },
-  });
-  return memberships.flatMap(m => m.shopAccess.map(sa => sa.shop));
+    }),
+  ]);
+
+  const teamShops = memberships.flatMap(m => m.shopAccess.map(sa => sa.shop));
+
+  if (ownedShops.length === 0) return teamShops;
+
+  // Ajoute les boutiques d'équipe non déjà possédées (évite les doublons)
+  const ownedIds = new Set(ownedShops.map(s => s.id));
+  return [...ownedShops, ...teamShops.filter(s => !ownedIds.has(s.id))];
 }
 
 /**

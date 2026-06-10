@@ -2,7 +2,11 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSessionFromRequest } from "@/lib/auth";
-import { randomBytes } from "crypto";
+import { createHash, randomBytes } from "crypto";
+
+function hashToken(raw: string): string {
+  return createHash("sha256").update(raw).digest("hex");
+}
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ invitationId: string }> }) {
   const session = await getSessionFromRequest(request);
@@ -31,11 +35,11 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     if (invitation.status !== "pending") {
       return NextResponse.json({ error: "Seules les invitations en attente peuvent être renvoyées" }, { status: 400 });
     }
-    const token     = randomBytes(32).toString("hex");
+    const rawToken  = randomBytes(32).toString("hex");
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
     const updated   = await prisma.teamInvitation.update({
       where: { id: invitationId },
-      data:  { token, expiresAt },
+      data:  { token: hashToken(rawToken), expiresAt },
     });
     const owner  = await prisma.user.findUnique({ where: { id: session.userId }, select: { fullName: true } });
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? process.env.APP_URL ?? "https://bizmanager.app";
@@ -45,7 +49,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         to:        invitation.email,
         ownerName: owner?.fullName ?? "Un marchand",
         role:      invitation.role,
-        inviteUrl: `${appUrl}/accept-invitation?token=${token}`,
+        inviteUrl: `${appUrl}/accept-invitation?token=${rawToken}`,
         expiresAt,
       });
     } catch { /* email non bloquant */ }

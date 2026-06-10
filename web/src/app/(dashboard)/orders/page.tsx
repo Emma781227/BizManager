@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { MessageCircle, Globe, PenLine, ShoppingCart, Clock, CheckCircle, TrendingUp, Bell, RefreshCw, X, Check, Store, Download } from "lucide-react";
 import { useActiveShop } from "@/hooks/useActiveShop";
+import LastModifiedBy from "../LastModifiedBy";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type ApiOrderStatus = "pending"|"new"|"confirmed"|"in_progress"|"ready"|"delivered"|"cancelled";
@@ -290,6 +291,9 @@ function DetailModal({
             </div>
           )}
         </div>
+
+        {/* Dernière modification */}
+        <LastModifiedBy entityType="order" entityId={order.id} />
 
         {/* Actions */}
         <div style={{ display:"flex", gap:10, flexWrap:"wrap" }}>

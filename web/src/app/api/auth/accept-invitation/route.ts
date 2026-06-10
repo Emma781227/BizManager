@@ -4,14 +4,43 @@ import { prisma } from "@/lib/prisma";
 import { signSession, setSessionCookie } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import bcrypt from "bcryptjs";
+import { createHash } from "crypto";
+import { checkRateLimit, getClientIp } from "@/lib/ratelimit";
+
+function hashToken(raw: string): string {
+  return createHash("sha256").update(raw).digest("hex");
+}
+
+// 10 tentatives / 15 min par IP — protège GET (reconnaissance) et POST (acceptation)
+const RL_MAX = 3;
+const RL_WINDOW = 15 * 60 * 1000;
+
+function applyRateLimit(request: NextRequest): NextResponse | null {
+  const ip  = getClientIp(request);
+  const res = checkRateLimit(`accept-invitation:${ip}`, RL_MAX, RL_WINDOW);
+  if (!res.allowed) {
+    return NextResponse.json(
+      { error: "Trop de tentatives. Réessayez dans quelques minutes." },
+      {
+        status: 429,
+        headers: { "Retry-After": String(res.retryAfter) },
+      },
+    );
+  }
+  return null;
+}
 
 // GET /api/auth/accept-invitation?token=xxx
 export async function GET(request: NextRequest) {
-  const token = request.nextUrl.searchParams.get("token")?.trim();
-  if (!token) return NextResponse.json({ error: "Token manquant" }, { status: 400 });
+  const limited = applyRateLimit(request);
+  if (limited) return limited;
 
+  const rawToken = request.nextUrl.searchParams.get("token")?.trim();
+  if (!rawToken) return NextResponse.json({ error: "Token manquant" }, { status: 400 });
+
+  const tokenHash = hashToken(rawToken);
   const invitation = await prisma.teamInvitation.findUnique({
-    where: { token },
+    where: { token: tokenHash },
     include: { owner: { select: { fullName: true, email: true } } },
   });
 
@@ -23,7 +52,7 @@ export async function GET(request: NextRequest) {
     );
   }
   if (invitation.expiresAt < new Date()) {
-    await prisma.teamInvitation.update({ where: { token }, data: { status: "expired" } });
+    await prisma.teamInvitation.update({ where: { token: tokenHash }, data: { status: "expired" } });
     return NextResponse.json({ error: "Cette invitation a expiré", status: "expired" }, { status: 410 });
   }
 
@@ -52,6 +81,9 @@ export async function GET(request: NextRequest) {
 
 // POST /api/auth/accept-invitation
 export async function POST(request: NextRequest) {
+  const limited = applyRateLimit(request);
+  if (limited) return limited;
+
   const body = await request.json().catch(() => null) as {
     token:     string;
     password?: string;
@@ -60,13 +92,14 @@ export async function POST(request: NextRequest) {
 
   if (!body?.token) return NextResponse.json({ error: "Token manquant" }, { status: 400 });
 
+  const tokenHash = hashToken(body.token);
   const invitation = await prisma.teamInvitation.findUnique({
-    where: { token: body.token },
+    where: { token: tokenHash },
   });
   if (!invitation)                       return NextResponse.json({ error: "Invitation invalide" }, { status: 404 });
   if (invitation.status !== "pending")   return NextResponse.json({ error: "Invitation déjà utilisée ou annulée" }, { status: 410 });
   if (invitation.expiresAt < new Date()) {
-    await prisma.teamInvitation.update({ where: { token: body.token }, data: { status: "expired" } });
+    await prisma.teamInvitation.update({ where: { token: tokenHash }, data: { status: "expired" } });
     return NextResponse.json({ error: "Invitation expirée" }, { status: 410 });
   }
 
@@ -125,7 +158,7 @@ export async function POST(request: NextRequest) {
     }
 
     await tx.teamInvitation.update({
-      where: { token: body.token },
+      where: { token: tokenHash },
       data:  { status: "accepted" },
     });
   });
@@ -137,6 +170,25 @@ export async function POST(request: NextRequest) {
     entityType:  "team_invitation",
     entityId:    invitation.id,
   });
+
+  // Notifier le propriétaire — non bloquant
+  try {
+    const owner = await prisma.user.findUnique({
+      where:  { id: invitation.ownerUserId },
+      select: { email: true },
+    });
+    if (owner) {
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? process.env.APP_URL ?? "https://bizmanager.app";
+      const { sendTeamMemberJoinedEmail } = await import("@/lib/mailer");
+      await sendTeamMemberJoinedEmail({
+        to:          owner.email,
+        memberName:  resolvedUser.fullName,
+        memberEmail: resolvedUser.email,
+        role:        invitation.role,
+        teamPageUrl: `${appUrl}/team`,
+      });
+    }
+  } catch { /* notification non bloquante */ }
 
   const sessionToken = await signSession({ userId: resolvedUser.id, email: resolvedUser.email, role: "merchant", sessionVersion: resolvedUser.sessionVersion });
   const response = NextResponse.json({ success: true, redirectTo: "/dashboard" });

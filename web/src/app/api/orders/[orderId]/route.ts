@@ -5,6 +5,7 @@ import { getSessionFromRequest } from "@/lib/auth";
 import { updateOrderSchema } from "@/lib/validators";
 import { resolveShop } from "@/lib/shop";
 import { hasPermission } from "@/lib/permissions";
+import { logAudit } from "@/lib/audit";
 
 type RouteParams = {
   params: Promise<{ orderId: string }>;
@@ -93,6 +94,16 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
     }
 
     return order;
+  });
+
+  await logAudit({
+    actorUserId: session.userId,
+    ownerUserId: shop._ownerUserId,
+    shopId:      existing.shopId,
+    action:      "order.update",
+    entityType:  "order",
+    entityId:    orderId,
+    metadata:    { changes: result.data },
   });
 
   return NextResponse.json({ data: updated });
