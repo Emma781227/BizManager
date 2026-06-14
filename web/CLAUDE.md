@@ -49,6 +49,9 @@ src/
 │   │       └── favorites/
 │   ├── billing/
 │   │   └── success/          # Page de confirmation post-paiement (polling statut)
+│   ├── shop/
+│   │   └── [slug]/
+│   │       ├── payment-status/ # Résultat paiement GeniusPay commande (polling)
 │   ├── api/                  # Routes API (voir section dédiée)
 │   ├── layout.tsx            # Layout racine (fonts, PWA, metadata)
 │   └── page.tsx              # Landing page marketing
@@ -123,6 +126,8 @@ public/
 | GET | `/api/public/shop/[slug]/products` | Produits de la boutique |
 | GET | `/api/public/shop/[slug]/products/[productId]` | Détail produit |
 | POST | `/api/public/shop/[slug]/orders` | Créer commande (vitrine) |
+| POST | `/api/public/shop/[slug]/pay` | Créer commande + initier paiement GeniusPay |
+| GET | `/api/public/orders/payment-status` | Statut d'un paiement de commande (polling) |
 | POST | `/api/public/shop/[slug]/whatsapp` | Webhook WhatsApp |
 
 ### Admin
@@ -174,7 +179,8 @@ public/
 | `OrderItem` | Lignes de commande | orderId, productId, variantId?, variantLabel?, quantity, unitPrice, lineTotal |
 | `OrderStatusHistory` | Historique des statuts de commande | orderId, status (OrderStatus), changedAt, note? |
 | `WhatsappLog` | Historique messages WhatsApp | shopId, orderId, type, message |
-| `PaymentTransaction` | Transactions de paiement GeniusPay | userId, planId, amount, currency, status, providerReference (unique) |
+| `PaymentTransaction` | Transactions de paiement GeniusPay (abonnements) | userId, planId, amount, currency, status, providerReference (unique) |
+| `OrderPaymentTransaction` | Transactions de paiement GeniusPay (commandes vitrine) | orderId (unique), shopId, amount, currency, status, providerReference (unique) |
 | `WebhookEvent` | Événements webhook reçus | provider, eventType, providerReference, processed |
 
 ### Plans d'abonnement

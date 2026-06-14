@@ -62,6 +62,7 @@ enum PaymentMethod {
   mobile_money
   bank_transfer
   cod
+  online
 }
 
 enum WhatsappLogType {
@@ -262,7 +263,8 @@ model Shop {
   customers     Customer[]
   orders        Order[]
   whatsappLogs  WhatsappLog[]
-  teamMembershipShops TeamMembershipShop[]
+  teamMembershipShops      TeamMembershipShop[]
+  orderPaymentTransactions OrderPaymentTransaction[]
 
   @@index([userId])
   @@index([name])
@@ -349,11 +351,12 @@ model Order {
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
-  shop          Shop                 @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  customer      Customer             @relation(fields: [customerId], references: [id], onDelete: Restrict)
-  items         OrderItem[]
-  whatsappLogs  WhatsappLog[]
-  statusHistory OrderStatusHistory[]
+  shop               Shop                    @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  customer           Customer                @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  items              OrderItem[]
+  whatsappLogs       WhatsappLog[]
+  statusHistory      OrderStatusHistory[]
+  paymentTransaction OrderPaymentTransaction?
 
   @@index([shopId, createdAt])
   @@index([shopId, status])
@@ -479,4 +482,29 @@ model AuditLog {
   @@index([actorUserId])
   @@index([ownerUserId, createdAt])
   @@index([shopId])
+}
+
+// ─── Order Payment Transactions ───────────────────────────────────────────────
+
+model OrderPaymentTransaction {
+  id                String                   @id @default(cuid())
+  orderId           String                   @unique
+  shopId            String
+  amount            Decimal                  @db.Decimal(12, 2)
+  currency          String                   @default("XOF")
+  status            PaymentTransactionStatus @default(pending)
+  provider          String                   @default("geniuspay")
+  providerReference String?                  @unique
+  providerPaymentId String?
+  checkoutUrl       String?
+  webhookPayload    Json?
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  shop  Shop  @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([shopId])
+  @@index([providerReference])
 }

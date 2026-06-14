@@ -21,6 +21,8 @@ type ProductPayload = {
   shopName: string;
 };
 
+type PaymentMode = "whatsapp" | "geniuspay";
+
 export default function PublicCheckoutPage() {
   const routeParams = useParams<{ slug: string }>();
   const slug = routeParams?.slug;
@@ -31,29 +33,25 @@ export default function PublicCheckoutPage() {
     return Number.isFinite(raw) && raw > 0 ? Math.floor(raw) : 1;
   }, [searchParams]);
 
-  const [customerName, setCustomerName] = useState("");
+  const [customerName, setCustomerName]   = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
-  const [quantity, setQuantity] = useState(initialQuantity);
-  const [address, setAddress] = useState("");
-  const [note, setNote] = useState("");
-  const [product, setProduct] = useState<ProductPayload | null>(null);
+  const [customerEmail, setCustomerEmail] = useState("");
+  const [quantity, setQuantity]           = useState(initialQuantity);
+  const [address, setAddress]             = useState("");
+  const [note, setNote]                   = useState("");
+  const [paymentMode, setPaymentMode]     = useState<PaymentMode>("whatsapp");
+  const [product, setProduct]             = useState<ProductPayload | null>(null);
   const [paymentMethods, setPaymentMethods] = useState<string[]>([]);
   const [loadingProduct, setLoadingProduct] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting]         = useState(false);
+  const [error, setError]                   = useState<string | null>(null);
 
   useEffect(() => {
     setQuantity(initialQuantity);
   }, [initialQuantity]);
 
   useEffect(() => {
-    if (!slug) {
-      setProduct(null);
-      setLoadingProduct(false);
-      return;
-    }
-
-    if (!productId) {
+    if (!slug || !productId) {
       setProduct(null);
       setLoadingProduct(false);
       return;
@@ -68,9 +66,7 @@ export default function PublicCheckoutPage() {
         ]);
         const [productJson, shopJson] = await Promise.all([productRes.json(), shopRes.json()]);
 
-        if (!productRes.ok) {
-          throw new Error(productJson.error ?? "Produit introuvable");
-        }
+        if (!productRes.ok) throw new Error(productJson.error ?? "Produit introuvable");
 
         setProduct(productJson.data ?? null);
         if (Array.isArray(shopJson.data?.paymentMethods)) {
@@ -86,46 +82,32 @@ export default function PublicCheckoutPage() {
   }, [slug, productId]);
 
   const totalEstimate = useMemo(() => {
-    if (!product) {
-      return 0;
-    }
-
+    if (!product) return 0;
     return Number(product.unitPrice) * quantity;
   }, [product, quantity]);
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleWhatsapp(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSubmitting(true);
     setError(null);
 
-    // Open a placeholder tab from user interaction to reduce popup blocking.
     const popup = window.open("", "_blank", "noopener,noreferrer");
 
     try {
       const response = await fetch(`/api/public/shop/${slug}/whatsapp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          productId,
-          quantity,
-          customerName,
-          customerPhone,
-          address,
-          note,
-        }),
+        body: JSON.stringify({ productId, quantity, customerName, customerPhone, address, note }),
       });
 
       const json = await response.json();
-
       if (!response.ok) {
-        if (popup) {
-          popup.close();
-        }
-        throw new Error(json.error ?? "Impossible de preparer la commande");
+        if (popup) popup.close();
+        throw new Error(json.error ?? "Impossible de préparer la commande");
       }
 
       const whatsappUrl = String(json.data.whatsappUrl ?? "");
-      const orderId = String(json.data.orderId ?? "");
+      const orderId     = String(json.data.orderId ?? "");
       let sent = "0";
 
       if (popup && whatsappUrl) {
@@ -133,17 +115,54 @@ export default function PublicCheckoutPage() {
         sent = "1";
       }
 
-      const redirectUrl = `/shop/${slug}/confirmation?wa=${encodeURIComponent(whatsappUrl)}&sent=${sent}&orderId=${encodeURIComponent(orderId)}`;
-      window.location.href = redirectUrl;
+      window.location.href = `/shop/${slug}/confirmation?wa=${encodeURIComponent(whatsappUrl)}&sent=${sent}&orderId=${encodeURIComponent(orderId)}`;
     } catch (submitError) {
-      if (popup) {
-        popup.close();
-      }
+      if (popup) popup.close();
       setError(submitError instanceof Error ? submitError.message : "Erreur inconnue");
     } finally {
       setSubmitting(false);
     }
   }
+
+  async function handleGeniusPay(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSubmitting(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`/api/public/shop/${slug}/pay`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          productId,
+          customerName,
+          customerPhone,
+          customerEmail,
+          customerAddress: address,
+          notes: note,
+          items: [{ productId, quantity }],
+        }),
+      });
+
+      const json = await response.json();
+      if (!response.ok) throw new Error(json.error ?? "Impossible d'initier le paiement");
+
+      const checkoutUrl = String(json.data?.checkoutUrl ?? "");
+      if (!checkoutUrl) throw new Error("URL de paiement manquante");
+
+      window.location.href = checkoutUrl;
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : "Erreur inconnue");
+      setSubmitting(false);
+    }
+  }
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    if (paymentMode === "geniuspay") return handleGeniusPay(event);
+    return handleWhatsapp(event);
+  }
+
+  const disabled = submitting || !slug || !productId || !product || product.stock <= 0;
 
   return (
     <main className="min-h-screen bg-[linear-gradient(180deg,#f7faf7_0%,#edf5ef_100%)] px-4 py-6 text-slate-900 sm:px-6 lg:px-8">
@@ -162,14 +181,32 @@ export default function PublicCheckoutPage() {
 
         <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
           <div className="space-y-4">
-            {loadingProduct ? <p className="text-sm text-slate-500">Verification du produit...</p> : null}
+            {loadingProduct ? <p className="text-sm text-slate-500">Vérification du produit...</p> : null}
             {!loadingProduct && product ? (
               <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                 <h1 className="text-xl font-semibold text-slate-950">{product.name}</h1>
                 <p className="mt-1 text-lg font-semibold text-emerald-700">{formatPriceCFA(product.unitPrice)}</p>
-                <p className="mt-1 text-sm text-slate-500">Total estime: {formatPriceCFA(totalEstimate)}</p>
+                <p className="mt-1 text-sm text-slate-500">Total estimé: {formatPriceCFA(totalEstimate)}</p>
               </div>
             ) : null}
+
+            {/* Payment mode selector */}
+            <div className="grid grid-cols-2 gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-1.5">
+              <button
+                type="button"
+                onClick={() => setPaymentMode("whatsapp")}
+                className={`rounded-xl px-3 py-2.5 text-sm font-medium transition ${paymentMode === "whatsapp" ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700"}`}
+              >
+                💬 WhatsApp
+              </button>
+              <button
+                type="button"
+                onClick={() => setPaymentMode("geniuspay")}
+                className={`rounded-xl px-3 py-2.5 text-sm font-medium transition ${paymentMode === "geniuspay" ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700"}`}
+              >
+                💳 Payer en ligne
+              </button>
+            </div>
 
             <form className="space-y-4" onSubmit={handleSubmit}>
               <label className="block space-y-2 text-sm font-medium text-slate-700">
@@ -177,32 +214,46 @@ export default function PublicCheckoutPage() {
                 <input
                   required
                   value={customerName}
-                  onChange={(event) => setCustomerName(event.target.value)}
+                  onChange={(e) => setCustomerName(e.target.value)}
                   className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
                 />
               </label>
 
               <label className="block space-y-2 text-sm font-medium text-slate-700">
-                <span>Telephone</span>
+                <span>Téléphone</span>
                 <input
                   required
                   value={customerPhone}
-                  onChange={(event) => setCustomerPhone(event.target.value)}
+                  onChange={(e) => setCustomerPhone(e.target.value)}
                   placeholder="+237..."
                   className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
                 />
               </label>
 
+              {paymentMode === "geniuspay" && (
+                <label className="block space-y-2 text-sm font-medium text-slate-700">
+                  <span>Email</span>
+                  <input
+                    required
+                    type="email"
+                    value={customerEmail}
+                    onChange={(e) => setCustomerEmail(e.target.value)}
+                    placeholder="votre@email.com"
+                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+                  />
+                </label>
+              )}
+
               <label className="block space-y-2 text-sm font-medium text-slate-700">
-                <span>Quantite</span>
+                <span>Quantité</span>
                 <input
                   type="number"
                   min={1}
                   max={Math.max(1, product?.stock ?? 1)}
                   value={quantity}
-                  onChange={(event) => {
-                    const next = Number(event.target.value) || 1;
-                    const max = Math.max(1, product?.stock ?? 1);
+                  onChange={(e) => {
+                    const next = Number(e.target.value) || 1;
+                    const max  = Math.max(1, product?.stock ?? 1);
                     setQuantity(Math.min(Math.max(next, 1), max));
                   }}
                   className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
@@ -213,7 +264,7 @@ export default function PublicCheckoutPage() {
                 <span>Adresse</span>
                 <input
                   value={address}
-                  onChange={(event) => setAddress(event.target.value)}
+                  onChange={(e) => setAddress(e.target.value)}
                   className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
                 />
               </label>
@@ -222,7 +273,7 @@ export default function PublicCheckoutPage() {
                 <span>Remarque</span>
                 <textarea
                   value={note}
-                  onChange={(event) => setNote(event.target.value)}
+                  onChange={(e) => setNote(e.target.value)}
                   rows={2}
                   className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
                 />
@@ -230,10 +281,12 @@ export default function PublicCheckoutPage() {
 
               <button
                 type="submit"
-                disabled={submitting || !slug || !productId || !product || product.stock <= 0}
+                disabled={disabled}
                 className="inline-flex w-full items-center justify-center rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-70"
               >
-                {submitting ? "Preparation..." : "Valider la commande"}
+                {submitting
+                  ? (paymentMode === "geniuspay" ? "Redirection vers le paiement..." : "Préparation...")
+                  : (paymentMode === "geniuspay" ? `Payer ${formatPriceCFA(totalEstimate)}` : "Valider la commande")}
               </button>
             </form>
           </div>
@@ -242,7 +295,11 @@ export default function PublicCheckoutPage() {
             <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-700">Infos utiles</h2>
             <div className="grid gap-3 text-sm text-slate-600">
               <span className="rounded-xl border border-slate-200 bg-white px-3 py-2">Livraison rapide possible</span>
-              <span className="rounded-xl border border-slate-200 bg-white px-3 py-2">Confirmation de commande par WhatsApp</span>
+              {paymentMode === "whatsapp" ? (
+                <span className="rounded-xl border border-slate-200 bg-white px-3 py-2">Confirmation de commande par WhatsApp</span>
+              ) : (
+                <span className="rounded-xl border border-slate-200 bg-white px-3 py-2">Paiement sécurisé via GeniusPay</span>
+              )}
             </div>
             {paymentMethods.length > 0 && (
               <div className="space-y-2">
@@ -272,9 +329,7 @@ export default function PublicCheckoutPage() {
 
         <nav className="mt-8 grid grid-cols-5 gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-2 text-center text-sm text-slate-500" aria-label="Navigation client">
           {slug ? (
-            <Link href={`/shop/${slug}`} className="rounded-xl px-2 py-2 transition hover:bg-white">
-              Accueil
-            </Link>
+            <Link href={`/shop/${slug}`} className="rounded-xl px-2 py-2 transition hover:bg-white">Accueil</Link>
           ) : (
             <span className="rounded-xl px-2 py-2">Accueil</span>
           )}

@@ -52,13 +52,19 @@ export async function POST(request: NextRequest) {
     },
   });
 
+  const metadata   = (payload.metadata ?? (payload.data as Record<string, unknown>)?.metadata) as Record<string, string> | undefined;
+  const isOrderPay = metadata?.type === "order";
+
   try {
     if (eventType === "payment.success" || eventType === "payment.completed") {
-      await handlePaymentSuccess(txData, providerReference);
+      if (isOrderPay) await handleOrderPaymentSuccess(txData, providerReference, metadata);
+      else await handlePaymentSuccess(txData, providerReference);
     } else if (eventType === "payment.failed") {
-      await handlePaymentFailed(providerReference, txData);
+      if (isOrderPay) await handleOrderPaymentFailed(providerReference, metadata);
+      else await handlePaymentFailed(providerReference, txData);
     } else if (eventType === "payment.cancelled") {
-      await handlePaymentCancelled(providerReference, txData);
+      if (isOrderPay) await handleOrderPaymentCancelled(providerReference, metadata);
+      else await handlePaymentCancelled(providerReference, txData);
     }
 
     await prisma.webhookEvent.update({
@@ -149,6 +155,76 @@ async function handlePaymentSuccess(
     }),
   ]);
 }
+
+// ─── Order payment handlers ───────────────────────────────────────────────────
+
+async function handleOrderPaymentSuccess(
+  txData: Record<string, unknown>,
+  providerReference: string,
+  metadata?: Record<string, string>,
+) {
+  const internalTxId = metadata?.orderTransactionId;
+  const tx = internalTxId
+    ? await prisma.orderPaymentTransaction.findUnique({ where: { id: internalTxId } })
+    : providerReference
+    ? await prisma.orderPaymentTransaction.findUnique({ where: { providerReference } })
+    : null;
+
+  if (!tx) {
+    console.error("[webhook] orderPaymentTransaction introuvable", { internalTxId, providerReference });
+    return;
+  }
+  if (tx.status === "paid") return;
+
+  const paidAmount   = Number(txData.amount ?? 0);
+  const paidCurrency = ((txData.currency ?? "XOF") as string).toUpperCase();
+  if (paidCurrency !== tx.currency.toUpperCase()) throw new Error(`Devise incorrecte: reçu ${paidCurrency}, attendu ${tx.currency}`);
+  if (paidAmount < Number(tx.amount)) throw new Error(`Montant insuffisant: reçu ${paidAmount}, attendu ${Number(tx.amount)}`);
+
+  const geniusRef = providerReference || (txData.reference as string | undefined) || null;
+
+  await prisma.$transaction([
+    prisma.orderPaymentTransaction.update({
+      where: { id: tx.id },
+      data: {
+        status: "paid",
+        providerReference: geniusRef ?? tx.providerReference,
+        providerPaymentId: txData.id != null ? String(txData.id) : tx.providerPaymentId,
+        webhookPayload: toJson(txData),
+      },
+    }),
+    prisma.order.update({
+      where: { id: tx.orderId },
+      data: { paymentStatus: "paid", paidAmount: String(paidAmount), status: "confirmed" },
+    }),
+  ]);
+}
+
+async function handleOrderPaymentFailed(
+  providerReference: string,
+  metadata?: Record<string, string>,
+) {
+  const internalTxId = metadata?.orderTransactionId;
+  if (internalTxId) {
+    await prisma.orderPaymentTransaction.updateMany({ where: { id: internalTxId, status: "pending" }, data: { status: "failed" } });
+  } else if (providerReference) {
+    await prisma.orderPaymentTransaction.updateMany({ where: { providerReference, status: "pending" }, data: { status: "failed" } });
+  }
+}
+
+async function handleOrderPaymentCancelled(
+  providerReference: string,
+  metadata?: Record<string, string>,
+) {
+  const internalTxId = metadata?.orderTransactionId;
+  if (internalTxId) {
+    await prisma.orderPaymentTransaction.updateMany({ where: { id: internalTxId, status: "pending" }, data: { status: "cancelled" } });
+  } else if (providerReference) {
+    await prisma.orderPaymentTransaction.updateMany({ where: { providerReference, status: "pending" }, data: { status: "cancelled" } });
+  }
+}
+
+// ─── Subscription payment handlers ────────────────────────────────────────────
 
 async function handlePaymentFailed(
   providerReference: string,
