@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, type JSX } from "react";
 import { Users, UserPlus, Mail, Shield, Store, Clock, CheckCircle, XCircle, AlertCircle, Pencil, Trash2, RefreshCw, X, Check, ChevronDown, Lock, Send, MoreHorizontal, Activity } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
