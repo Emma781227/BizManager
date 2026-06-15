@@ -21,6 +21,7 @@ interface Shop {
   openingHours?: string;
   whatsappNumber?: string;
   productsCount?: number;
+  paymentMethods?: string[];
 }
 
 interface Product {
@@ -1352,6 +1353,7 @@ export default function ShopPageClient({ initialShop, initialProducts }: ShopPag
           cart={cart}
           cartTotal={cartTotal}
           slug={slug}
+          shopPaymentMethods={shop.paymentMethods ?? []}
           onClose={() => setCheckoutOpen(false)}
           onSuccess={(order) => { setCart([]); setCheckoutOpen(false); setConfirmedOrder(order); }}
         />
@@ -1399,10 +1401,20 @@ export default function ShopPageClient({ initialShop, initialProducts }: ShopPag
 }
 
 // ===== CHECKOUT MODAL =====
-function CheckoutModal({ cart, cartTotal, slug, onClose, onSuccess }: {
+// Mapping: clé DB → id interne du modal
+const SHOP_METHOD_MAP: Record<string, 'cod' | 'cash' | 'mobile_money' | 'bank_transfer'> = {
+  ORANGE_MONEY:     'mobile_money',
+  MTN_MOBILE_MONEY: 'mobile_money',
+  CASH:             'cash',
+  BANK_TRANSFER:    'bank_transfer',
+  COD:              'cod',
+};
+
+function CheckoutModal({ cart, cartTotal, slug, shopPaymentMethods, onClose, onSuccess }: {
   cart: CartItem[];
   cartTotal: number;
   slug: string;
+  shopPaymentMethods: string[];
   onClose: () => void;
   onSuccess: (order: ConfirmedOrder) => void;
 }) {
@@ -1410,7 +1422,15 @@ function CheckoutModal({ cart, cartTotal, slug, onClose, onSuccess }: {
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [address, setAddress] = useState('');
-  const [payment, setPayment] = useState<'cash' | 'mobile_money' | 'bank_transfer' | 'cod'>('cod');
+  const defaultPayment = ((): 'cod' | 'cash' | 'mobile_money' | 'bank_transfer' => {
+    if (shopPaymentMethods.length === 0) return 'cod';
+    for (const m of shopPaymentMethods) {
+      const mapped = SHOP_METHOD_MAP[m];
+      if (mapped) return mapped;
+    }
+    return 'cod';
+  })();
+  const [payment, setPayment] = useState<'cash' | 'mobile_money' | 'bank_transfer' | 'cod'>(defaultPayment);
   const [notes, setNotes] = useState('');
   const [honeypot, setHoneypot] = useState('');
   const [loading, setLoading] = useState(false);
@@ -1479,12 +1499,21 @@ function CheckoutModal({ cart, cartTotal, slug, onClose, onSuccess }: {
     }
   }
 
-  const paymentOptions: { id: 'cod' | 'cash' | 'mobile_money' | 'bank_transfer'; icon: string; label: string; imgUrl?: string }[] = [
-    { id: 'cod', icon: '🚚', label: 'Paiement à la livraison' },
+  const ALL_PAYMENT_OPTIONS: { id: 'cod' | 'cash' | 'mobile_money' | 'bank_transfer'; icon: string; label: string; imgUrl?: string }[] = [
+    { id: 'cod',          icon: '🚚', label: 'Paiement à la livraison' },
     { id: 'mobile_money', icon: '📱', label: 'Mobile Money', imgUrl: 'https://res.cloudinary.com/dngaowjt8/image/upload/v1779488827/MM_uvauci.jpg' },
-    { id: 'cash', icon: '💵', label: 'Espèces' },
-    { id: 'bank_transfer', icon: '🏦', label: 'Virement' },
+    { id: 'cash',         icon: '💵', label: 'Espèces' },
+    { id: 'bank_transfer',icon: '🏦', label: 'Virement' },
   ];
+
+  // Filtrer selon la configuration du marchand
+  const enabledIds = shopPaymentMethods.length > 0
+    ? new Set(shopPaymentMethods.map(m => SHOP_METHOD_MAP[m]).filter(Boolean))
+    : null; // null = tout afficher (fallback si rien de configuré)
+
+  const paymentOptions = enabledIds
+    ? ALL_PAYMENT_OPTIONS.filter(opt => enabledIds.has(opt.id))
+    : ALL_PAYMENT_OPTIONS;
 
   const inputStyle: React.CSSProperties = {
     width: '100%', height: 42, padding: '0 12px', border: '1.5px solid #E8ECEA',
