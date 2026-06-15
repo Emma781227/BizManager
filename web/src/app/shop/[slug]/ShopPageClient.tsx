@@ -1408,6 +1408,7 @@ function CheckoutModal({ cart, cartTotal, slug, onClose, onSuccess }: {
 }) {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
   const [address, setAddress] = useState('');
   const [payment, setPayment] = useState<'cash' | 'mobile_money' | 'bank_transfer' | 'cod'>('cod');
   const [notes, setNotes] = useState('');
@@ -1416,14 +1417,40 @@ function CheckoutModal({ cart, cartTotal, slug, onClose, onSuccess }: {
   const [error, setError] = useState('');
   const submittingRef = useRef(false);
 
+  const isOnlinePayment = payment === 'mobile_money' || payment === 'bank_transfer';
+
   async function handleSubmit() {
     if (submittingRef.current) return;
     if (!name.trim()) { setError('Veuillez entrer votre nom.'); return; }
     if (!phone.trim() || phone.trim().length < 8) { setError('Numéro de téléphone invalide.'); return; }
+    if (isOnlinePayment && !email.trim()) { setError('Veuillez entrer votre email pour le paiement en ligne.'); return; }
     if (cart.length === 0) { setError('Votre panier est vide.'); return; }
     submittingRef.current = true;
     setLoading(true); setError('');
     try {
+      if (isOnlinePayment) {
+        // Paiement en ligne via GeniusPay
+        const res = await fetch(`/api/public/shop/${slug}/pay`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            customerName: name.trim(),
+            customerPhone: phone.trim(),
+            customerEmail: email.trim(),
+            customerAddress: address.trim() || undefined,
+            notes: notes.trim() || undefined,
+            items: cart.map(i => ({ productId: i.productId, quantity: i.quantity })),
+          }),
+        });
+        const json = await res.json();
+        if (!res.ok) { setError(json.error ?? 'Erreur lors de la création du paiement.'); return; }
+        const checkoutUrl = String(json.data?.checkoutUrl ?? '');
+        if (!checkoutUrl) { setError('URL de paiement manquante. Veuillez réessayer.'); return; }
+        window.location.href = checkoutUrl;
+        return;
+      }
+
+      // Paiement classique (espèces / livraison)
       const res = await fetch(`/api/public/shop/${slug}/orders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1506,6 +1533,15 @@ function CheckoutModal({ cart, cartTotal, slug, onClose, onSuccess }: {
               <label style={{ fontSize: 13, fontWeight: 600, color: '#1F2A24', display: 'block', marginBottom: 6 }}>Téléphone <span style={{ color: '#EF4444' }}>*</span></label>
               <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="+237 6XX XXX XXX" type="tel" style={inputStyle} />
             </div>
+            {isOnlinePayment && (
+              <div>
+                <label style={{ fontSize: 13, fontWeight: 600, color: '#1F2A24', display: 'block', marginBottom: 6 }}>
+                  Email <span style={{ color: '#EF4444' }}>*</span>
+                  <span style={{ fontWeight: 400, color: '#98A2B3', marginLeft: 6 }}>(requis pour le paiement en ligne)</span>
+                </label>
+                <input value={email} onChange={e => setEmail(e.target.value)} placeholder="votre@email.com" type="email" style={inputStyle} />
+              </div>
+            )}
             <div>
               <label style={{ fontSize: 13, fontWeight: 600, color: '#1F2A24', display: 'block', marginBottom: 6 }}>Adresse de livraison</label>
               <input value={address} onChange={e => setAddress(e.target.value)} placeholder="Quartier, rue, repère…" style={inputStyle} />
@@ -1565,7 +1601,11 @@ function CheckoutModal({ cart, cartTotal, slug, onClose, onSuccess }: {
             disabled={loading}
             style={{ width: '100%', height: 50, background: loading ? '#7CC49E' : '#0A8F45', color: '#fff', border: 'none', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: loading ? 'wait' : 'pointer' }}
           >
-            {loading ? 'Envoi en cours…' : `Confirmer la commande · ${cartTotal.toLocaleString('fr-FR')} FCFA`}
+            {loading
+              ? (isOnlinePayment ? 'Redirection vers le paiement…' : 'Envoi en cours…')
+              : isOnlinePayment
+              ? `Payer ${cartTotal.toLocaleString('fr-FR')} FCFA`
+              : `Confirmer la commande · ${cartTotal.toLocaleString('fr-FR')} FCFA`}
           </button>
         </div>
       </div>
