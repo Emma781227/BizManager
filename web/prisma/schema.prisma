@@ -105,6 +105,13 @@ enum InvitationStatus {
   cancelled
 }
 
+enum DeliveryOtpStatus {
+  pending
+  verified
+  expired
+  failed
+}
+
 // ─── Auth & Identity ──────────────────────────────────────────────────────────
 
 model User {
@@ -357,6 +364,7 @@ model Order {
   whatsappLogs       WhatsappLog[]
   statusHistory      OrderStatusHistory[]
   paymentTransaction OrderPaymentTransaction?
+  deliveryOtps       DeliveryOtp[]
 
   @@index([shopId, createdAt])
   @@index([shopId, status])
@@ -482,6 +490,26 @@ model AuditLog {
   @@index([actorUserId])
   @@index([ownerUserId, createdAt])
   @@index([shopId])
+}
+
+// ─── Delivery OTP ─────────────────────────────────────────────────────────────
+
+model DeliveryOtp {
+  id           String            @id @default(cuid())
+  orderId      String
+  phone        String
+  codeHash     String
+  status       DeliveryOtpStatus @default(pending)
+  expiresAt    DateTime
+  attemptCount Int               @default(0)
+  verifiedAt   DateTime?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([expiresAt])
 }
 
 // ─── Order Payment Transactions ───────────────────────────────────────────────

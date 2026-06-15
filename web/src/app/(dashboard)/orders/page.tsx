@@ -7,7 +7,7 @@ import LastModifiedBy from "../LastModifiedBy";
 // ─── Types ────────────────────────────────────────────────────────────────────
 type ApiOrderStatus = "pending"|"new"|"confirmed"|"in_progress"|"ready"|"delivered"|"cancelled";
 type ApiPaymentStatus = "unpaid"|"partial"|"paid"|"refunded";
-type ApiPaymentMethod = "cash"|"mobile_money"|"bank_transfer"|"cod";
+type ApiPaymentMethod = "cash"|"mobile_money"|"bank_transfer"|"cod"|"online";
 type ApiChannel = "whatsapp"|"online"|"manual";
 
 type ApiStatusHistory = {
@@ -68,7 +68,7 @@ const CHANNEL_ICONS: Record<ApiChannel, React.ReactNode> = {
   manual:   <PenLine size={16} color="#667085" />,
 };
 const PAY_METHOD_LABELS: Record<ApiPaymentMethod, string> = {
-  cash:"Espèces", mobile_money:"Mobile Money", bank_transfer:"Virement", cod:"Contre remboursement",
+  cash:"Espèces", mobile_money:"Mobile Money", bank_transfer:"Virement", cod:"Contre remboursement", online:"En ligne",
 };
 const NEXT_STATUS: Partial<Record<ApiOrderStatus, ApiOrderStatus>> = {
   pending:"new", new:"confirmed", confirmed:"in_progress", in_progress:"ready", ready:"delivered",
@@ -199,12 +199,13 @@ const STATUS_DOT_COLOR: Record<string, string> = {
 };
 
 function DetailModal({
-  order, onClose, onAdvance, onMarkPaid,
+  order, onClose, onAdvance, onMarkPaid, onSendOtp,
 }: {
   order: Order;
   onClose: () => void;
   onAdvance: (id: string, status: ApiOrderStatus) => void;
   onMarkPaid: (id: string) => void;
+  onSendOtp: (id: string) => void;
 }) {
   const nextStatus = NEXT_STATUS[order.status];
   const nextLabel  = NEXT_STATUS_LABEL[order.status];
@@ -320,6 +321,16 @@ function DetailModal({
               {nextLabel} →
             </button>
           )}
+          {(order.paymentMethod === "cash" || order.paymentMethod === "cod") &&
+            order.paymentStatus !== "paid" && order.paymentStatus !== "refunded" &&
+            order.status !== "cancelled" && (
+            <button
+              style={{ height:38, padding:"0 14px", background:"#7C3AED", color:"#fff", border:"none",
+                borderRadius:10, fontSize:12, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap" }}
+              onClick={() => { onSendOtp(order.id); onClose(); }}>
+              🔐 Confirmer avec code
+            </button>
+          )}
           {order.paymentStatus !== "paid" && order.paymentStatus !== "refunded" && order.channel !== "online" && (
             <button
               style={{ height:38, padding:"0 14px", background:"#3B82F6", color:"#fff", border:"none",
@@ -334,6 +345,212 @@ function DetailModal({
           </button>
           <button className="btn-secondary" style={{ height:38 }} onClick={onClose}>Fermer</button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── OTP Modal ────────────────────────────────────────────────────────────────
+type OtpInfo = {
+  otpId:       string;
+  maskedPhone: string;
+  sentVia:     "email" | "dashboard";
+  code?:       string;
+  expiresAt:   string;
+};
+
+function OtpModal({
+  order, onClose, onVerified,
+}: {
+  order:      Order;
+  onClose:    () => void;
+  onVerified: () => void;
+}) {
+  const [step,      setStep]      = useState<"init" | "sent" | "success">("init");
+  const [otpInfo,   setOtpInfo]   = useState<OtpInfo | null>(null);
+  const [code,      setCode]      = useState("");
+  const [sending,   setSending]   = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const [error,     setError]     = useState<string | null>(null);
+
+  async function sendOtp() {
+    setSending(true);
+    setError(null);
+    try {
+      const res  = await fetch(`/api/orders/${order.id}/otp`, { method: "POST" });
+      const json = await res.json();
+      if (!res.ok) throw new Error((json as { error?: string }).error ?? "Erreur envoi OTP");
+      setOtpInfo((json as { data: OtpInfo }).data);
+      setStep("sent");
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setSending(false);
+    }
+  }
+
+  async function verifyOtp() {
+    if (code.length !== 6) { setError("Entrez le code à 6 chiffres."); return; }
+    setVerifying(true);
+    setError(null);
+    try {
+      const res  = await fetch(`/api/orders/${order.id}/otp/verify`, {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ code }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error((json as { error?: string }).error ?? "Code invalide");
+      setStep("success");
+      setTimeout(() => { onVerified(); onClose(); }, 2000);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setVerifying(false);
+    }
+  }
+
+  function resetToInit() {
+    setStep("init");
+    setOtpInfo(null);
+    setCode("");
+    setError(null);
+  }
+
+  return (
+    <div className="or-modal" style={{ zIndex:1010 }}
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="or-modal-box" style={{ maxWidth:420 }}>
+
+        {/* Header */}
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:18 }}>
+          <div>
+            <div style={{ fontSize:15, fontWeight:700, color:"#1F2A24" }}>Confirmation de livraison</div>
+            <div style={{ fontSize:12, color:"#98A2B3", marginTop:2 }}>{order.ref} · {order.client}</div>
+          </div>
+          <button onClick={onClose}
+            style={{ border:"none", background:"none", cursor:"pointer", color:"#98A2B3", display:"flex", alignItems:"center" }}>
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Étape 1 : intro */}
+        {step === "init" && (
+          <>
+            <div style={{ textAlign:"center", padding:"8px 0 20px" }}>
+              <div style={{ fontSize:36, marginBottom:12 }}>📦</div>
+              <div style={{ fontSize:14, fontWeight:600, color:"#1F2A24", marginBottom:8 }}>
+                Confirmer la livraison par code OTP
+              </div>
+              <div style={{ fontSize:13, color:"#667085", lineHeight:1.6 }}>
+                Un code à 6 chiffres sera envoyé au client par email.<br/>
+                Demandez-lui de vous communiquer ce code pour valider la livraison et le paiement.
+              </div>
+            </div>
+            {error && (
+              <div style={{ padding:"8px 12px", background:"#FDE8E8", borderRadius:8,
+                fontSize:12, color:"#EF4444", marginBottom:12 }}>
+                {error}
+              </div>
+            )}
+            <button className="btn-primary" style={{ width:"100%", height:42, fontSize:14 }}
+              onClick={sendOtp} disabled={sending}>
+              {sending ? "Envoi du code…" : "Envoyer le code OTP"}
+            </button>
+          </>
+        )}
+
+        {/* Étape 2 : saisie du code */}
+        {step === "sent" && otpInfo && (
+          <>
+            <div style={{
+              padding:"12px 14px", borderRadius:10, marginBottom:18,
+              background:  otpInfo.sentVia === "email" ? "#EAF7EF" : "#FFF8ED",
+              border:      `1px solid ${otpInfo.sentVia === "email" ? "#0A8F45" : "#F08A24"}`,
+            }}>
+              {otpInfo.sentVia === "email" ? (
+                <div style={{ fontSize:13, color:"#0A8F45" }}>
+                  <strong>✓ Code envoyé par email au client</strong>
+                  <div style={{ fontSize:12, fontWeight:400, marginTop:3, color:"#08763A" }}>
+                    Demandez-lui de consulter son email et de vous lire son code.
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <div style={{ fontSize:13, color:"#92600A", fontWeight:600, marginBottom:10 }}>
+                    Aucun email client — lisez ce code au client :
+                  </div>
+                  <div style={{ fontSize:30, fontWeight:800, letterSpacing:10, color:"#1F2A24",
+                    fontFamily:"monospace", textAlign:"center", background:"#FFF", borderRadius:10,
+                    padding:"10px 0" }}>
+                    {otpInfo.code}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div style={{ marginBottom:14 }}>
+              <label style={{ fontSize:12, fontWeight:600, color:"#1F2A24", display:"block", marginBottom:8 }}>
+                Code communiqué par le client
+              </label>
+              <input
+                className="inp"
+                style={{ width:"100%", boxSizing:"border-box", textAlign:"center",
+                  fontSize:24, fontWeight:800, letterSpacing:10, height:54, fontFamily:"monospace" }}
+                type="text"
+                inputMode="numeric"
+                maxLength={6}
+                placeholder="• • • • • •"
+                value={code}
+                onChange={e => { setCode(e.target.value.replace(/\D/g,"").slice(0,6)); setError(null); }}
+              />
+            </div>
+
+            {error && (
+              <div style={{ padding:"8px 12px", background:"#FDE8E8", borderRadius:8,
+                fontSize:12, color:"#EF4444", marginBottom:12 }}>
+                {error}
+              </div>
+            )}
+
+            <div style={{ display:"flex", gap:8, marginBottom:10 }}>
+              <button className="btn-secondary" style={{ height:42 }} onClick={resetToInit}>
+                Renvoyer
+              </button>
+              <button
+                style={{ flex:1, height:42, border:"none", borderRadius:10, fontSize:13, fontWeight:600,
+                  cursor: code.length === 6 && !verifying ? "pointer" : "not-allowed",
+                  background: code.length === 6 ? "#0A8F45" : "#A8D5B8", color:"#fff",
+                  transition:"background .15s" }}
+                onClick={verifyOtp}
+                disabled={code.length !== 6 || verifying}>
+                {verifying ? "Vérification…" : "Valider la livraison ✓"}
+              </button>
+            </div>
+
+            <div style={{ fontSize:11, color:"#98A2B3", textAlign:"center" }}>
+              Code valable jusqu&apos;à {new Date(otpInfo.expiresAt).toLocaleTimeString("fr-FR",
+                { hour:"2-digit", minute:"2-digit" })} · max 5 tentatives
+            </div>
+          </>
+        )}
+
+        {/* Étape 3 : succès */}
+        {step === "success" && (
+          <div style={{ textAlign:"center", padding:"16px 0 8px" }}>
+            <div style={{ width:64, height:64, borderRadius:"50%", background:"#EAF7EF",
+              display:"flex", alignItems:"center", justifyContent:"center",
+              margin:"0 auto 16px", fontSize:28, color:"#0A8F45", fontWeight:800 }}>
+              ✓
+            </div>
+            <div style={{ fontSize:18, fontWeight:800, color:"#0A8F45", marginBottom:8 }}>
+              Livraison confirmée !
+            </div>
+            <div style={{ fontSize:13, color:"#667085", lineHeight:1.6 }}>
+              Le paiement a été enregistré et la commande marquée comme livrée.
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -693,6 +910,7 @@ export default function OrdersPage() {
   const [newBadge, setNewBadge]           = useState(0);
   const [cancelOrderId, setCancelOrderId] = useState<string | null>(null);
   const [detailOrder, setDetailOrder]     = useState<Order | null>(null);
+  const [otpOrder,    setOtpOrder]        = useState<Order | null>(null);
   const [refreshKey, setRefreshKey]       = useState(0);
   const knownIds          = useRef<Set<string>>(new Set());
   const knownPayStatuses  = useRef<Map<string, string>>(new Map());
@@ -845,6 +1063,19 @@ export default function OrdersPage() {
           onClose={() => setDetailOrder(null)}
           onAdvance={advanceStatus}
           onMarkPaid={markPaymentPaid}
+          onSendOtp={id => {
+            const o = orders.find(o => o.id === id);
+            if (o) setOtpOrder(o);
+            setDetailOrder(null);
+          }}
+        />
+      )}
+
+      {otpOrder && (
+        <OtpModal
+          order={otpOrder}
+          onClose={() => setOtpOrder(null)}
+          onVerified={() => { setOtpOrder(null); setRefreshKey(k => k + 1); }}
         />
       )}
 

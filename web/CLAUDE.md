@@ -113,6 +113,8 @@ public/
 |---------|-------|-------------|
 | GET/POST | `/api/orders` | Liste / créer commandes |
 | GET/PUT | `/api/orders/[orderId]` | Détail / modifier commande |
+| POST | `/api/orders/[orderId]/otp` | Générer + envoyer OTP de confirmation livraison |
+| POST | `/api/orders/[orderId]/otp/verify` | Vérifier OTP → marque commande payée + livrée |
 
 ### Clients
 | Méthode | Route | Description |
@@ -181,6 +183,7 @@ public/
 | `WhatsappLog` | Historique messages WhatsApp | shopId, orderId, type, message |
 | `PaymentTransaction` | Transactions de paiement GeniusPay (abonnements) | userId, planId, amount, currency, status, providerReference (unique) |
 | `OrderPaymentTransaction` | Transactions de paiement GeniusPay (commandes vitrine) | orderId (unique), shopId, amount, currency, status, providerReference (unique) |
+| `DeliveryOtp` | OTP de confirmation de livraison cash/COD | orderId, phone, codeHash (HMAC-SHA256), status, expiresAt (30 min), attemptCount (max 5) |
 | `WebhookEvent` | Événements webhook reçus | provider, eventType, providerReference, processed |
 
 ### Plans d'abonnement
