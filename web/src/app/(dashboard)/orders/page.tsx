@@ -199,11 +199,12 @@ const STATUS_DOT_COLOR: Record<string, string> = {
 };
 
 function DetailModal({
-  order, onClose, onAdvance,
+  order, onClose, onAdvance, onMarkPaid,
 }: {
   order: Order;
   onClose: () => void;
   onAdvance: (id: string, status: ApiOrderStatus) => void;
+  onMarkPaid: (id: string) => void;
 }) {
   const nextStatus = NEXT_STATUS[order.status];
   const nextLabel  = NEXT_STATUS_LABEL[order.status];
@@ -295,12 +296,36 @@ function DetailModal({
         {/* Dernière modification */}
         <LastModifiedBy entityType="order" entityId={order.id} />
 
+        {/* Payment status banner for online orders */}
+        {order.channel === "online" && order.paymentStatus === "paid" && (
+          <div style={{ background:"#DDF6E7", border:"1px solid #0A8F45", borderRadius:10,
+            padding:"8px 14px", fontSize:12, color:"#0A8F45", fontWeight:600, marginBottom:12,
+            display:"flex", alignItems:"center", gap:8 }}>
+            ✓ Paiement reçu via GeniusPay
+          </div>
+        )}
+        {order.channel === "online" && order.paymentStatus === "unpaid" && (
+          <div style={{ background:"#FFF1E5", border:"1px solid #F08A24", borderRadius:10,
+            padding:"8px 14px", fontSize:12, color:"#F08A24", fontWeight:600, marginBottom:12,
+            display:"flex", alignItems:"center", gap:8 }}>
+            ⏳ En attente de confirmation GeniusPay
+          </div>
+        )}
+
         {/* Actions */}
         <div style={{ display:"flex", gap:10, flexWrap:"wrap" }}>
           {nextStatus && nextLabel && (
             <button className="btn-primary" style={{ flex:1, height:38, minWidth:120 }}
               onClick={() => { onAdvance(order.id, nextStatus); onClose(); }}>
               {nextLabel} →
+            </button>
+          )}
+          {order.paymentStatus !== "paid" && order.paymentStatus !== "refunded" && order.channel !== "online" && (
+            <button
+              style={{ height:38, padding:"0 14px", background:"#3B82F6", color:"#fff", border:"none",
+                borderRadius:10, fontSize:12, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap" }}
+              onClick={() => { onMarkPaid(order.id); onClose(); }}>
+              💳 Marquer comme payée
             </button>
           )}
           <button className="btn-secondary" style={{ height:38 }}
@@ -669,7 +694,8 @@ export default function OrdersPage() {
   const [cancelOrderId, setCancelOrderId] = useState<string | null>(null);
   const [detailOrder, setDetailOrder]     = useState<Order | null>(null);
   const [refreshKey, setRefreshKey]       = useState(0);
-  const knownIds = useRef<Set<string>>(new Set());
+  const knownIds          = useRef<Set<string>>(new Set());
+  const knownPayStatuses  = useRef<Map<string, string>>(new Map());
 
   const activeShop = shops.find(s => s.id === activeShopId) ?? null;
 
@@ -714,6 +740,7 @@ export default function OrdersPage() {
         const mapped = raw.map(apiToDisplay);
         setOrders(mapped);
         knownIds.current = new Set(mapped.map(o => o.id));
+        mapped.forEach(o => knownPayStatuses.current.set(o.id, o.paymentStatus));
         setPaginationTotal(data.total ?? 0);
         setGlobalStats(data.meta?.stats ?? { total: 0, pending: 0, delivered: 0, revenue: 0, unpaid: 0 });
         setChannelCounts(data.meta?.channelCounts ?? { whatsapp: 0, online: 0, manual: 0 });
@@ -734,9 +761,13 @@ export default function OrdersPage() {
         if (!Array.isArray(data.items)) return;
         const fetched = (data.items as ApiOrder[]).map(apiToDisplay);
         const brandNew = fetched.filter(o => !knownIds.current.has(o.id) && o.status === "new");
-        if (brandNew.length > 0) {
-          fetched.forEach(o => knownIds.current.add(o.id));
-          setNewBadge(c => c + brandNew.length);
+        const payChanged = fetched.filter(o =>
+          knownIds.current.has(o.id) &&
+          knownPayStatuses.current.get(o.id) !== o.paymentStatus
+        );
+        if (brandNew.length > 0 || payChanged.length > 0) {
+          fetched.forEach(o => { knownIds.current.add(o.id); knownPayStatuses.current.set(o.id, o.paymentStatus); });
+          if (brandNew.length > 0) setNewBadge(c => c + brandNew.length);
           setRefreshKey(k => k + 1);
         }
       } catch {}
@@ -778,6 +809,24 @@ export default function OrdersPage() {
     } catch {}
   }
 
+  async function markPaymentPaid(orderId: string) {
+    const order = orders.find(o => o.id === orderId);
+    try {
+      const res = await fetch(`/api/orders/${orderId}`, {
+        method: "PATCH",
+        headers: { "Content-Type":"application/json" },
+        body: JSON.stringify({ paymentStatus: "paid", paidAmount: order?.amount ?? 0 }),
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.data) {
+        const updated = apiToDisplay(data.data as ApiOrder);
+        setOrders(prev => prev.map(o => o.id === orderId ? updated : o));
+        setDetailOrder(prev => prev?.id === orderId ? updated : prev);
+      }
+    } catch {}
+  }
+
   return (
     <>
       <style>{CSS}</style>
@@ -795,6 +844,7 @@ export default function OrdersPage() {
           order={detailOrder}
           onClose={() => setDetailOrder(null)}
           onAdvance={advanceStatus}
+          onMarkPaid={markPaymentPaid}
         />
       )}
 
