@@ -65,6 +65,12 @@ body { margin: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Se
   .lp-hero-btns { flex-direction: column; }
   .lp-hero-btns a { text-align: center; }
 }
+details summary::-webkit-details-marker { display: none; }
+details summary::marker { display: none; }
+.faq-icon::before { content: "+"; font-size: 16px; font-weight: 700; color: #0A8F45; }
+details[open] .faq-icon::before { content: "−"; color: #fff; }
+details[open] .faq-icon { background: #0A8F45; }
+
 @media (max-width: 480px) {
   .lp-features-grid { grid-template-columns: 1fr; }
   .lp-header-inner { padding: 0 14px; height: 60px; }
@@ -710,7 +716,67 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* ── 9. CTA Final ── */}
+        {/* ── 9. FAQ ── */}
+        <section id="faq" style={{ marginTop: 60 }}>
+          <div className="lp-container">
+            <div style={{ textAlign: "center", marginBottom: 40 }}>
+              <h2 style={{ fontSize: 38, fontWeight: 800, color: "#1F2A24", margin: 0 }}>Questions fréquentes</h2>
+              <p style={{ fontSize: 17, color: "#667085", marginTop: 10, marginBottom: 0 }}>Tout ce que vous devez savoir avant de démarrer.</p>
+            </div>
+            <div style={{ maxWidth: 720, margin: "0 auto", display: "flex", flexDirection: "column", gap: 12 }}>
+              {[
+                {
+                  q: "Est-ce vraiment gratuit pour commencer ?",
+                  a: "Oui, le plan Starter est entièrement gratuit, sans carte bancaire. Il vous permet de créer 1 boutique avec jusqu'à 20 produits et de recevoir des commandes illimitées. Vous ne payez que si vous souhaitez passer à un plan supérieur.",
+                },
+                {
+                  q: "Comment fonctionne l'intégration WhatsApp ?",
+                  a: "BizManager génère un lien de partage de votre boutique que vous envoyez à vos clients via WhatsApp. Vos clients voient vos produits, passent commande et vous recevez une notification. Vous pouvez aussi envoyer des messages de suivi directement depuis le dashboard.",
+                },
+                {
+                  q: "Mes clients peuvent-ils payer en ligne ?",
+                  a: "Oui. BizManager intègre GeniusPay pour accepter les paiements en ligne via Orange Money, Mobile Money et virement bancaire. Vous pouvez aussi enregistrer les paiements en espèces (cash) depuis le dashboard.",
+                },
+                {
+                  q: "L'application fonctionne-t-elle sur mobile ?",
+                  a: "Le dashboard marchand est accessible depuis n'importe quel navigateur, desktop ou mobile. La boutique publique de vos clients est entièrement optimisée mobile — vos clients commandent depuis leur téléphone.",
+                },
+                {
+                  q: "Puis-je ajouter des membres à mon équipe ?",
+                  a: "Oui, dès le plan Business vous pouvez inviter des collaborateurs (managers, vendeurs) avec des rôles et permissions configurables. Chaque membre voit uniquement les boutiques auxquelles il a accès.",
+                },
+                {
+                  q: "Comment sont sécurisées mes données ?",
+                  a: "Vos données sont stockées sur une base PostgreSQL chiffrée (Neon) et l'application est hébergée sur Vercel avec HTTPS. Les mots de passe sont hachés avec bcrypt. Aucune donnée sensible n'est transmise à des tiers sans votre accord.",
+                },
+                {
+                  q: "Puis-je gérer plusieurs boutiques ?",
+                  a: "Oui. Le plan Business autorise jusqu'à 3 boutiques, le plan Premium jusqu'à 10. Chaque boutique a son propre catalogue, ses propres commandes et son propre lien public.",
+                },
+                {
+                  q: "Comment résilier mon abonnement ?",
+                  a: "Vous pouvez résilier à tout moment depuis votre tableau de bord, sans engagement. Vous conservez l'accès jusqu'à la fin de la période payée. Vos données sont supprimées dans un délai de 30 jours après résiliation.",
+                },
+              ].map((item) => (
+                <details key={item.q} style={{ background: "#fff", border: "1.5px solid #E8ECEA", borderRadius: 14, overflow: "hidden" }}>
+                  <summary style={{ padding: "18px 22px", fontSize: 15, fontWeight: 600, color: "#1F2A24", cursor: "pointer", listStyle: "none", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16 }}>
+                    {item.q}
+                    <span className="faq-icon" style={{ flexShrink: 0, width: 22, height: 22, borderRadius: "50%", background: "#EAF7EF", display: "flex", alignItems: "center", justifyContent: "center" }} />
+                  </summary>
+                  <div style={{ padding: "0 22px 18px", fontSize: 14, color: "#667085", lineHeight: 1.75, borderTop: "1px solid #F4F6F5" }}>
+                    <div style={{ paddingTop: 14 }}>{item.a}</div>
+                  </div>
+                </details>
+              ))}
+            </div>
+            <div style={{ textAlign: "center", marginTop: 32 }}>
+              <p style={{ fontSize: 14, color: "#667085", margin: "0 0 12px 0" }}>Vous avez d&apos;autres questions ?</p>
+              <a href="mailto:contact@bizmanager.africa" style={{ ...btnOutline, fontSize: 14, padding: "10px 22px" }}>Contactez-nous</a>
+            </div>
+          </div>
+        </section>
+
+        {/* ── 10. CTA ── */}
         <section style={{ marginTop: 48 }}>
           <div className="lp-container">
             <div style={{ background: "linear-gradient(135deg, #0A8F45 0%, #08763A 100%)", borderRadius: 20, padding: "48px 56px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 24 }}>
@@ -725,7 +791,7 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* ── 10. Footer ── */}
+        {/* ── 11. Footer ── */}
         <footer style={{ marginTop: 32, paddingTop: 40, paddingBottom: 40, borderTop: "1.5px solid #E8ECEA" }}>
           <div className="lp-container">
             <div className="lp-footer-grid">
