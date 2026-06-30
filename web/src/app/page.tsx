@@ -353,22 +353,25 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* ── 3. Stats ── */}
-        <section id="stats" style={{ marginTop: 0, background: "#fff", borderTop: "1.5px solid #E8ECEA", borderBottom: "1.5px solid #E8ECEA" }}>
+        {/* ── 3. Valeurs clés ── */}
+        <section style={{ marginTop: 0, background: "#fff", borderTop: "1.5px solid #E8ECEA", borderBottom: "1.5px solid #E8ECEA" }}>
           <div className="lp-container">
-            <div className="lp-stats" style={{ padding: "28px 0" }}>
-              <div style={{ borderRight: "1.5px solid #E8ECEA", padding: "0 40px", textAlign: "center" }}>
-                <div style={{ fontSize: 36, fontWeight: 800, color: "#0A8F45" }}>5 000+</div>
-                <div style={{ fontSize: 14, color: "#667085", marginTop: 4 }}>Boutiques créées</div>
-              </div>
-              <div style={{ borderRight: "1.5px solid #E8ECEA", padding: "0 40px", textAlign: "center" }}>
-                <div style={{ fontSize: 36, fontWeight: 800, color: "#0A8F45" }}>120 000+</div>
-                <div style={{ fontSize: 14, color: "#667085", marginTop: 4 }}>Commandes gérées</div>
-              </div>
-              <div style={{ padding: "0 40px", textAlign: "center" }}>
-                <div style={{ fontSize: 36, fontWeight: 800, color: "#0A8F45" }}>30 000+</div>
-                <div style={{ fontSize: 14, color: "#667085", marginTop: 4 }}>Clients satisfaits</div>
-              </div>
+            <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 0, padding: "22px 0" }}>
+              {[
+                { icon: "🆓", label: "Gratuit pour démarrer", sub: "Sans carte bancaire requise" },
+                { icon: "🇫🇷", label: "Interface en français", sub: "Conçu pour les marchés africains" },
+                { icon: "📱", label: "WhatsApp intégré", sub: "Commandes et notifications directes" },
+                { icon: "⚡", label: "Boutique en 5 minutes", sub: "Catalogue, commandes, paiements" },
+              ].map((item, i, arr) => (
+                <div key={item.label} style={{
+                  flex: "1 1 200px", padding: "12px 28px", textAlign: "center",
+                  borderRight: i < arr.length - 1 ? "1.5px solid #E8ECEA" : "none",
+                }}>
+                  <div style={{ fontSize: 22, marginBottom: 6 }}>{item.icon}</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: "#1F2A24" }}>{item.label}</div>
+                  <div style={{ fontSize: 12, color: "#98A2B3", marginTop: 2 }}>{item.sub}</div>
+                </div>
+              ))}
             </div>
           </div>
         </section>
@@ -562,8 +565,8 @@ export default async function HomePage() {
         <section id="testimonials" style={{ marginTop: 60 }}>
           <div className="lp-container">
             <div style={{ textAlign: "center", marginBottom: 40 }}>
-              <h2 style={{ fontSize: 38, fontWeight: 800, color: "#1F2A24", margin: 0 }}>Ils nous font confiance</h2>
-              <p style={{ fontSize: 15, color: "#F08A24", marginTop: 8, marginBottom: 0 }}>★★★★★  4.9/5 sur 300+ avis</p>
+              <h2 style={{ fontSize: 38, fontWeight: 800, color: "#1F2A24", margin: 0 }}>Ce que disent nos utilisateurs</h2>
+              <p style={{ fontSize: 15, color: "#667085", marginTop: 8, marginBottom: 0 }}>Les premiers commerçants à tester BizManager partagent leur expérience.</p>
             </div>
             <div className="lp-testimonials">
               <div style={{ ...card, padding: 24 }}>
@@ -713,7 +716,7 @@ export default async function HomePage() {
             <div style={{ background: "linear-gradient(135deg, #0A8F45 0%, #08763A 100%)", borderRadius: 20, padding: "48px 56px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 24 }}>
               <div>
                 <h2 style={{ fontSize: 30, fontWeight: 800, color: "#fff", margin: 0 }}>Prêt à lancer votre boutique ?</h2>
-                <p style={{ fontSize: 16, color: "rgba(255,255,255,0.8)", marginTop: 8, marginBottom: 0 }}>Rejoignez 5 000+ commerçants qui gèrent leur activité avec BizManager.</p>
+                <p style={{ fontSize: 16, color: "rgba(255,255,255,0.8)", marginTop: 8, marginBottom: 0 }}>Créez votre boutique en ligne gratuitement et commencez à recevoir des commandes dès aujourd&apos;hui.</p>
               </div>
               <a href="/register" style={{ background: "#fff", color: "#0A8F45", borderRadius: 12, padding: "14px 32px", fontSize: 16, fontWeight: 700, textDecoration: "none", display: "inline-block", whiteSpace: "nowrap" }}>
                 Commencer gratuitement →
@@ -735,7 +738,7 @@ export default async function HomePage() {
                 <p style={{ fontSize: 13, color: "#667085", marginTop: 12, lineHeight: 1.6, maxWidth: 220, marginBottom: 0 }}>
                   La plateforme de gestion tout-en-un pour les commerçants africains.
                 </p>
-                <p style={{ fontSize: 12, color: "#98A2B3", marginTop: 16, marginBottom: 0 }}>© 2025 BizManager</p>
+                <p style={{ fontSize: 12, color: "#98A2B3", marginTop: 16, marginBottom: 0 }}>© 2026 BizManager</p>
               </div>
 
               {/* Produit */}
@@ -754,11 +757,16 @@ export default async function HomePage() {
                 ))}
               </div>
 
-              {/* Contact */}
+              {/* Légal */}
               <div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: "#1F2A24", marginBottom: 14, textTransform: "uppercase", letterSpacing: "0.06em" }}>Contact</div>
-                {["Support", "Partenaires", "CGU", "Confidentialité"].map((link) => (
-                  <a key={link} href="#" style={{ fontSize: 14, color: "#667085", textDecoration: "none", display: "block", marginBottom: 10, lineHeight: 1.6 }}>{link}</a>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#1F2A24", marginBottom: 14, textTransform: "uppercase", letterSpacing: "0.06em" }}>Légal</div>
+                {[
+                  { label: "Mentions légales",           href: "/mentions-legales" },
+                  { label: "CGU",                        href: "/cgu" },
+                  { label: "Politique de confidentialité", href: "/politique-de-confidentialite" },
+                  { label: "Contact",                    href: "mailto:contact@bizmanager.africa" },
+                ].map((link) => (
+                  <a key={link.label} href={link.href} style={{ fontSize: 14, color: "#667085", textDecoration: "none", display: "block", marginBottom: 10, lineHeight: 1.6 }}>{link.label}</a>
                 ))}
               </div>
             </div>

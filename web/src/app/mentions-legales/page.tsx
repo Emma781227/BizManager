@@ -1,0 +1,133 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+
+export const metadata: Metadata = {
+  title: "Mentions légales — BizManager",
+  description: "Mentions légales du site et service BizManager.",
+};
+
+const LAST_UPDATED = "30 juin 2026";
+
+export default function MentionsLegalesPage() {
+  return (
+    <div style={{ background: "#F8FAF9", minHeight: "100vh", fontFamily: "system-ui, sans-serif" }}>
+      <header style={{ background: "#fff", borderBottom: "1px solid #E8ECEA", padding: "0 24px" }}>
+        <div style={{ maxWidth: 900, margin: "0 auto", height: 64, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <Link href="/" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
+            <div style={{ width: 34, height: 34, borderRadius: 9, background: "#0A8F45", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, fontSize: 14 }}>BM</div>
+            <span style={{ fontSize: 16, fontWeight: 700, color: "#1F2A24" }}>BizManager</span>
+          </Link>
+          <Link href="/" style={{ fontSize: 13, color: "#667085", textDecoration: "none" }}>← Retour à l&apos;accueil</Link>
+        </div>
+      </header>
+
+      <main style={{ maxWidth: 900, margin: "0 auto", padding: "48px 24px 80px" }}>
+        <div style={{ background: "#fff", borderRadius: 20, border: "1px solid #E8ECEA", padding: "48px 56px", boxShadow: "0 2px 12px rgba(16,24,40,.05)" }}>
+
+          <h1 style={{ fontSize: 32, fontWeight: 800, color: "#1F2A24", margin: "0 0 8px" }}>
+            Mentions légales
+          </h1>
+          <p style={{ fontSize: 14, color: "#98A2B3", margin: "0 0 40px" }}>Dernière mise à jour : {LAST_UPDATED}</p>
+
+          <Section title="1. Éditeur du site">
+            <div style={{ background: "#F8FAF9", border: "1px solid #E8ECEA", borderRadius: 10, padding: "18px 22px", fontSize: 15, color: "#1F2A24", lineHeight: 2 }}>
+              <strong>Nom du service :</strong> BizManager<br />
+              <strong>Site web :</strong> <a href="https://bizmanager.africa">https://bizmanager.africa</a><br />
+              <strong>Email de contact :</strong> <a href="mailto:contact@bizmanager.africa">contact@bizmanager.africa</a><br />
+              <br />
+              <em style={{ fontSize: 13, color: "#98A2B3" }}>
+                Les informations légales suivantes sont à compléter avec les données exactes de votre entité :<br />
+                — Nom légal de la société / du responsable<br />
+                — Adresse complète<br />
+                — Numéro d&apos;enregistrement (RCCM, NINEA, NIF selon le pays)<br />
+                — Numéro de téléphone professionnel
+              </em>
+            </div>
+          </Section>
+
+          <Section title="2. Directeur de la publication">
+            <p>Le directeur de la publication est le représentant légal de l&apos;entité éditrice du service BizManager.</p>
+            <p>Pour le contacter : <a href="mailto:contact@bizmanager.africa">contact@bizmanager.africa</a></p>
+          </Section>
+
+          <Section title="3. Hébergement">
+            <div style={{ background: "#F8FAF9", border: "1px solid #E8ECEA", borderRadius: 10, padding: "18px 22px", fontSize: 15, color: "#1F2A24", lineHeight: 2 }}>
+              <strong>Hébergeur principal (application) :</strong><br />
+              Vercel Inc.<br />
+              440 N Barranca Ave #4133, Covina, CA 91723, États-Unis<br />
+              <a href="https://vercel.com">https://vercel.com</a><br />
+              <br />
+              <strong>Base de données :</strong><br />
+              Neon (Neon Inc.)<br />
+              <a href="https://neon.tech">https://neon.tech</a><br />
+              <br />
+              <strong>Stockage des médias :</strong><br />
+              Cloudinary Ltd.<br />
+              <a href="https://cloudinary.com">https://cloudinary.com</a>
+            </div>
+          </Section>
+
+          <Section title="4. Propriété intellectuelle">
+            <p>L&apos;ensemble du contenu du site BizManager (structure, textes, logos, icônes, interfaces, code source) est protégé par le droit de la propriété intellectuelle et est la propriété exclusive de l&apos;éditeur, sauf mention contraire.</p>
+            <p>Toute reproduction, représentation, modification, publication, transmission ou exploitation, totale ou partielle, du contenu ou de l&apos;interface de BizManager, par quelque procédé que ce soit, sans autorisation préalable écrite de l&apos;éditeur, est strictement interdite et constituerait une contrefaçon.</p>
+            <p>Les marques, logos et dénominations cités sur ce site sont la propriété de leurs détenteurs respectifs.</p>
+          </Section>
+
+          <Section title="5. Limitation de responsabilité">
+            <p>BizManager s&apos;efforce d&apos;assurer l&apos;exactitude et la mise à jour des informations diffusées sur ce site, dont il se réserve le droit de corriger le contenu à tout moment et sans préavis.</p>
+            <p>BizManager ne peut être tenu responsable :</p>
+            <ul style={ulStyle}>
+              <li>Des erreurs ou omissions dans les informations fournies sur le site</li>
+              <li>Des dommages directs ou indirects résultant de l&apos;utilisation ou de l&apos;impossibilité d&apos;accéder au site</li>
+              <li>Des contenus des sites tiers vers lesquels ce site renvoie par des liens hypertextes</li>
+            </ul>
+          </Section>
+
+          <Section title="6. Données personnelles">
+            <p>La collecte et le traitement des données personnelles effectués via ce site sont décrits dans notre <Link href="/politique-de-confidentialite" style={{ color: "#0A8F45" }}>Politique de confidentialité</Link>.</p>
+            <p>Pour exercer vos droits ou pour toute question relative à vos données personnelles, contactez-nous à : <a href="mailto:contact@bizmanager.africa">contact@bizmanager.africa</a></p>
+          </Section>
+
+          <Section title="7. Cookies">
+            <p>Ce site utilise un cookie de session sécurisé (httpOnly, Secure) strictement nécessaire au fonctionnement du service d&apos;authentification. Aucun cookie publicitaire ou de tracking tiers n&apos;est utilisé.</p>
+            <p>Pour plus de détails, consultez notre <Link href="/politique-de-confidentialite" style={{ color: "#0A8F45" }}>Politique de confidentialité</Link>.</p>
+          </Section>
+
+          <Section title="8. Droit applicable">
+            <p>Les présentes mentions légales sont soumises au droit applicable dans le pays de résidence de l&apos;éditeur. En cas de litige relatif à l&apos;interprétation ou à l&apos;exécution de ces mentions légales, les tribunaux compétents sont ceux du lieu du siège social de l&apos;éditeur.</p>
+          </Section>
+
+          <Section title="9. Contact">
+            <p>Pour toute question ou réclamation relative à ce site :</p>
+            <div style={{ background: "#F8FAF9", border: "1px solid #E8ECEA", borderRadius: 10, padding: "14px 18px", fontSize: 14, color: "#1F2A24", lineHeight: 1.8 }}>
+              Email : <a href="mailto:contact@bizmanager.africa">contact@bizmanager.africa</a><br />
+              Site : <a href="https://bizmanager.africa">https://bizmanager.africa</a>
+            </div>
+          </Section>
+
+          <div style={{ marginTop: 40, paddingTop: 24, borderTop: "1px solid #E8ECEA", display: "flex", gap: 16, flexWrap: "wrap" }}>
+            <Link href="/cgu" style={{ fontSize: 14, color: "#0A8F45", textDecoration: "none" }}>Conditions Générales d&apos;Utilisation →</Link>
+            <Link href="/politique-de-confidentialite" style={{ fontSize: 14, color: "#0A8F45", textDecoration: "none" }}>Politique de confidentialité →</Link>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
+
+const ulStyle: React.CSSProperties = {
+  paddingLeft: 20, color: "#667085", fontSize: 15, lineHeight: 1.8, margin: "0 0 12px",
+};
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section style={{ marginBottom: 36 }}>
+      <h2 style={{ fontSize: 20, fontWeight: 700, color: "#1F2A24", margin: "0 0 14px", paddingBottom: 10, borderBottom: "1px solid #E8ECEA" }}>
+        {title}
+      </h2>
+      <div style={{ fontSize: 15, color: "#667085", lineHeight: 1.8 }}>
+        {children}
+      </div>
+    </section>
+  );
+}
