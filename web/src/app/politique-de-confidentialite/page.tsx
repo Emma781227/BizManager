@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   description: "Politique de confidentialité et protection des données personnelles de BizManager.",
 };
 
-const LAST_UPDATED = "30 juin 2026";
+const LAST_UPDATED = "21 juillet 2026";
 
 export default function PolitiqueConfidentialitePage() {
   return (
@@ -36,7 +36,7 @@ export default function PolitiqueConfidentialitePage() {
               <strong>BizManager</strong><br />
               Email : <a href="mailto:contact@bizmanager.africa">contact@bizmanager.africa</a><br />
               Site web : <a href="https://bizmanager.africa">https://bizmanager.africa</a><br />
-              <em style={{ fontSize: 13, color: "#98A2B3" }}>[Nom légal, adresse et numéro d'enregistrement à compléter]</em>
+              <em style={{ fontSize: 13, color: "#98A2B3" }}>Nom légal, siège social, RCCM et NIU : voir nos <Link href="/mentions-legales" style={{ color: "#0A8F45" }}>Mentions légales</Link></em>
             </Box>
           </Section>
 
@@ -136,7 +136,7 @@ export default function PolitiqueConfidentialitePage() {
           </Section>
 
           <Section title="6. Vos droits">
-            <p>Conformément aux lois applicables sur la protection des données (RGPD, lois locales africaines), vous disposez des droits suivants :</p>
+            <p>Conformément à la loi camerounaise n° 2010/012 du 21 décembre 2010 relative à la cybersécurité et à la cybercriminalité au Cameroun, qui encadre la protection des données à caractère personnel, ainsi qu&apos;à la Convention de l&apos;Union Africaine sur la cybersécurité et la protection des données à caractère personnel (Convention de Malabo, ratifiée par le Cameroun), vous disposez des droits suivants sur vos données :</p>
             <ul style={ulStyle}>
               <li><strong>Droit d&apos;accès :</strong> obtenir une copie de vos données personnelles.</li>
               <li><strong>Droit de rectification :</strong> corriger des données inexactes ou incomplètes.</li>
@@ -146,7 +146,7 @@ export default function PolitiqueConfidentialitePage() {
               <li><strong>Droit de limitation :</strong> demander la suspension temporaire d&apos;un traitement.</li>
             </ul>
             <p>Pour exercer ces droits, contactez-nous à : <a href="mailto:contact@bizmanager.africa">contact@bizmanager.africa</a></p>
-            <p>Nous répondrons dans un délai maximum de 30 jours.</p>
+            <p>Nous répondrons dans un délai maximum de 30 jours. À défaut de réponse satisfaisante, vous pouvez saisir l&apos;Agence Nationale des Technologies de l&apos;Information et de la Communication (ANTIC), autorité camerounaise en charge de la régulation de la cybersécurité et de la certification électronique.</p>
           </Section>
 
           <Section title="7. Cookies et stockage local">
@@ -170,7 +170,7 @@ export default function PolitiqueConfidentialitePage() {
           </Section>
 
           <Section title="9. Transferts internationaux">
-            <p>Certains de nos sous-traitants sont basés en dehors de l&apos;Afrique (États-Unis principalement : Vercel, Neon, Cloudinary). Ces transferts sont encadrés par les clauses contractuelles types ou les certifications appropriées garantissant un niveau de protection adéquat.</p>
+            <p>Certains de nos sous-traitants sont basés en dehors du Cameroun et de la zone OHADA (États-Unis principalement : Vercel, Neon, Cloudinary). Conformément à la loi n° 2010/012 relative à la cybersécurité et à la cybercriminalité, ces transferts de données hors du territoire camerounais ne sont effectués qu&apos;auprès de prestataires offrant des garanties de sécurité et de confidentialité adéquates (clauses contractuelles, certifications de sécurité reconnues), et strictement dans la limite nécessaire à la fourniture du service.</p>
           </Section>
 
           <Section title="10. Modifications de cette politique">

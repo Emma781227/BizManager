@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   description: "Conditions générales d'utilisation du service BizManager.",
 };
 
-const LAST_UPDATED = "30 juin 2026";
+const LAST_UPDATED = "21 juillet 2026";
 
 export default function CguPage() {
   return (
@@ -33,6 +33,7 @@ export default function CguPage() {
             <p>Les présentes Conditions Générales d&apos;Utilisation (« CGU ») régissent l&apos;accès et l&apos;utilisation du service BizManager (ci-après le « Service »), accessible sur le site <a href="https://bizmanager.africa">https://bizmanager.africa</a> et ses sous-domaines.</p>
             <p>En créant un compte, vous acceptez sans réserve les présentes CGU. Si vous n&apos;acceptez pas ces conditions, vous ne devez pas utiliser le Service.</p>
             <p>Ces CGU peuvent être modifiées à tout moment. En cas de modification substantielle, vous serez notifié par email. La version en vigueur est toujours celle disponible sur cette page.</p>
+            <p>Conformément à la loi camerounaise n° 2010/012 du 21 décembre 2010 relative à la cybersécurité et à la cybercriminalité, qui reconnaît la validité juridique de l&apos;écrit électronique, de la signature électronique et des contrats conclus par voie électronique, votre acceptation des présentes CGU lors de la création de votre compte a la même valeur juridique qu&apos;une signature manuscrite.</p>
           </Section>
 
           <Section title="2. Description du service">
@@ -54,6 +55,7 @@ export default function CguPage() {
             <p><strong>Exactitude des informations :</strong> Vous vous engagez à fournir des informations exactes, complètes et à jour lors de votre inscription et à les maintenir à jour.</p>
             <p><strong>Sécurité du compte :</strong> Vous êtes seul responsable de la confidentialité de vos identifiants de connexion. Toute activité réalisée depuis votre compte est de votre responsabilité. En cas de compromission, vous devez nous contacter immédiatement.</p>
             <p><strong>Un compte par personne :</strong> La création de comptes multiples pour contourner les limitations de plan est interdite.</p>
+            <p><strong>Immatriculation commerciale :</strong> Conformément à l&apos;Acte Uniforme OHADA relatif au Droit Commercial Général (AUDCG), toute personne exerçant une activité commerciale à titre habituel doit être immatriculée au Registre du Commerce et du Crédit Mobilier (RCCM) et disposer d&apos;un Numéro d&apos;Identifiant Unique (NIU) délivré par l&apos;administration fiscale de son pays. Il vous appartient de vérifier et de respecter les obligations d&apos;immatriculation et fiscales applicables à votre activité.</p>
           </Section>
 
           <Section title="4. Plans tarifaires et abonnements">
@@ -112,18 +114,30 @@ export default function CguPage() {
             <p>BizManager agit comme sous-traitant pour ces données et les traite uniquement sur vos instructions.</p>
           </Section>
 
-          <Section title="7. Propriété intellectuelle">
+          <Section title="7. Protection du consommateur">
+            <p>BizManager est un prestataire technique qui met à disposition des marchands les outils nécessaires à la gestion de leur activité commerciale (catalogue, commandes, paiements, communication client). <strong>BizManager n&apos;est pas partie au contrat de vente</strong> conclu entre un marchand et ses clients : ce contrat engage exclusivement le marchand, seul vendeur au sens de la loi.</p>
+            <p>En tant que marchand, vous vous engagez à respecter les dispositions de la loi camerounaise n° 2011/012 du 6 mai 2011 portant Code de protection du consommateur, notamment :</p>
+            <ul style={ulStyle}>
+              <li>Fournir une information claire, loyale et complète sur vos produits (nature, prix, disponibilité)</li>
+              <li>Afficher des prix exacts et ne pas recourir à des pratiques commerciales trompeuses</li>
+              <li>Garantir la conformité des produits vendus et traiter les réclamations de vos clients</li>
+              <li>Respecter le droit à la sécurité et à l&apos;information du consommateur</li>
+            </ul>
+            <p>BizManager se réserve le droit de suspendre tout compte marchand ne respectant pas ces obligations légales.</p>
+          </Section>
+
+          <Section title="8. Propriété intellectuelle">
             <p><strong>Service BizManager :</strong> L&apos;ensemble du service (code, interfaces, marques, logos, documentation) est la propriété exclusive de BizManager et est protégé par le droit de la propriété intellectuelle. Toute reproduction sans autorisation est interdite.</p>
             <p><strong>Vos contenus :</strong> Les produits, images, textes et informations que vous ajoutez sur votre boutique restent votre propriété. Vous nous accordez une licence non exclusive pour les stocker et les afficher dans le cadre du service.</p>
             <p><strong>Feedback :</strong> Tout retour, suggestion ou idée d&apos;amélioration que vous partagez avec nous peut être utilisé librement pour améliorer le service, sans obligation de contrepartie.</p>
           </Section>
 
-          <Section title="8. Disponibilité et support">
+          <Section title="9. Disponibilité et support">
             <p>BizManager vise une disponibilité maximale du service, mais ne garantit pas une disponibilité ininterrompue. Des maintenances planifiées ou incidents techniques peuvent temporairement rendre le service indisponible.</p>
             <p>Le support est disponible par email à <a href="mailto:contact@bizmanager.africa">contact@bizmanager.africa</a>. Les délais de réponse varient selon le plan souscrit.</p>
           </Section>
 
-          <Section title="9. Limitation de responsabilité">
+          <Section title="10. Limitation de responsabilité">
             <p>Dans les limites autorisées par la loi :</p>
             <ul style={ulStyle}>
               <li>BizManager n&apos;est pas responsable des pertes de revenus, de données ou d&apos;opportunités liées à une interruption du service.</li>
@@ -134,7 +148,7 @@ export default function CguPage() {
             <p>Ces limitations ne s&apos;appliquent pas en cas de faute grave ou intentionnelle de notre part.</p>
           </Section>
 
-          <Section title="10. Suspension et résiliation">
+          <Section title="11. Suspension et résiliation">
             <p><strong>Par vous :</strong> Vous pouvez résilier votre compte à tout moment depuis votre tableau de bord ou en nous contactant. En cas de résiliation, vos données seront supprimées dans un délai de 30 jours.</p>
             <p><strong>Par BizManager :</strong> Nous pouvons suspendre ou résilier un compte en cas de :</p>
             <ul style={ulStyle}>
@@ -146,12 +160,13 @@ export default function CguPage() {
             <p>Nous vous notifierons dans la mesure du possible avant toute suspension, sauf urgence (fraude avérée, risque de sécurité).</p>
           </Section>
 
-          <Section title="11. Droit applicable et litiges">
-            <p>Les présentes CGU sont soumises au droit applicable dans le pays où BizManager est enregistré. En cas de litige, les parties s&apos;efforceront de trouver une solution amiable avant tout recours judiciaire.</p>
+          <Section title="12. Droit applicable et litiges">
+            <p>Les présentes CGU sont régies par le droit camerounais, ainsi que par les Actes Uniformes de l&apos;OHADA applicables aux actes de commerce et aux relations entre commerçants.</p>
+            <p>En cas de litige, les parties s&apos;efforceront de trouver une solution amiable avant tout recours judiciaire. À défaut d&apos;accord amiable, le litige sera porté devant les juridictions camerounaises compétentes du ressort du siège social de BizManager, sous réserve, pour les litiges commerciaux relevant du droit uniforme OHADA, de la possibilité de recourir à l&apos;arbitrage de la Cour Commune de Justice et d&apos;Arbitrage (CCJA).</p>
             <p>Pour tout litige, contactez-nous en premier lieu à <a href="mailto:contact@bizmanager.africa">contact@bizmanager.africa</a>.</p>
           </Section>
 
-          <Section title="12. Contact">
+          <Section title="13. Contact">
             <p>Pour toute question relative aux présentes CGU :</p>
             <div style={{ background: "#F8FAF9", border: "1px solid #E8ECEA", borderRadius: 10, padding: "14px 18px", fontSize: 14, color: "#1F2A24", lineHeight: 1.8, margin: "12px 0" }}>
               Email : <a href="mailto:contact@bizmanager.africa">contact@bizmanager.africa</a><br />

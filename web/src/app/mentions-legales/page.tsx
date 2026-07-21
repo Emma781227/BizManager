@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   description: "Mentions légales du site et service BizManager.",
 };
 
-const LAST_UPDATED = "30 juin 2026";
+const LAST_UPDATED = "21 juillet 2026";
 
 export default function MentionsLegalesPage() {
   return (
@@ -30,18 +30,16 @@ export default function MentionsLegalesPage() {
           <p style={{ fontSize: 14, color: "#98A2B3", margin: "0 0 40px" }}>Dernière mise à jour : {LAST_UPDATED}</p>
 
           <Section title="1. Éditeur du site">
+            <p>BizManager est édité par une société commerciale immatriculée au Cameroun, conformément à l&apos;Acte Uniforme de l&apos;OHADA relatif au Droit Commercial Général (AUDCG), qui impose à tout commerçant et à toute société commerciale l&apos;immatriculation au Registre du Commerce et du Crédit Mobilier (RCCM).</p>
             <div style={{ background: "#F8FAF9", border: "1px solid #E8ECEA", borderRadius: 10, padding: "18px 22px", fontSize: 15, color: "#1F2A24", lineHeight: 2 }}>
               <strong>Nom du service :</strong> BizManager<br />
+              <strong>Forme juridique :</strong> <em style={{ color: "#98A2B3" }}>[à compléter — ex. Société à Responsabilité Limitée (SARL) de droit camerounais]</em><br />
+              <strong>Siège social :</strong> <em style={{ color: "#98A2B3" }}>[adresse complète à compléter — ville, région, Cameroun]</em><br />
+              <strong>RCCM :</strong> <em style={{ color: "#98A2B3" }}>[numéro d&apos;immatriculation au Registre du Commerce et du Crédit Mobilier, ex. RC/DLA/2026/B/xxxx — à compléter]</em><br />
+              <strong>NIU :</strong> <em style={{ color: "#98A2B3" }}>[Numéro d&apos;Identifiant Unique délivré par la Direction Générale des Impôts (DGI) — à compléter]</em><br />
+              <strong>Capital social :</strong> <em style={{ color: "#98A2B3" }}>[à compléter, le cas échéant]</em><br />
               <strong>Site web :</strong> <a href="https://bizmanager.africa">https://bizmanager.africa</a><br />
-              <strong>Email de contact :</strong> <a href="mailto:contact@bizmanager.africa">contact@bizmanager.africa</a><br />
-              <br />
-              <em style={{ fontSize: 13, color: "#98A2B3" }}>
-                Les informations légales suivantes sont à compléter avec les données exactes de votre entité :<br />
-                — Nom légal de la société / du responsable<br />
-                — Adresse complète<br />
-                — Numéro d&apos;enregistrement (RCCM, NINEA, NIF selon le pays)<br />
-                — Numéro de téléphone professionnel
-              </em>
+              <strong>Email de contact :</strong> <a href="mailto:contact@bizmanager.africa">contact@bizmanager.africa</a>
             </div>
           </Section>
 
@@ -84,7 +82,7 @@ export default function MentionsLegalesPage() {
           </Section>
 
           <Section title="6. Données personnelles">
-            <p>La collecte et le traitement des données personnelles effectués via ce site sont décrits dans notre <Link href="/politique-de-confidentialite" style={{ color: "#0A8F45" }}>Politique de confidentialité</Link>.</p>
+            <p>La collecte et le traitement des données personnelles effectués via ce site sont encadrés par la loi camerounaise n° 2010/012 du 21 décembre 2010 relative à la cybersécurité et à la cybercriminalité au Cameroun, et décrits en détail dans notre <Link href="/politique-de-confidentialite" style={{ color: "#0A8F45" }}>Politique de confidentialité</Link>.</p>
             <p>Pour exercer vos droits ou pour toute question relative à vos données personnelles, contactez-nous à : <a href="mailto:contact@bizmanager.africa">contact@bizmanager.africa</a></p>
           </Section>
 
@@ -94,7 +92,8 @@ export default function MentionsLegalesPage() {
           </Section>
 
           <Section title="8. Droit applicable">
-            <p>Les présentes mentions légales sont soumises au droit applicable dans le pays de résidence de l&apos;éditeur. En cas de litige relatif à l&apos;interprétation ou à l&apos;exécution de ces mentions légales, les tribunaux compétents sont ceux du lieu du siège social de l&apos;éditeur.</p>
+            <p>Les présentes mentions légales sont soumises au droit camerounais, ainsi qu&apos;aux Actes Uniformes de l&apos;Organisation pour l&apos;Harmonisation en Afrique du Droit des Affaires (OHADA), applicables au Cameroun en tant qu&apos;État partie.</p>
+            <p>En cas de litige relatif à l&apos;interprétation ou à l&apos;exécution des présentes mentions légales, et à défaut de résolution amiable, les tribunaux camerounais compétents du ressort du siège social de l&apos;éditeur seront seuls compétents. Pour les litiges de nature commerciale relevant du droit uniforme OHADA, les parties pourront également recourir à l&apos;arbitrage de la Cour Commune de Justice et d&apos;Arbitrage (CCJA) de l&apos;OHADA, siégeant à Abidjan.</p>
           </Section>
 
           <Section title="9. Contact">
