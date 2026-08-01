@@ -486,6 +486,38 @@ a {
 
 /* ── End mobile burger nav ──────────────────────────────────────────────── */
 
+/* ── Mobile header: burger gauche · brand droite ──────────────────────── */
+@media (max-width: 1023px) {
+  .dashboard-sidebar {
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+  }
+
+  /* La nav ne prend que la place du bouton burger */
+  .app-nav {
+    flex-direction: row;
+    width: auto;
+    flex-shrink: 0;
+  }
+
+  /* Burger compact — icône seule */
+  .nav-burger-btn {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  /* Brand poussé à droite */
+  .sidebar-brand {
+    margin-left: auto;
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+}
+
 /* Account block inside burger menu */
 .nav-account-block {
   display: flex;
