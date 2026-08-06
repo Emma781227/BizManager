@@ -1,6 +1,6 @@
 // Stratégie: Network-first pour les pages HTML, cache-first pour les assets
-const CACHE_STATIC = 'bizmanager-static-v2';
-const CACHE_DYNAMIC = 'bizmanager-dynamic-v2';
+const CACHE_STATIC = 'bizmanager-static-v3';
+const CACHE_DYNAMIC = 'bizmanager-dynamic-v3';
 const OFFLINE_URL = '/';
 
 const STATIC_ASSETS = [
