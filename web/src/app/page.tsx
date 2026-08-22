@@ -12,6 +12,7 @@ import {
   Package,
   Rocket,
   ShieldCheck,
+  Star,
   Store,
   Check,
   Users,
@@ -26,6 +27,7 @@ import { DashboardPreview, StorefrontPreview } from "@/components/marketing/Prod
 import {
   btnLg,
   btnMd,
+  btnOnBrand,
   btnPrimary,
   btnSecondary,
   card,
@@ -137,6 +139,33 @@ type Plan = {
   href: string;
   featured?: boolean;
 };
+
+const TESTIMONIALS = [
+  {
+    quote:
+      "BizManager m’a permis de gérer mes 50 commandes quotidiennes sans stress. Indispensable !",
+    name: "Awa Diallo",
+    initials: "AD",
+    role: "Boutique de vêtements",
+    city: "Dakar",
+  },
+  {
+    quote:
+      "Je partage mon lien WhatsApp et mes clients commandent directement. C’est magique.",
+    name: "Kofi Tano",
+    initials: "KT",
+    role: "Électronique",
+    city: "Abidjan",
+  },
+  {
+    quote:
+      "Les rapports de ventes m’aident à prendre les bonnes décisions chaque semaine.",
+    name: "Fatou Mbaye",
+    initials: "FM",
+    role: "Cosmétiques",
+    city: "Yaoundé",
+  },
+];
 
 const PLANS: Plan[] = [
   {
@@ -431,8 +460,52 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* ── Témoignages ──────────────────────────────────────────── */}
+      <section id="temoignages" className="scroll-mt-20 py-20">
+        <div className={container}>
+          <div className="max-w-2xl">
+            <p className={eyebrow}>Témoignages</p>
+            <h2 className={`${sectionTitle} mt-3`}>Ce que disent nos utilisateurs</h2>
+            <p className={sectionLead}>
+              Les premiers commerçants à tester BizManager partagent leur expérience.
+            </p>
+          </div>
+
+          <div className="mt-10 grid gap-5 lg:grid-cols-3">
+            {TESTIMONIALS.map((item) => (
+              <figure key={item.name} className={`${card} flex flex-col p-6`}>
+                <div className="flex gap-0.5 text-warning-500" aria-label="Note : 5 sur 5">
+                  {Array.from({ length: 5 }, (_, i) => (
+                    <Star key={i} size={14} strokeWidth={0} fill="currentColor" aria-hidden="true" />
+                  ))}
+                </div>
+
+                <blockquote className="mt-4 flex-1 text-[0.9375rem] leading-relaxed text-ink-700">
+                  {item.quote}
+                </blockquote>
+
+                <figcaption className="mt-6 flex items-center gap-3 border-t border-ink-100 pt-5">
+                  <span
+                    aria-hidden="true"
+                    className="flex size-10 shrink-0 items-center justify-center rounded-full bg-brand-50 text-[0.8125rem] font-bold text-brand-700"
+                  >
+                    {item.initials}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-sm font-semibold text-ink-900">{item.name}</span>
+                    <span className="block truncate text-[0.8125rem] text-ink-500">
+                      {item.role} · {item.city}
+                    </span>
+                  </span>
+                </figcaption>
+              </figure>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ── Tarifs ───────────────────────────────────────────────── */}
-      <section id="pricing" className="scroll-mt-20 py-20">
+      <section id="pricing" className="scroll-mt-20 border-t border-ink-100 bg-ink-50 py-20">
         <div className={container}>
           <div className="max-w-2xl">
             <p className={eyebrow}>Tarifs</p>
@@ -444,11 +517,14 @@ export default async function HomePage() {
             {PLANS.map((plan) => (
               <article
                 key={plan.name}
-                className={
+                /* Les trois cartes gardent une bordure de 2px : une largeur
+                   différente décalerait le contenu de la carte mise en avant
+                   d'un pixel et casserait l'alignement de la rangée. */
+                className={`relative flex flex-col rounded-xl border-2 bg-white p-7 ${
                   plan.featured
-                    ? "relative rounded-xl border-2 border-brand-600 bg-white p-7 shadow-md"
-                    : `${card} p-7`
-                }
+                    ? "border-brand-600 shadow-md"
+                    : "border-ink-200 shadow-xs"
+                }`}
               >
                 {plan.featured && (
                   <span className="absolute -top-3 left-7 rounded-full bg-brand-600 px-3 py-1 text-[0.6875rem] font-semibold uppercase tracking-[0.08em] text-white">
@@ -470,7 +546,7 @@ export default async function HomePage() {
                 </p>
                 <p className="mt-1.5 text-sm text-ink-500">{plan.tagline}</p>
 
-                <ul className="mt-6 space-y-2.5 border-t border-ink-100 pt-6">
+                <ul className="mt-6 flex-1 space-y-2.5 border-t border-ink-100 pt-6">
                   {plan.features.map((feature) => (
                     <li key={feature.text} className="flex items-start gap-2.5">
                       {feature.included ? (
@@ -560,7 +636,7 @@ export default async function HomePage() {
             </div>
             <Link
               href="/register"
-              className={`${btnLg} shrink-0 rounded-lg bg-white font-semibold text-brand-700 transition-colors hover:bg-brand-50`}
+              className={`${btnOnBrand} ${btnLg} shrink-0`}
             >
               Commencer gratuitement
             </Link>

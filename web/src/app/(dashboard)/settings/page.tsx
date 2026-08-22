@@ -278,7 +278,7 @@ function ShopActionsModal({
           margin: 1,
           width: 280,
           color: {
-            dark: "#145f38",
+            dark: "#085f30",
             light: "#FFFFFF",
           },
         });

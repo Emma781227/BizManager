@@ -138,7 +138,7 @@ function buildCodeEmail(code: string, title: string, intro: string) {
       <div style="font-family:Arial,sans-serif;line-height:1.5;color:#1f2937">
         <h2 style="margin:0 0 16px">${title}</h2>
         <p style="margin:0 0 16px">${intro}</p>
-        <div style="display:inline-block;padding:12px 18px;border-radius:12px;background:#e8f5ef;color:#166b4a;font-size:24px;font-weight:700;letter-spacing:4px;">
+        <div style="display:inline-block;padding:12px 18px;border-radius:12px;background:#e8f5ef;color:#08763a;font-size:24px;font-weight:700;letter-spacing:4px;">
           ${code}
         </div>
         <p style="margin:16px 0 0">Ce code expire dans 10 minutes.</p>

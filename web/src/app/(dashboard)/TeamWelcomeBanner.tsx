@@ -60,7 +60,7 @@ export default function TeamWelcomeBanner({ userId }: { userId: string }) {
     <div style={{
       margin: "0 0 20px",
       background: "linear-gradient(135deg, #EAF7EF 0%, #F0F9F4 100%)",
-      border: "1.5px solid #A8E0BF",
+      border: "1.5px solid #a8e8c2",
       borderRadius: 18,
       padding: "20px 22px",
       position: "relative",

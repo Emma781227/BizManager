@@ -415,12 +415,12 @@ export default function LoginPage() {
 
           <div className="relative flex min-h-full flex-col gap-4 lg:gap-5">
             <div className="flex items-center gap-2">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#0f5f38] text-base font-bold text-white shadow-sm">B</div>
-              <span className="text-xl font-extrabold tracking-tight text-[#135a35]">BizManager</span>
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#085f30] text-base font-bold text-white shadow-sm">B</div>
+              <span className="text-xl font-extrabold tracking-tight text-[#085f30]">BizManager</span>
             </div>
 
             <div className="max-w-135 space-y-2">
-              <h1 className="max-w-135 text-[clamp(1.75rem,3vw,2.25rem)] font-black leading-[0.92] tracking-tight text-[#104f2f] sm:text-[clamp(1.9rem,3vw,2.4rem)]">
+              <h1 className="max-w-135 text-[clamp(1.75rem,3vw,2.25rem)] font-black leading-[0.92] tracking-tight text-[#074e29] sm:text-[clamp(1.9rem,3vw,2.4rem)]">
                 Pilotez votre boutique
                 <br />
                 simplement
@@ -434,7 +434,7 @@ export default function LoginPage() {
             <div className="flex flex-wrap gap-3 lg:flex-nowrap lg:gap-3">
               {marketingKpis.map((item) => (
                 <article key={item.label} className="flex h-16 min-w-40 flex-1 items-center gap-3 rounded-lg border border-slate-100 bg-white px-3 text-sm shadow-[0_8px_20px_rgba(15,23,42,0.07)]">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-50 text-[#145f38]">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-50 text-[#085f30]">
                     {item.icon === "cube" ? (
                       <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
                         <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
@@ -456,7 +456,7 @@ export default function LoginPage() {
                     )}
                   </div>
                   <div>
-                    <p className="text-lg font-extrabold leading-none tracking-tight text-[#145f38]">{item.value}</p>
+                    <p className="text-lg font-extrabold leading-none tracking-tight text-[#085f30]">{item.value}</p>
                     <p className="mt-0.5 text-xs font-medium text-slate-600">{item.label}</p>
                   </div>
                 </article>
@@ -467,8 +467,8 @@ export default function LoginPage() {
               <div className="flex min-h-64 flex-col lg:min-h-72 lg:flex-row">
                 <aside className="flex w-full flex-col border-b border-slate-100 bg-[#f9fbf8] px-3 py-2 lg:w-32 lg:border-b-0 lg:border-r lg:px-3 lg:py-3">
                   <div className="flex items-center gap-2">
-                    <div className="flex h-7 w-7 items-center justify-center rounded-md bg-[#145f38] text-xs font-bold text-white">B</div>
-                    <span className="text-sm font-extrabold text-[#135a35]">BizManager</span>
+                    <div className="flex h-7 w-7 items-center justify-center rounded-md bg-[#085f30] text-xs font-bold text-white">B</div>
+                    <span className="text-sm font-extrabold text-[#085f30]">BizManager</span>
                   </div>
                   <nav className="mt-2 flex flex-1 flex-wrap gap-1 lg:mt-3 lg:flex-col lg:gap-1">
                     {dashboardMenu.map((item) => (
@@ -476,7 +476,7 @@ export default function LoginPage() {
                         key={item}
                         className={`flex items-center gap-1.5 rounded-md px-2 py-1.5 text-xs transition ${
                           item === "Tableau de bord"
-                            ? "bg-[#145f38] text-white shadow-sm"
+                            ? "bg-[#085f30] text-white shadow-sm"
                             : "text-slate-600 hover:bg-white"
                         }`}
                       >
@@ -507,7 +507,7 @@ export default function LoginPage() {
                           {chartBars.map((height, index) => (
                             <div key={index} className="flex flex-1 items-end justify-center">
                               <div
-                                className={`w-full max-w-4.5 rounded-t-lg ${index % 3 === 0 ? "bg-[#145f38]" : "bg-emerald-200"}`}
+                                className={`w-full max-w-4.5 rounded-t-lg ${index % 3 === 0 ? "bg-[#085f30]" : "bg-emerald-200"}`}
                                 style={{ height: `${height}%` }}
                               />
                             </div>
@@ -527,7 +527,7 @@ export default function LoginPage() {
                               <p className="text-xs text-slate-500">{card.label}</p>
                               <p className="mt-1 text-base font-bold tracking-tight text-slate-950">{card.value}</p>
                             </div>
-                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-50 text-[#145f38]">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-50 text-[#085f30]">
                               <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                                 <path d="M12 5v14" />
                                 <path d="M5 12l7-7 7 7" />
@@ -543,7 +543,7 @@ export default function LoginPage() {
                   <article className="mt-2 rounded-lg border border-slate-100 bg-white p-2 shadow-sm">
                     <div className="mb-2 flex items-center justify-between gap-2">
                       <h3 className="text-xs font-semibold text-slate-900">Commandes récentes</h3>
-                      <button type="button" className="rounded-full border border-emerald-200 px-2 py-0.5 text-xs font-semibold text-[#145f38]">Voir</button>
+                      <button type="button" className="rounded-full border border-emerald-200 px-2 py-0.5 text-xs font-semibold text-[#085f30]">Voir</button>
                     </div>
                     <div className="overflow-hidden rounded-lg border border-slate-100">
                       <table className="w-full text-left text-xs">
@@ -561,7 +561,7 @@ export default function LoginPage() {
                               <td className="px-2 py-1 font-medium text-slate-700 text-xs">{row.order}</td>
                               <td className="px-2 py-1 text-slate-600 text-xs truncate">{row.client}</td>
                               <td className="px-2 py-1">
-                                <span className="inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-[#145f38]">{row.status}</span>
+                                <span className="inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-[#085f30]">{row.status}</span>
                               </td>
                               <td className="px-2 py-1 text-slate-600 text-xs">{row.amount}</td>
                             </tr>
@@ -749,7 +749,7 @@ export default function LoginPage() {
                 <button
                   disabled={isLoading}
                   type="submit"
-                  className="inline-flex h-10 w-full items-center justify-center rounded-lg bg-[#145f38] px-4 text-xs font-semibold text-white shadow-[0_12px_25px_rgba(20,95,56,0.18)] transition hover:bg-[#0f522f] disabled:cursor-not-allowed disabled:opacity-70"
+                  className="inline-flex h-10 w-full items-center justify-center rounded-lg bg-[#085f30] px-4 text-xs font-semibold text-white shadow-[0_12px_25px_rgba(8,118,58,0.18)] transition hover:bg-[#074e29] disabled:cursor-not-allowed disabled:opacity-70"
                 >
                   {isLoading
                     ? "Chargement..."
@@ -798,7 +798,7 @@ export default function LoginPage() {
 
                 <div className="rounded-lg border border-emerald-100 bg-emerald-50/80 px-3 py-2">
                   <div className="flex items-start gap-2">
-                    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-white text-[#145f38] shadow-sm">
+                    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-white text-[#085f30] shadow-sm">
                       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                         <path d="M12 2 4 5v6c0 5 3.4 9.7 8 11 4.6-1.3 8-6 8-11V5l-8-3Z" />
                         <path d="m9 12 2 2 4-4" />
@@ -894,7 +894,7 @@ export default function LoginPage() {
                     <button
                       disabled={forgotLoading}
                       type="submit"
-                      className="inline-flex h-9 flex-1 items-center justify-center rounded-lg bg-[#145f38] px-3 text-xs font-semibold text-white transition hover:bg-[#0f522f] disabled:cursor-not-allowed disabled:opacity-70"
+                      className="inline-flex h-9 flex-1 items-center justify-center rounded-lg bg-[#085f30] px-3 text-xs font-semibold text-white transition hover:bg-[#074e29] disabled:cursor-not-allowed disabled:opacity-70"
                     >
                       {forgotLoading
                         ? "..."

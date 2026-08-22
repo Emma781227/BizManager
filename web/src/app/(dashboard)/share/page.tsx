@@ -49,7 +49,7 @@ export default function SharePage() {
 
   return (
     <main className="grid gap-2.5 p-3 sm:gap-3.5 sm:p-4 lg:gap-4 lg:p-5">
-      <section className="rounded-2xl border border-slate-200 bg-[radial-gradient(circle_at_8%_16%,rgba(34,136,102,0.09)_0%,transparent_46%),linear-gradient(145deg,#ffffff_0%,#f8fbf9_100%)] p-4 sm:p-5">
+      <section className="rounded-2xl border border-slate-200 bg-[radial-gradient(circle_at_8%_16%,rgba(10,143,69,0.09)_0%,transparent_46%),linear-gradient(145deg,#ffffff_0%,#f8fbf9_100%)] p-4 sm:p-5">
         <h1 className="mb-2 line-clamp-2 text-2xl font-bold leading-tight text-slate-900 sm:text-2.5xl">Partage boutique</h1>
         <p className="text-sm text-slate-600 sm:text-base">Partage ton lien public sur WhatsApp, Instagram et Facebook.</p>
       </section>

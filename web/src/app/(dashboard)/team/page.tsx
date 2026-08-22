@@ -518,7 +518,7 @@ function InviteModal({ open, onClose, shops, onInvited }: {
             </div>
           )}
           {success && (
-            <div style={{ background:"#DDF6E7", border:"1px solid #A8E0BF", borderRadius:10,
+            <div style={{ background:"#DDF6E7", border:"1px solid #a8e8c2", borderRadius:10,
                           padding:"10px 14px", fontSize:13, color:"#08763A", fontWeight:600 }}>
               <Check size={13} style={{ marginRight:5, verticalAlign:"middle" }} />
               Invitation envoyée avec succès !
@@ -641,7 +641,7 @@ function EditMemberModal({ open, onClose, member, shops, onUpdated }: {
             </div>
           )}
           {success && (
-            <div style={{ background:"#DDF6E7", border:"1px solid #A8E0BF", borderRadius:10, padding:"10px 14px", fontSize:13, color:"#08763A", fontWeight:600 }}>
+            <div style={{ background:"#DDF6E7", border:"1px solid #a8e8c2", borderRadius:10, padding:"10px 14px", fontSize:13, color:"#08763A", fontWeight:600 }}>
               <Check size={13} style={{ marginRight:5, verticalAlign:"middle" }} /> Mis à jour avec succès !
             </div>
           )}

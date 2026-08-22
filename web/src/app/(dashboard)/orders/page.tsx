@@ -520,7 +520,7 @@ function OtpModal({
               <button
                 style={{ flex:1, height:42, border:"none", borderRadius:10, fontSize:13, fontWeight:600,
                   cursor: code.length === 6 && !verifying ? "pointer" : "not-allowed",
-                  background: code.length === 6 ? "#0A8F45" : "#A8D5B8", color:"#fff",
+                  background: code.length === 6 ? "#0A8F45" : "#a8e8c2", color:"#fff",
                   transition:"background .15s" }}
                 onClick={verifyOtp}
                 disabled={code.length !== 6 || verifying}>
@@ -540,7 +540,7 @@ function OtpModal({
           <div style={{ textAlign:"center", padding:"16px 0 8px" }}>
             <div style={{ width:64, height:64, borderRadius:"50%", background:"#EAF7EF",
               display:"flex", alignItems:"center", justifyContent:"center",
-              margin:"0 auto 16px", color:"#1d7c5f" }}>
+              margin:"0 auto 16px", color:"#0a8f45" }}>
               <Check size={30} strokeWidth={2.5} />
             </div>
             <div style={{ fontSize:18, fontWeight:800, color:"#0A8F45", marginBottom:8 }}>
@@ -1421,7 +1421,7 @@ export default function OrdersPage() {
                 <div style={{ fontSize:12, color:"#98A2B3", textAlign:"center", padding:"8px 0" }}>
                   {globalStats.total === 0
                     ? "Aucune commande"
-                    : <span style={{ display:"inline-flex", alignItems:"center", gap:5 }}><Check size={13} strokeWidth={2.5} color="#1d7c5f" /> Aucune alerte en cours</span>}
+                    : <span style={{ display:"inline-flex", alignItems:"center", gap:5 }}><Check size={13} strokeWidth={2.5} color="#0a8f45" /> Aucune alerte en cours</span>}
                 </div>
               ) : (
                 <>
@@ -1462,10 +1462,10 @@ export default function OrdersPage() {
                 { Icon: Store,      t:"Comparez vos boutiques",                       d:"Identifiez quelle boutique performe le mieux.",                        link:"Mes boutiques",    href:"/shops" },
               ].map(({ Icon, ...c }) => (
                 <div key={c.t} style={{ background:"#F8FAF9", borderRadius:10, padding:"11px 13px", border:"1px solid #F0F2F1" }}>
-                  <div style={{ marginBottom:6 }}><Icon size={17} strokeWidth={1.9} color="#1d7c5f" /></div>
+                  <div style={{ marginBottom:6 }}><Icon size={17} strokeWidth={1.9} color="#0a8f45" /></div>
                   <div style={{ fontWeight:600, color:"#1F2A24", fontSize:12, marginBottom:3 }}>{c.t}</div>
                   <div style={{ fontSize:11, color:"#98A2B3", marginBottom:8 }}>{c.d}</div>
-                  <a href={c.href} style={{ display:"inline-flex", alignItems:"center", gap:3, fontSize:11, fontWeight:600, color:"#1d7c5f", textDecoration:"none" }}>{c.link} <ArrowRight size={11} strokeWidth={2.25} /></a>
+                  <a href={c.href} style={{ display:"inline-flex", alignItems:"center", gap:3, fontSize:11, fontWeight:600, color:"#0a8f45", textDecoration:"none" }}>{c.link} <ArrowRight size={11} strokeWidth={2.25} /></a>
                 </div>
               ))}
             </div>

@@ -511,7 +511,7 @@ const CSS = `
   .sp-toast-icon {
     width: 36px; height: 36px; border-radius: 9px; background: #DDF6E7;
     display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0; color: #1d7c5f;
+    flex-shrink: 0; color: #0a8f45;
   }
   .sp-toast-close {
     background: none; border: none; cursor: pointer;
@@ -994,7 +994,7 @@ export default function ShopPageClient({ initialShop, initialProducts }: ShopPag
             <div className="sp-stat-lbl">Produits</div>
           </div>
           <div className="sp-stat">
-            <div className="sp-stat-val" style={{ color: '#1d7c5f', display: 'flex', justifyContent: 'center' }}><Check size={20} strokeWidth={2.5} /></div>
+            <div className="sp-stat-val" style={{ color: '#0a8f45', display: 'flex', justifyContent: 'center' }}><Check size={20} strokeWidth={2.5} /></div>
             <div className="sp-stat-lbl">Livraison</div>
           </div>
           <div className="sp-stat">
@@ -1120,7 +1120,7 @@ export default function ShopPageClient({ initialShop, initialProducts }: ShopPag
             { Icon: MessageCircle, title: 'Support client', sub: 'Réponse rapide sur WhatsApp' },
           ].map(({ Icon, ...item }, i) => (
             <div key={i} className="sp-reassurance-item">
-              <div className="sp-reassurance-icon"><Icon size={19} strokeWidth={1.9} color="#1d7c5f" /></div>
+              <div className="sp-reassurance-icon"><Icon size={19} strokeWidth={1.9} color="#0a8f45" /></div>
               <div>
                 <div style={{ fontSize: 13, fontWeight: 700, color: '#1F2A24' }}>{item.title}</div>
                 <div style={{ fontSize: 11, color: '#98A2B3', marginTop: 2 }}>{item.sub}</div>
@@ -1363,7 +1363,7 @@ export default function ShopPageClient({ initialShop, initialProducts }: ShopPag
       {confirmedOrder && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.5)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
           <div style={{ background: '#fff', borderRadius: 20, padding: '32px 28px', maxWidth: 440, width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,.15)', textAlign: 'center' }}>
-            <div style={{ width: 64, height: 64, borderRadius: 50, background: '#DDF6E7', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}><CheckCircle2 size={32} strokeWidth={1.8} color="#1d7c5f" /></div>
+            <div style={{ width: 64, height: 64, borderRadius: 50, background: '#DDF6E7', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}><CheckCircle2 size={32} strokeWidth={1.8} color="#0a8f45" /></div>
             <h2 style={{ fontSize: 22, fontWeight: 800, color: '#1F2A24', margin: '0 0 8px' }}>Commande confirmée !</h2>
             <p style={{ fontSize: 14, color: '#667085', marginBottom: 6 }}>
               Référence : <strong style={{ color: '#1F2A24' }}>#{confirmedOrder.orderId.slice(0, 8).toUpperCase()}</strong>
@@ -1628,7 +1628,7 @@ function CheckoutModal({ cart, cartTotal, slug, shopPaymentMethods, onClose, onS
           <button
             onClick={handleSubmit}
             disabled={loading}
-            style={{ width: '100%', height: 50, background: loading ? '#7CC49E' : '#0A8F45', color: '#fff', border: 'none', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: loading ? 'wait' : 'pointer' }}
+            style={{ width: '100%', height: 50, background: loading ? '#71d69d' : '#0A8F45', color: '#fff', border: 'none', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: loading ? 'wait' : 'pointer' }}
           >
             {loading
               ? (isOnlinePayment ? 'Redirection vers le paiement…' : 'Envoi en cours…')

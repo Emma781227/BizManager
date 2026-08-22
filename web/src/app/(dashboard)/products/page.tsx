@@ -842,7 +842,7 @@ function AddProductModal({ open, onClose, shopId, shopName, categories, onCreate
             </div>
           )}
           {submitSuccess && (
-            <div style={{ background:"#DDF6E7", border:"1px solid #A8E0BF", borderRadius:10,
+            <div style={{ background:"#DDF6E7", border:"1px solid #a8e8c2", borderRadius:10,
                           padding:"10px 14px", fontSize:13, color:"#08763A", fontWeight:600 }}>
               <Check size={14} style={{ marginRight:4, verticalAlign:"middle" }} /> Produit créé avec succès !
             </div>
@@ -861,7 +861,7 @@ function AddProductModal({ open, onClose, shopId, shopName, categories, onCreate
           <button onClick={handleSubmit} disabled={isSubmitting || !shopId}
             style={{ height:44, padding:"0 28px", borderRadius:10, fontSize:14, fontWeight:700,
                      border:"none", cursor: isSubmitting ? "wait" : "pointer", minWidth:200,
-                     background: isSubmitting ? "#7CC49E" : "#0A8F45", color:"#fff" }}>
+                     background: isSubmitting ? "#71d69d" : "#0A8F45", color:"#fff" }}>
             {isSubmitting ? "Enregistrement…" : "Enregistrer le produit"}
           </button>
         </div>
@@ -1247,7 +1247,7 @@ function EditProductModal({ open, onClose, shopId, shopName, categories, product
             </div>
           )}
           {submitSuccess && (
-            <div style={{ background:"#DDF6E7", border:"1px solid #A8E0BF", borderRadius:10,
+            <div style={{ background:"#DDF6E7", border:"1px solid #a8e8c2", borderRadius:10,
                           padding:"10px 14px", fontSize:13, color:"#08763A", fontWeight:600 }}>
               <Check size={14} style={{ marginRight:4, verticalAlign:"middle" }} /> Produit modifié avec succès !
             </div>
@@ -1264,7 +1264,7 @@ function EditProductModal({ open, onClose, shopId, shopName, categories, product
           <button onClick={handleSubmit} disabled={isSubmitting || !shopId}
             style={{ height:44, padding:"0 28px", borderRadius:10, fontSize:14, fontWeight:700,
                      border:"none", cursor: isSubmitting ? "wait" : "pointer", minWidth:220,
-                     background: isSubmitting ? "#7CC49E" : "#0A8F45", color:"#fff" }}>
+                     background: isSubmitting ? "#71d69d" : "#0A8F45", color:"#fff" }}>
             {isSubmitting ? "Enregistrement…" : "Enregistrer les modifications"}
           </button>
         </div>

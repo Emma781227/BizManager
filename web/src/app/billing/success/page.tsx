@@ -23,7 +23,7 @@ const CSS = `
 .bs-icon { display: flex; justify-content: center; margin-bottom: 16px; }
 .bs-title { font-size: 22px; font-weight: 700; color: #111; margin: 0 0 8px; }
 .bs-sub { font-size: 15px; color: #555; margin: 0 0 24px; }
-.bs-plan { background: #f0faf5; border: 1px solid #b3e6cb; border-radius: 10px; padding: 14px 18px; margin-bottom: 24px; font-size: 14px; color: #1a7a48; font-weight: 600; }
+.bs-plan { background: #f0faf5; border: 1px solid #b3e6cb; border-radius: 10px; padding: 14px 18px; margin-bottom: 24px; font-size: 14px; color: #12a253; font-weight: 600; }
 .bs-spinner { width: 40px; height: 40px; border: 3px solid #e5e7eb; border-top-color: #0A8F45; border-radius: 50%; animation: spin .8s linear infinite; margin: 0 auto 20px; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .bs-btn { display: inline-block; padding: 12px 28px; border-radius: 10px; font-size: 15px; font-weight: 600; text-decoration: none; border: none; cursor: pointer; }
@@ -122,7 +122,7 @@ function BillingSuccessContent() {
       <div className="bs-wrap">
         <style>{CSS}</style>
         <div className="bs-card">
-          <div className="bs-icon"><CircleCheck size={44} strokeWidth={1.6} color="#1d7c5f" /></div>
+          <div className="bs-icon"><CircleCheck size={44} strokeWidth={1.6} color="#0a8f45" /></div>
           <h1 className="bs-title">Paiement confirmé !</h1>
           <p className="bs-sub">Votre abonnement est maintenant actif.</p>
           {data.plan && (

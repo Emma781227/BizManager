@@ -19,6 +19,10 @@ export const btnSecondary =
 export const btnGhost =
   `${btnBase} text-ink-600 hover:bg-ink-100 hover:text-ink-900`;
 
+/** Bouton blanc posé sur un aplat vert (section d'appel à l'action). */
+export const btnOnBrand =
+  `${btnBase} bg-white text-brand-700 hover:bg-brand-50`;
+
 /** Tailles : à combiner avec une variante ci-dessus. */
 export const btnSm = "h-9 px-3.5 text-[0.8125rem]";
 export const btnMd = "h-11 px-5 text-[0.9375rem]";

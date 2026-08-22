@@ -323,7 +323,7 @@ const CSS = `
     cursor: pointer; display: flex; align-items: center; justify-content: center;
     gap: 8px; transition: background .15s; text-decoration: none;
   }
-  .pdp-cta-wa:hover { background: #1ebe5d; }
+  .pdp-cta-wa:hover { background: #38be74; }
   .pdp-cta-disabled {
     width: 100%; height: 50px; background: #F0F2F1; color: #A0ABA8;
     border: none; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: not-allowed;
@@ -371,7 +371,7 @@ const CSS = `
     background: #25D366; color: #fff; font-size: 13px; font-weight: 700;
     cursor: pointer; text-decoration: none; transition: background .15s;
   }
-  .pdp-share-wa:hover { background: #1ebe5d; }
+  .pdp-share-wa:hover { background: #38be74; }
   .pdp-share-copy {
     flex: 1; display: flex; align-items: center; justify-content: center; gap: 7px;
     padding: 10px 14px; border-radius: 10px; border: 1.5px solid #E8ECEA;
@@ -1395,7 +1395,7 @@ export default function ProductDetailPage() {
                 <div className="pdp-shop-logo">{shopInitial}</div>
                 <div>
                   <div style={{ fontWeight: 700, fontSize: 15, color: "#1F2A24" }}>{shopName}</div>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: "#1d7c5f", background: "#EAF7EF", padding: "2px 8px", borderRadius: 20, display: "inline-flex", alignItems: "center", gap: 3 }}><BadgeCheck size={12} strokeWidth={2.1} /> Vérifié</span>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: "#0a8f45", background: "#EAF7EF", padding: "2px 8px", borderRadius: 20, display: "inline-flex", alignItems: "center", gap: 3 }}><BadgeCheck size={12} strokeWidth={2.1} /> Vérifié</span>
                 </div>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 14 }}>
@@ -1524,7 +1524,7 @@ export default function ProductDetailPage() {
                     </p>
                     {["Matériaux de haute qualité", "Design moderne adapté aux tendances", "Finitions soignées", "Idéal pour toutes les occasions"].map(f => (
                       <div key={f} style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 10, fontSize: 14, color: "#1F2A24" }}>
-                        <div style={{ width: 20, height: 20, background: "#EAF7EF", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: "#1d7c5f" }}><Check size={11} strokeWidth={3} /></div>
+                        <div style={{ width: 20, height: 20, background: "#EAF7EF", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: "#0a8f45" }}><Check size={11} strokeWidth={3} /></div>
                         {f}
                       </div>
                     ))}

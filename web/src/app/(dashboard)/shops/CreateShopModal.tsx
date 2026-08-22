@@ -499,7 +499,7 @@ export default function CreateShopModal({ open, onClose, onCreated }: CreateShop
               style={{height:44,padding:"0 28px",borderRadius:10,fontSize:14,fontWeight:700,border:"none",minWidth:200,
                 cursor:isSubmitting ? "wait" : "pointer",
                 background: (quota !== null && quota.usage.shops >= quota.plan.maxShops) ? "#E8ECEA"
-                          : isSubmitting ? "#7CC49E" : "#0A8F45",
+                          : isSubmitting ? "#71d69d" : "#0A8F45",
                 color: (quota !== null && quota.usage.shops >= quota.plan.maxShops) ? "#98A2B3" : "#fff"}}>
               {isSubmitting ? "Création en cours…" : <>Créer la boutique <ArrowRight size={14} strokeWidth={2.25} style={{verticalAlign:"-2px"}} /></>}
             </button>

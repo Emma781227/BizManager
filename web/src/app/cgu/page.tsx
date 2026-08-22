@@ -170,8 +170,8 @@ export default function CguPage() {
           </Section>
 
           <div style={{ marginTop: 40, paddingTop: 24, borderTop: "1px solid #E8ECEA", display: "flex", gap: 16, flexWrap: "wrap" }}>
-            <Link href="/politique-de-confidentialite" style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 14, color: "#1d7c5f", textDecoration: "none" }}>Politique de confidentialité <ArrowRight size={13} strokeWidth={2.25} /></Link>
-            <Link href="/mentions-legales" style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 14, color: "#1d7c5f", textDecoration: "none" }}>Mentions légales <ArrowRight size={13} strokeWidth={2.25} /></Link>
+            <Link href="/politique-de-confidentialite" style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 14, color: "#0a8f45", textDecoration: "none" }}>Politique de confidentialité <ArrowRight size={13} strokeWidth={2.25} /></Link>
+            <Link href="/mentions-legales" style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 14, color: "#0a8f45", textDecoration: "none" }}>Mentions légales <ArrowRight size={13} strokeWidth={2.25} /></Link>
           </div>
         </div>
       </main>

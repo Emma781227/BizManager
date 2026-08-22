@@ -343,7 +343,7 @@ export default function DashboardPage() {
                   ))}
                 </div>
                 <a href="/shops"
-                  style={{ display:"inline-flex", alignItems:"center", justifyContent:"center", gap:"0.5rem", background:"linear-gradient(180deg, #228866 0%, #1d7c5f 100%)", color:"#fff", borderRadius:14, padding:"0.85rem 1.5rem", fontSize:15, fontWeight:700, textDecoration:"none", boxShadow:"0 12px 24px rgba(29,124,95,0.2)", transition:"transform 0.15s ease" }}
+                  style={{ display:"inline-flex", alignItems:"center", justifyContent:"center", gap:"0.5rem", background:"linear-gradient(180deg, #12a253 0%, #0a8f45 100%)", color:"#fff", borderRadius:14, padding:"0.85rem 1.5rem", fontSize:15, fontWeight:700, textDecoration:"none", boxShadow:"0 12px 24px rgba(10, 143, 69,0.2)", transition:"transform 0.15s ease" }}
                   onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"; }}
                   onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(0)"; }}>
                   <Plus size={18} />
@@ -545,7 +545,7 @@ export default function DashboardPage() {
                               : <><Link2 size={12} strokeWidth={2} /> Lien</>}
                           </span>
                         </button>
-                        <a href="/settings" onClick={e => e.stopPropagation()} style={{ fontSize:11, color:"#1d7c5f", textDecoration:"none", fontWeight:500, display:"inline-flex", alignItems:"center", gap:3 }}>Gérer <ArrowRight size={11} strokeWidth={2.25} /></a>
+                        <a href="/settings" onClick={e => e.stopPropagation()} style={{ fontSize:11, color:"#0a8f45", textDecoration:"none", fontWeight:500, display:"inline-flex", alignItems:"center", gap:3 }}>Gérer <ArrowRight size={11} strokeWidth={2.25} /></a>
                       </div>
                     </div>
                   </div>
@@ -575,7 +575,7 @@ export default function DashboardPage() {
                     onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "#EAF7EF"; }}
                     onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "#F8FAF9"; }}>
                     {copied === activeShop?.slug
-                      ? <Check size={17} strokeWidth={2.25} color="#1d7c5f" />
+                      ? <Check size={17} strokeWidth={2.25} color="#0a8f45" />
                       : <Icon size={17} strokeWidth={1.9} color="#565f5c" />}
                     {copied === activeShop?.slug ? "Lien copié !" : a.label}
                   </button>
@@ -741,7 +741,7 @@ export default function DashboardPage() {
               )}
               {(lowStockCount + outOfStock) === 0 && pendingCount === 0 && unpublishedShops.length === 0 && (
                 <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:7, padding:"20px 0", color:"#9aa5a1", fontSize:13 }}>
-                  <Check size={15} strokeWidth={2.25} color="#1d7c5f" />
+                  <Check size={15} strokeWidth={2.25} color="#0a8f45" />
                   Aucune alerte en cours
                 </div>
               )}
