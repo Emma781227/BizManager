@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Check, DollarSign, ArrowUpRight, Copy, CheckCircle, FileText, Eye, RotateCcw, Lightbulb, Zap, ClipboardList, Info, X } from "lucide-react";
+import { Check, DollarSign, ArrowRight, ArrowUpRight, Copy, CheckCircle, FileText, Eye, RotateCcw, Lightbulb, Zap, ClipboardList, Info, X } from "lucide-react";
 
 const WA_CSS = `
 @keyframes wa-spin { to { transform: rotate(360deg); } }
@@ -72,10 +72,10 @@ const PAY_STATUS_LABELS: Record<string, string> = {
 };
 
 const HISTORY: { icon: React.ReactNode; text: string; time: string }[] = [
-  { icon: <Check size={12} color="#0A8F45" />,       text: "Confirmation envoyée — #WA-1287",           time: "Aujourd'hui, 10:27" },
-  { icon: <DollarSign size={12} color="#F08A24" />,  text: "Rappel paiement envoyé — #WA-1285",         time: "Aujourd'hui, 09:14" },
-  { icon: <ArrowUpRight size={12} color="#3B82F6" />, text: "Commande ouverte dans WhatsApp — #WA-1283", time: "Hier, 17:42" },
-  { icon: <Copy size={12} color="#667085" />,        text: "Modèle \"Commande prête\" utilisé — #WA-1280", time: "Hier, 14:05" },
+  { icon: <Check size={12} color="#0A8F45" />,       text: "Confirmation envoyée · #WA-1287",           time: "Aujourd'hui, 10:27" },
+  { icon: <DollarSign size={12} color="#F08A24" />,  text: "Rappel paiement envoyé · #WA-1285",         time: "Aujourd'hui, 09:14" },
+  { icon: <ArrowUpRight size={12} color="#3B82F6" />, text: "Commande ouverte dans WhatsApp · #WA-1283", time: "Hier, 17:42" },
+  { icon: <Copy size={12} color="#667085" />,        text: "Modèle \"Commande prête\" utilisé · #WA-1280", time: "Hier, 14:05" },
   { icon: <CheckCircle size={12} color="#0A8F45" />, text: "Commande #WA-1278 confirmée",               time: "Il y a 2 jours" },
 ];
 
@@ -103,7 +103,7 @@ const INITIAL_TEMPLATES: Template[] = [
   {
     label: "Merci pour votre achat",
     preview: "Merci pour votre confiance…",
-    body: "Bonjour {{client}},\n\nMerci pour votre achat ! Commande {{commande}} — {{montant}}.\nNous espérons vous revoir bientôt.",
+    body: "Bonjour {{client}},\n\nMerci pour votre achat ! Commande {{commande}} pour {{montant}}.\nNous espérons vous revoir bientôt.",
   },
 ];
 
@@ -415,10 +415,10 @@ export default function WhatsAppPage() {
                 <div>
                   <label style={labelStyle}>Choisir une commande</label>
                   <select value={newMsgOrderId} onChange={(e) => setNewMsgOrderId(e.target.value)} style={inputStyle}>
-                    <option value="">— Sélectionner une commande —</option>
+                    <option value="">Sélectionner une commande</option>
                     {orders.map((o) => (
                       <option key={o.id} value={o.id}>
-                        {shortRef(o.id)} — {o.customer.fullName} ({formatAmount(o.totalAmount)})
+                        {shortRef(o.id)} · {o.customer.fullName} ({formatAmount(o.totalAmount)})
                       </option>
                     ))}
                   </select>
@@ -447,7 +447,7 @@ export default function WhatsAppPage() {
                     onClick={() => { window.open(newMsgUrl, "_blank"); setNewMsgOpen(false); }}
                     style={{ ...btnPrimary, opacity: !newMsgUrl ? 0.5 : 1 }}
                   >
-                    Ouvrir dans WhatsApp ↗
+                    Ouvrir dans WhatsApp <ArrowUpRight size={14} strokeWidth={2.25} style={{ verticalAlign: "-2px" }} />
                   </button>
                   <button onClick={() => setNewMsgOpen(false)} style={{ ...btnSecondary }}>Annuler</button>
                 </div>
@@ -631,7 +631,7 @@ export default function WhatsAppPage() {
           </div>
         )}
 
-        {/* ── A — Titre ─────────────────────────────────────── */}
+        {/* ── A - Titre ─────────────────────────────────────── */}
         <div className="wa-title-bar">
           <div>
             <h1 style={{ fontSize: 22, fontWeight: 700, color: "#1F2A24", margin: 0 }}>Centre WhatsApp</h1>
@@ -651,7 +651,7 @@ export default function WhatsAppPage() {
           </div>
         </div>
 
-        {/* ── B — KPI row ───────────────────────────────────── */}
+        {/* ── B - KPI row ───────────────────────────────────── */}
         <div className="wa-kpi-row">
           {[
             { label: "Commandes WhatsApp", value: String(orders.length), variation: "+18,3%", vc: "#0A8F45", sub: "vs 30 derniers jours", onClick: onKpiCommandes, tip: "Voir toutes les commandes" },
@@ -674,14 +674,14 @@ export default function WhatsAppPage() {
                 </span>
               </div>
               {kpi.onClick && (
-                <div style={{ position: "absolute", top: 8, right: 8, fontSize: 10, color: "#98A2B3" }}>↗</div>
+                <div style={{ position: "absolute", top: 8, right: 8, color: "#98A2B3", display: "flex" }}><ArrowUpRight size={12} strokeWidth={2} /></div>
               )}
               <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 3, background: kpi.vc, opacity: 0.3 }} />
             </div>
           ))}
         </div>
 
-        {/* ── C — Bandeau info ──────────────────────────────── */}
+        {/* ── C - Bandeau info ──────────────────────────────── */}
         <div style={{ background: "#EAF7EF", border: "1.5px solid #C3E6D3", borderRadius: 12, padding: "10px 16px", marginBottom: 16, display: "flex", gap: 10, alignItems: "center" }}>
           <span style={{ width: 24, height: 24, borderRadius: "50%", background: "#DDF6E7", display: "flex", alignItems: "center", justifyContent: "center", color: "#0A8F45", flexShrink: 0 }}><Info size={14} /></span>
           <p style={{ fontSize: 13, color: "#1F2A24", margin: 0 }}>
@@ -689,10 +689,10 @@ export default function WhatsAppPage() {
           </p>
         </div>
 
-        {/* ── D — Main 2-col ────────────────────────────────── */}
+        {/* ── D - Main 2-col ────────────────────────────────── */}
         <div className="wa-main">
 
-          {/* D.1 — Colonne gauche */}
+          {/* D.1 - Colonne gauche */}
           <div>
             {/* Table card */}
             <div ref={tableRef} style={{ background: "#fff", border: "1.5px solid #E8ECEA", borderRadius: 18, padding: 20, boxShadow: "0 2px 10px rgba(16,24,40,0.04)" }}>
@@ -788,7 +788,7 @@ export default function WhatsAppPage() {
                             <td style={{ padding: "10px 10px", fontSize: 12, color: "#98A2B3", whiteSpace: "nowrap" }}>{formatDate(order.createdAt)}</td>
                             <td style={{ padding: "10px 10px" }}>
                               <div style={{ display: "flex", gap: 4 }}>
-                                {/* WA — ouvre la conversation */}
+                                {/* WA - ouvre la conversation */}
                                 <button title="Ouvrir WhatsApp" onClick={async (e) => {
                                   e.stopPropagation();
                                   setSelectedOrder(order);
@@ -901,13 +901,13 @@ export default function WhatsAppPage() {
                   ))}
                 </div>
                 <button style={{ background: "none", border: "none", marginTop: 12, color: "#0A8F45", fontSize: 13, cursor: "pointer", padding: 0, fontWeight: 500 }}>
-                  Voir tout l&apos;historique →
+                  Voir tout l&apos;historique <ArrowRight size={13} strokeWidth={2.25} style={{ verticalAlign: "-2px" }} />
                 </button>
               </div>
             </div>
           </div>
 
-          {/* D.2 — Colonne droite */}
+          {/* D.2 - Colonne droite */}
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
             {/* Commande sélectionnée */}
@@ -960,7 +960,7 @@ export default function WhatsAppPage() {
                       style={{ width: "100%", background: "#0A8F45", color: "#fff", border: "none", height: 40, borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: previewLoading ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, opacity: previewLoading ? 0.7 : 1 }}>
                       {previewLoading ? (
                         <><span style={{ width: 14, height: 14, border: "2px solid rgba(255,255,255,0.4)", borderTopColor: "#fff", borderRadius: "50%", animation: "wa-spin 0.8s linear infinite", display: "inline-block" }} />Chargement…</>
-                      ) : "Ouvrir WhatsApp ↗"}
+                      ) : <>Ouvrir WhatsApp <ArrowUpRight size={14} strokeWidth={2.25} style={{ verticalAlign: "-2px" }} /></>}
                     </button>
                     <button onClick={handleCopy}
                       style={{ width: "100%", background: "#F8FAF9", border: "1.5px solid #E8ECEA", color: copyOk ? "#0A8F45" : "#1F2A24", height: 40, borderRadius: 10, fontSize: 13, cursor: "pointer", fontWeight: copyOk ? 600 : 400, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
@@ -1033,14 +1033,14 @@ export default function WhatsAppPage() {
           </div>
         </div>
 
-        {/* ── E — Bandeau bas ───────────────────────────────── */}
+        {/* ── E - Bandeau bas ───────────────────────────────── */}
         <div className="wa-bottom-banner">
           <div style={{ background: "#fff", border: "1.5px solid #E8ECEA", borderRadius: 18, padding: "20px 24px", boxShadow: "0 2px 10px rgba(16,24,40,0.04)" }}>
             <h3 style={{ fontSize: 15, fontWeight: 700, color: "#1F2A24", marginBottom: 4, marginTop: 0 }}>Automatisez vos relances WhatsApp</h3>
             <p style={{ fontSize: 13, color: "#667085", marginBottom: 14, marginTop: 0 }}>Configurez des relances automatiques pour les commandes non payées et les clients silencieux.</p>
             <button onClick={() => setConfigRelanceOpen(true)}
               style={{ background: "#0A8F45", color: "#fff", border: "none", borderRadius: 10, padding: "9px 18px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-              Configurer les relances →
+              Configurer les relances <ArrowRight size={13} strokeWidth={2.25} style={{ verticalAlign: "-2px" }} />
             </button>
           </div>
           <div style={{ background: "#fff", border: "1.5px solid #E8ECEA", borderRadius: 18, padding: "20px 24px", boxShadow: "0 2px 10px rgba(16,24,40,0.04)" }}>
@@ -1048,7 +1048,7 @@ export default function WhatsAppPage() {
             <p style={{ fontSize: 13, color: "#667085", marginBottom: 14, marginTop: 0 }}>Notre équipe est disponible pour vous accompagner dans l&apos;utilisation du canal WhatsApp.</p>
             <a href="mailto:support@bizmanager.app"
               style={{ display: "inline-block", background: "#F8FAF9", border: "1.5px solid #E8ECEA", color: "#1F2A24", borderRadius: 10, padding: "9px 18px", fontSize: 13, fontWeight: 600, textDecoration: "none" }}>
-              Contacter le support →
+              Contacter le support <ArrowRight size={13} strokeWidth={2.25} style={{ verticalAlign: "-2px" }} />
             </a>
           </div>
         </div>

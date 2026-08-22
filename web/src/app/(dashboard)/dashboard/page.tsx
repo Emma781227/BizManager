@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
-import { MessageCircle, Globe, PenLine, Package, Store, Plus } from "lucide-react";
+import { MessageCircle, Globe, PenLine, Package, Store, Plus, ShoppingBag, Link2, Settings, Check, TriangleAlert, Clock, ArrowRight } from "lucide-react";
 import { useActiveShop } from "@/hooks/useActiveShop";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -33,10 +33,10 @@ type Product = { id: string; name: string; unitPrice: number | string; stock: nu
 // ─── Static ───────────────────────────────────────────────────────────────────
 
 const QUICK_ACTIONS = [
-  { icon:"📦", label:"Ajouter un produit",  href:"/products" },
-  { icon:"🛒", label:"Nouvelle commande",   href:"/orders"   },
-  { icon:"🔗", label:"Partager la boutique",href:"/settings" },
-  { icon:"⚙️", label:"Paramètres boutique", href:"/settings" },
+  { Icon: Package,     label:"Ajouter un produit",   href:"/products" },
+  { Icon: ShoppingBag, label:"Nouvelle commande",    href:"/orders"   },
+  { Icon: Link2,       label:"Partager la boutique", href:"/settings" },
+  { Icon: Settings,    label:"Paramètres boutique",  href:"/settings" },
 ];
 
 const CHANNEL_ICONS: Record<string, React.ReactNode> = {
@@ -351,7 +351,7 @@ export default function DashboardPage() {
                 </a>
                 {sub && (
                   <p style={{ fontSize:12, color:"#98A2B3", margin:0 }}>
-                    Plan <strong style={{ color:"#0A8F45" }}>{sub.plan.displayName}</strong> — jusqu&apos;à {sub.plan.maxShops} boutique{sub.plan.maxShops > 1 ? "s" : ""}
+                    Plan <strong style={{ color:"#0A8F45" }}>{sub.plan.displayName}</strong> : jusqu&apos;à {sub.plan.maxShops} boutique{sub.plan.maxShops > 1 ? "s" : ""}
                   </p>
                 )}
               </>
@@ -385,7 +385,7 @@ export default function DashboardPage() {
               href={`/shop/${activeShop.slug}`}
               target="_blank"
               rel="noreferrer"
-              title={activeShop.isPublished ? undefined : "Boutique non publiée — aperçu uniquement"}
+              title={activeShop.isPublished ? undefined : "Boutique non publiée : aperçu uniquement"}
               style={{
                 display:"inline-flex", alignItems:"center", gap:6,
                 background: activeShop.isPublished ? "#EAF7EF" : "#F2F4F7",
@@ -454,7 +454,7 @@ export default function DashboardPage() {
             <div style={{ width:40, height:40, borderRadius:"50%", background:"#EAF7EF", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}><Store size={20} color="#0A8F45" /></div>
             <div style={{ flex:1, minWidth:200 }}>
               <p style={{ fontSize:14, fontWeight:700, color:"#1F2A24", margin:"0 0 2px" }}>
-                Plan {sub.plan.displayName} — jusqu&apos;à {planMaxShops} boutique{planMaxShops > 1 ? "s" : ""}
+                Plan {sub.plan.displayName} : jusqu&apos;à {planMaxShops} boutique{planMaxShops > 1 ? "s" : ""}
               </p>
               <p style={{ fontSize:12, color:"#667085", margin:0 }}>Gérez plusieurs boutiques et développez votre activité.</p>
             </div>
@@ -539,9 +539,13 @@ export default function DashboardPage() {
                         <button onClick={e => { e.stopPropagation(); copyShopLink(s.slug); }}
                           style={{ fontSize:11, color: copied === s.slug ? "#0A8F45" : "#667085",
                             fontWeight:500, background:"none", border:"none", cursor:"pointer", padding:0 }}>
-                          {copied === s.slug ? "✓ Copié" : "🔗 Lien"}
+                          <span style={{ display:"inline-flex", alignItems:"center", gap:4 }}>
+                            {copied === s.slug
+                              ? <><Check size={12} strokeWidth={2.5} /> Copié</>
+                              : <><Link2 size={12} strokeWidth={2} /> Lien</>}
+                          </span>
                         </button>
-                        <a href="/settings" onClick={e => e.stopPropagation()} style={{ fontSize:11, color:"#0A8F45", textDecoration:"none", fontWeight:500 }}>Gérer →</a>
+                        <a href="/settings" onClick={e => e.stopPropagation()} style={{ fontSize:11, color:"#1d7c5f", textDecoration:"none", fontWeight:500, display:"inline-flex", alignItems:"center", gap:3 }}>Gérer <ArrowRight size={11} strokeWidth={2.25} /></a>
                       </div>
                     </div>
                   </div>
@@ -562,7 +566,7 @@ export default function DashboardPage() {
           <div style={{ ...card, padding:20 }}>
             <h3 style={{ fontSize:14, fontWeight:700, color:"#1F2A24", margin:"0 0 14px" }}>Actions rapides</h3>
             <div className="db-quick-grid">
-              {QUICK_ACTIONS.map((a, i) => {
+              {QUICK_ACTIONS.map(({ Icon, ...a }, i) => {
                 const sharedStyle: React.CSSProperties = { display:"flex", alignItems:"center", gap:12, padding:"10px 12px", borderRadius:10, background:"#F8FAF9", border:"1.5px solid #E8ECEA", color:"#1F2A24", fontSize:13, fontWeight:500, cursor:"pointer", width:"100%", boxSizing:"border-box" as const, textDecoration:"none" };
                 const isShare = a.label === "Partager la boutique";
                 return isShare ? (
@@ -570,7 +574,9 @@ export default function DashboardPage() {
                     style={sharedStyle}
                     onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "#EAF7EF"; }}
                     onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "#F8FAF9"; }}>
-                    <span style={{ fontSize:18 }}>{copied === activeShop?.slug ? "✓" : a.icon}</span>
+                    {copied === activeShop?.slug
+                      ? <Check size={17} strokeWidth={2.25} color="#1d7c5f" />
+                      : <Icon size={17} strokeWidth={1.9} color="#565f5c" />}
                     {copied === activeShop?.slug ? "Lien copié !" : a.label}
                   </button>
                 ) : (
@@ -578,7 +584,7 @@ export default function DashboardPage() {
                     style={sharedStyle}
                     onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "#EAF7EF"; }}
                     onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "#F8FAF9"; }}>
-                    <span style={{ fontSize:18 }}>{a.icon}</span>
+                    <Icon size={17} strokeWidth={1.9} color="#565f5c" />
                     {a.label}
                   </a>
                 );
@@ -590,7 +596,7 @@ export default function DashboardPage() {
           <div style={{ ...card, padding:20 }}>
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
               <h3 style={{ fontSize:14, fontWeight:700, color:"#1F2A24", margin:0 }}>
-                Produits — <span style={{ color:"#0A8F45" }}>{activeName}</span>
+                Produits de <span style={{ color:"#0A8F45" }}>{activeName}</span>
               </h3>
               <a href="/products" style={{ fontSize:12, color:"#0A8F45", textDecoration:"none", fontWeight:500 }}>Voir tout</a>
             </div>
@@ -643,7 +649,7 @@ export default function DashboardPage() {
           <div style={{ ...card, padding:20 }}>
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
               <h3 style={{ fontSize:14, fontWeight:700, color:"#1F2A24", margin:0 }}>
-                Commandes — <span style={{ color:"#0A8F45" }}>{activeName}</span>
+                Commandes de <span style={{ color:"#0A8F45" }}>{activeName}</span>
               </h3>
               <a href="/orders" style={{ fontSize:12, color:"#0A8F45", textDecoration:"none", fontWeight:500 }}>Voir tout</a>
             </div>
@@ -697,7 +703,7 @@ export default function DashboardPage() {
                 <a href="/products" style={{ display:"flex", alignItems:"center", gap:14, padding:"12px 14px", borderRadius:12, background:"#F8FAF9", border:"1.5px solid #E8ECEA", textDecoration:"none" }}
                   onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "#EAF7EF"; }}
                   onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "#F8FAF9"; }}>
-                  <div style={{ width:38, height:38, borderRadius:10, background:"#FFF1E5", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0 }}>⚠️</div>
+                  <div style={{ width:38, height:38, borderRadius:10, background:"#FFF1E5", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}><TriangleAlert size={18} color="#c8890f" /></div>
                   <div style={{ flex:1, minWidth:0 }}>
                     <p style={{ fontSize:13, fontWeight:600, color:"#1F2A24", margin:0 }}>
                       {outOfStock > 0 ? `${outOfStock} produit${outOfStock > 1 ? "s" : ""} en rupture de stock` : `${lowStockCount} produit${lowStockCount > 1 ? "s" : ""} avec stock faible`}
@@ -711,7 +717,7 @@ export default function DashboardPage() {
                 <a href="/orders" style={{ display:"flex", alignItems:"center", gap:14, padding:"12px 14px", borderRadius:12, background:"#F8FAF9", border:"1.5px solid #E8ECEA", textDecoration:"none" }}
                   onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "#EAF7EF"; }}
                   onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "#F8FAF9"; }}>
-                  <div style={{ width:38, height:38, borderRadius:10, background:"#E8F0FF", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0 }}>🕐</div>
+                  <div style={{ width:38, height:38, borderRadius:10, background:"#E8F0FF", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}><Clock size={18} color="#2f6fb5" /></div>
                   <div style={{ flex:1, minWidth:0 }}>
                     <p style={{ fontSize:13, fontWeight:600, color:"#1F2A24", margin:0 }}>{pendingCount} commande{pendingCount > 1 ? "s" : ""} en attente de confirmation</p>
                     <p style={{ fontSize:11, color:"#98A2B3", margin:"2px 0 0" }}>Confirmez rapidement pour ne pas perdre vos clients</p>
@@ -727,15 +733,16 @@ export default function DashboardPage() {
                   <div style={{ flex:1, minWidth:0 }}>
                     <p style={{ fontSize:13, fontWeight:600, color:"#1F2A24", margin:0 }}>{unpublishedShops.length} boutique{unpublishedShops.length > 1 ? "s" : ""} non publiée{unpublishedShops.length > 1 ? "s" : ""}</p>
                     <p style={{ fontSize:11, color:"#98A2B3", margin:"2px 0 0" }}>
-                      {unpublishedShops.map(s => s.name).join(", ")} — non visible{unpublishedShops.length > 1 ? "s" : ""} par vos clients
+                      {unpublishedShops.map(s => s.name).join(", ")} : non visible{unpublishedShops.length > 1 ? "s" : ""} par vos clients
                     </p>
                   </div>
                   <span style={{ fontSize:13, fontWeight:700, background:"#FDE8E8", color:"#EF4444", borderRadius:20, padding:"3px 10px", flexShrink:0 }}>{unpublishedShops.length}</span>
                 </a>
               )}
               {(lowStockCount + outOfStock) === 0 && pendingCount === 0 && unpublishedShops.length === 0 && (
-                <div style={{ textAlign:"center", padding:"20px 0", color:"#98A2B3", fontSize:13 }}>
-                  ✓ Aucune alerte en cours
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:7, padding:"20px 0", color:"#9aa5a1", fontSize:13 }}>
+                  <Check size={15} strokeWidth={2.25} color="#1d7c5f" />
+                  Aucune alerte en cours
                 </div>
               )}
             </div>

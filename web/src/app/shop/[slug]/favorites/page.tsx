@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Heart, MessageCircle, Package, ShoppingCart, Trash2, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Heart, MessageCircle, Package, ShoppingCart, Trash2, X } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -348,7 +348,7 @@ export default function FavoritesPage() {
     try { localStorage.setItem(key, JSON.stringify(cartList)); } catch { /* ignore */ }
     setCart(cartList);
     setCartCount(cartList.reduce((sum, i) => sum + i.quantity, 0));
-    showToast(`"${item.name}" ajouté au panier ✓`);
+    showToast(`"${item.name}" ajouté au panier`);
   }
 
   function removeFromCart(productId: string) {
@@ -414,7 +414,7 @@ export default function FavoritesPage() {
             {whatsappUrl && (
               <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="fav-hbtn"
                 style={{ display: "none" }}
-                // Hidden on small screens via inline trick — bottom nav handles it
+                // Hidden on small screens via inline trick - bottom nav handles it
               >
                 <MessageCircle style={{ width: 14, height: 14 }} />
                 Contact
@@ -459,7 +459,7 @@ export default function FavoritesPage() {
                 {mounted
                   ? favorites.length > 0
                     ? `${favorites.length} produit${favorites.length > 1 ? "s" : ""} sauvegardé${favorites.length > 1 ? "s" : ""} chez ${shopName}`
-                    : `Aucun favori pour l'instant — parcourez ${shopName}`
+                    : `Aucun favori pour l'instant. Parcourez ${shopName}`
                   : "Chargement…"}
               </p>
             </div>
@@ -506,7 +506,7 @@ export default function FavoritesPage() {
                   Aucun favori pour l&apos;instant
                 </h2>
                 <p style={{ margin: 0, fontSize: 14, color: "#667085", maxWidth: 340 }}>
-                  Cliquez sur le ♡ d&apos;un produit pour le retrouver ici facilement.
+                  Cliquez sur le cœur d&apos;un produit pour le retrouver ici facilement.
                 </p>
               </div>
               <Link
@@ -561,7 +561,7 @@ export default function FavoritesPage() {
                       )}
                     </Link>
 
-                    {/* Bouton retirer — positionné dans l'img-wrap */}
+                    {/* Bouton retirer - positionné dans l'img-wrap */}
                     <button
                       className="fav-card-remove"
                       onClick={() => removeFromFavorites(item.productId, item.name)}
@@ -686,7 +686,7 @@ export default function FavoritesPage() {
             <div style={{ flex: 1, overflowY: "auto", padding: "14px 20px" }}>
               {cart.length === 0 ? (
                 <div style={{ textAlign: "center", padding: "48px 0", color: "#98A2B3" }}>
-                  <div style={{ fontSize: 38, marginBottom: 12 }}>🛒</div>
+                  <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}><ShoppingCart size={34} strokeWidth={1.3} color="#c7cfcc" /></div>
                   <div style={{ fontSize: 14, fontWeight: 600, color: "#1F2A24" }}>Panier vide</div>
                   <div style={{ fontSize: 12, marginTop: 4 }}>Ajoutez des produits pour commander</div>
                 </div>
@@ -696,7 +696,7 @@ export default function FavoritesPage() {
                     <div style={{ width: 54, height: 54, borderRadius: 10, background: "#F8FAF9", overflow: "hidden", flexShrink: 0 }}>
                       {item.imageUrl
                         ? <img src={item.imageUrl} alt={item.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                        : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>📦</div>
+                        : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}><Package size={19} strokeWidth={1.5} color="#c7cfcc" /></div>
                       }
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
@@ -732,7 +732,7 @@ export default function FavoritesPage() {
                   style={{ display: "flex", width: "100%", height: 46, background: "#0A8F45", color: "#fff", borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: "pointer", alignItems: "center", justifyContent: "center", textDecoration: "none" }}
                   onClick={() => setCartOpen(false)}
                 >
-                  Finaliser la commande →
+                  Finaliser la commande <ArrowRight size={15} strokeWidth={2.25} style={{ marginLeft: 6 }} />
                 </Link>
                 <button
                   onClick={() => { setCart([]); setCartCount(0); try { localStorage.removeItem(`cart-${slug}`); } catch { /* ignore */ } }}

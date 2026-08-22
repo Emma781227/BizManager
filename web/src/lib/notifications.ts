@@ -60,7 +60,7 @@ export async function sendNewOrderNotification(input: NewOrderNotificationInput)
   const html = `
     <div style="font-family:Arial,sans-serif;line-height:1.5;color:#1f2937;max-width:520px;margin:0 auto">
       <div style="background:#0A8F45;padding:20px 24px;border-radius:12px 12px 0 0">
-        <h2 style="margin:0;color:#fff;font-size:18px">Nouvelle commande — ${input.shopName}</h2>
+        <h2 style="margin:0;color:#fff;font-size:18px">Nouvelle commande · ${input.shopName}</h2>
       </div>
       <div style="background:#fff;padding:24px;border:1px solid #e8ecea;border-top:none;border-radius:0 0 12px 12px">
 
@@ -107,7 +107,7 @@ export async function sendNewOrderNotification(input: NewOrderNotificationInput)
   try {
     await sendEmail({
       to: input.merchantEmail,
-      subject: `[${input.shopName}] Nouvelle commande — ${input.orderId.slice(-8).toUpperCase()}`,
+      subject: `[${input.shopName}] Nouvelle commande ${input.orderId.slice(-8).toUpperCase()}`,
       text,
       html,
     });
@@ -238,7 +238,7 @@ export async function sendLowStockNotification(input: LowStockNotificationInput)
   const html = `
     <div style="font-family:Arial,sans-serif;line-height:1.5;color:#1f2937;max-width:480px;margin:0 auto">
       <div style="background:#F08A24;padding:18px 22px;border-radius:12px 12px 0 0">
-        <h2 style="margin:0;color:#fff;font-size:16px">Stock faible — ${input.shopName}</h2>
+        <h2 style="margin:0;color:#fff;font-size:16px">Stock faible · ${input.shopName}</h2>
       </div>
       <div style="background:#fff;padding:22px;border:1px solid #e8ecea;border-top:none;border-radius:0 0 12px 12px">
         <p style="margin:0 0 14px;font-size:14px;color:#1f2937">

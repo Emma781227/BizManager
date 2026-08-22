@@ -26,7 +26,7 @@ export async function generateMetadata({
     return { title: "Boutique introuvable", robots: { index: false } };
   }
 
-  const title = `${shop.name} — Boutique en ligne`;
+  const title = `${shop.name} | Boutique en ligne`;
   const description =
     shop.description ||
     `Découvrez les produits de ${shop.name}${shop.city ? ` à ${shop.city}` : ""}. Commandez facilement via WhatsApp.`;

@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Check } from "lucide-react";
 
 type Mode = "login" | "register";
 
@@ -113,7 +114,7 @@ export default function LoginPage() {
   function handleGoogleButton() {
     const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
     if (!clientId || clientId === "REPLACE_WITH_GOOGLE_CLIENT_ID") {
-      setError("Connexion Google non configurée — ajoutez NEXT_PUBLIC_GOOGLE_CLIENT_ID dans .env.local et redémarrez.");
+      setError("Connexion Google non configurée : ajoutez NEXT_PUBLIC_GOOGLE_CLIENT_ID dans .env.local puis redémarrez.");
       return;
     }
     if (!gsiReady) {
@@ -613,13 +614,13 @@ export default function LoginPage() {
                 <div className="space-y-2">
                   {selectedPlan ? (
                     <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2">
-                      <span className="text-emerald-600 text-sm font-bold">✓</span>
+                      <Check size={15} strokeWidth={2.5} className="shrink-0 text-emerald-600" />
                       <span className="text-xs text-emerald-800 font-medium">
                         Plan sélectionné :{" "}
                         <span className="font-bold capitalize">{selectedPlan}</span>
-                        {selectedPlan === "business" && " — 4 500 FCFA/mois"}
-                        {selectedPlan === "premium" && " — 10 000 FCFA/mois"}
-                        {selectedPlan === "starter" && " — Gratuit"}
+                        {selectedPlan === "business" && " · 4 500 FCFA/mois"}
+                        {selectedPlan === "premium" && " · 10 000 FCFA/mois"}
+                        {selectedPlan === "starter" && " · Gratuit"}
                       </span>
                     </div>
                   ) : null}

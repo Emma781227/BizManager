@@ -11,7 +11,7 @@ function hashToken(raw: string): string {
   return createHash("sha256").update(raw).digest("hex");
 }
 
-// 10 tentatives / 15 min par IP — protège GET (reconnaissance) et POST (acceptation)
+// 10 tentatives / 15 min par IP - protège GET (reconnaissance) et POST (acceptation)
 const RL_MAX = 3;
 const RL_WINDOW = 15 * 60 * 1000;
 
@@ -171,7 +171,7 @@ export async function POST(request: NextRequest) {
     entityId:    invitation.id,
   });
 
-  // Notifier le propriétaire — non bloquant
+  // Notifier le propriétaire - non bloquant
   try {
     const owner = await prisma.user.findUnique({
       where:  { id: invitation.ownerUserId },

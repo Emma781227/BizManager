@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import QRCode from "qrcode";
 import CreateShopModal from "../shops/CreateShopModal";
-import { BarChart2, Package, Rocket, Store, ShoppingCart, Users, Tag, AlertTriangle, Link, Pencil, QrCode, Clock, Crown, Info } from "lucide-react";
+import { BarChart2, Package, Rocket, Store, ShoppingCart, Users, Tag, AlertTriangle, Link, Pencil, QrCode, Clock, Crown, Info, ArrowLeft, ArrowRight, ArrowUpRight, X, Check } from "lucide-react";
 
 type SettingsShop = {
   id: string; name: string; slug: string; isPublished: boolean;
@@ -58,7 +58,7 @@ function toSettingsShop(sh: any, i: number): SettingsShop {
     products:          sh._count?.products  ?? 0,
     orders:            sh._count?.orders    ?? 0,
     clients:           sh._count?.customers ?? 0,
-    ca:                "—",
+    ca:                "0",
     color:             COLORS[i % COLORS.length],
     whatsappNumber:    sh.whatsappNumber    ?? "",
     category:          sh.category          ?? null,
@@ -533,14 +533,14 @@ function ShopActionsModal({
             <button
               type="button"
               onClick={() => setView("main")}
-              style={{ background:"none", border:"none", cursor:"pointer", color:"#1F2A24", fontSize:18, lineHeight:1, padding:4, marginRight:4, display:"flex", alignItems:"center" }}>
-              ←
+              style={{ background:"none", border:"none", cursor:"pointer", color:"#1F2A24", padding:4, marginRight:4, display:"flex", alignItems:"center" }}>
+              <ArrowLeft size={18} strokeWidth={2} />
             </button>
             <div style={{ flex:1, fontWeight:700, fontSize:15, color:"#1F2A24" }}>Modifier la boutique</div>
             <button
               onClick={onClose}
-              style={{ background:"none", border:"none", cursor:"pointer", color:"#98A2B3", fontSize:20, lineHeight:1, padding:4 }}>
-              ✕
+              style={{ background:"none", border:"none", cursor:"pointer", color:"#98A2B3", padding:4, display:"flex", alignItems:"center" }}>
+              <X size={18} strokeWidth={2} />
             </button>
           </div>
 
@@ -789,7 +789,7 @@ function ShopActionsModal({
                       background: editPayMethods.includes(p.id) ? p.border : "#fff",
                       display:"flex", alignItems:"center", justifyContent:"center"
                     }}>
-                      {editPayMethods.includes(p.id) && <span style={{ color:"#fff", fontSize:10, fontWeight:800 }}>✓</span>}
+                      {editPayMethods.includes(p.id) && <Check size={11} strokeWidth={3} color="#fff" />}
                     </div>
                   </div>
                 ))}
@@ -842,8 +842,8 @@ function ShopActionsModal({
                 {published ? "● Publiée" : "○ Brouillon"}
               </span>
             </div>
-            <button onClick={onClose} style={{ background:"none", border:"none", cursor:"pointer", color:"#98A2B3", fontSize:20, lineHeight:1, padding:4 }}>
-              ✕
+            <button onClick={onClose} style={{ background:"none", border:"none", cursor:"pointer", color:"#98A2B3", padding:4, display:"flex", alignItems:"center" }}>
+              <X size={18} strokeWidth={2} />
             </button>
           </div>
 
@@ -862,7 +862,7 @@ function ShopActionsModal({
                   {publishing ? "Mise à jour…" : published ? "Boutique publiée" : "Boutique en brouillon"}
                 </div>
                 <div style={{ fontSize:11, color:"#667085", marginTop:2 }}>
-                  {published ? "Visible par vos clients sur le web" : "Non visible — accessible seulement par vous"}
+                  {published ? "Visible par vos clients sur le web" : "Non visible, accessible seulement par vous"}
                 </div>
               </div>
             </div>
@@ -899,7 +899,7 @@ function ShopActionsModal({
                 <div style={{ fontSize:13, fontWeight:600 }}>Voir la boutique publique</div>
                 <div style={{ fontSize:11, color:"#98A2B3" }}>/shop/{currentShop.slug}</div>
               </div>
-              <span style={{ fontSize:11, color:"#98A2B3" }}>↗</span>
+              <ArrowUpRight size={14} strokeWidth={2} style={{ color:"#98A2B3", flexShrink:0 }} />
             </a>
             {!published && <div style={{ fontSize:11, color:"#98A2B3", marginTop:6 }}>Publiez la boutique pour activer ce lien.</div>}
           </div>
@@ -912,7 +912,7 @@ function ShopActionsModal({
                 <div style={{ fontSize:13, fontWeight:600 }}>Modifier les informations</div>
                 <div style={{ fontSize:11, color:"#98A2B3" }}>Nom, logo, cover, WhatsApp, horaires…</div>
               </div>
-              <span style={{ fontSize:11, color:"#98A2B3" }}>→</span>
+              <ArrowRight size={14} strokeWidth={2} style={{ color:"#98A2B3", flexShrink:0 }} />
             </button>
             <button type="button" className="sa-link-btn" style={{ cursor:"pointer", border:"none", width:"100%", textAlign:"left", marginTop:10 }} onClick={() => setQrOpen(true)}>
               <span style={{ color:"#667085" }}><QrCode size={16} /></span>
@@ -920,7 +920,7 @@ function ShopActionsModal({
                 <div style={{ fontSize:13, fontWeight:600 }}>Partager le QR code</div>
                 <div style={{ fontSize:11, color:"#98A2B3" }}>Afficher, télécharger ou partager le QR de la boutique</div>
               </div>
-              <span style={{ fontSize:11, color:"#98A2B3" }}>→</span>
+              <ArrowRight size={14} strokeWidth={2} style={{ color:"#98A2B3", flexShrink:0 }} />
             </button>
           </div>
 
@@ -943,8 +943,8 @@ function ShopActionsModal({
                   /shop/{currentShop.slug}
                 </div>
               </div>
-              <button onClick={() => setQrOpen(false)} style={{ background:"none", border:"none", cursor:"pointer", color:"#98A2B3", fontSize:20, lineHeight:1, padding:4 }}>
-                ✕
+              <button onClick={() => setQrOpen(false)} style={{ background:"none", border:"none", cursor:"pointer", color:"#98A2B3", padding:4, display:"flex", alignItems:"center" }}>
+                <X size={18} strokeWidth={2} />
               </button>
             </div>
 
@@ -1140,7 +1140,7 @@ export default function ShopsPage() {
 
             {!loading && shops.length === 0 && (
               <div style={{ textAlign:"center", padding:"32px 0", color:"#98A2B3", fontSize:14 }}>
-                Aucune boutique — créez-en une ci-dessous.
+                Aucune boutique. Créez-en une ci-dessous.
               </div>
             )}
 
@@ -1244,7 +1244,7 @@ export default function ShopsPage() {
                         onClick={() => upgradePlan(quota!.nextPlan!.name, quota!.nextPlan!.displayName)}
                         disabled={upgrading}
                         style={{ fontSize:12, fontWeight:600, color:"#fff", background:"#0A8F45", border:"none", borderRadius:8, padding:"6px 14px", cursor: upgrading ? "not-allowed" : "pointer", opacity: upgrading ? 0.7 : 1 }}>
-                        {upgrading ? "Mise à jour…" : `Passer au ${quota.nextPlan.displayName} →`}
+                        {upgrading ? "Mise à jour…" : <>Passer au {quota.nextPlan.displayName} <ArrowRight size={13} strokeWidth={2.25} style={{ verticalAlign:"-2px" }} /></>}
                       </button>
                       {upgradeErr && <div style={{ fontSize:11, color:"#EF4444", marginTop:6 }}>{upgradeErr}</div>}
                     </div>
@@ -1288,7 +1288,7 @@ export default function ShopsPage() {
                 <div style={{ fontWeight:700, color:"#1F2A24", fontSize:13, marginBottom:6 }}>{t.t}</div>
                 <div style={{ fontSize:12, color:"#667085", marginBottom:12, lineHeight:"1.6" }}>{t.d}</div>
                 <a href={t.href} style={{ fontSize:12, fontWeight:600, color:"#0A8F45", textDecoration:"none" }}>
-                  {t.link} →
+                  {t.link} <ArrowRight size={12} strokeWidth={2.25} style={{ verticalAlign:"-2px" }} />
                 </a>
               </div>
             ))}

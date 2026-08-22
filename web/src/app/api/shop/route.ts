@@ -232,7 +232,7 @@ export async function POST(request: NextRequest) {
     const slug = data.slug;
 
     const slugTaken = await prisma.shop.findUnique({ where: { slug }, select: { id: true } });
-    if (slugTaken) return NextResponse.json({ error: "Ce slug est déjà pris — choisissez-en un autre." }, { status: 409 });
+    if (slugTaken) return NextResponse.json({ error: "Ce slug est déjà pris, choisissez-en un autre." }, { status: 409 });
 
     const shop = await prisma.shop.create({
       data: {

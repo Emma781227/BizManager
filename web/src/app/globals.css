@@ -1,202 +1,133 @@
 @import "tailwindcss";
 
-/* ═══════════════════════════════════════════
-   LANDING PAGE — Animations
-   ═══════════════════════════════════════════ */
-
-@keyframes fade-in-up {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes slide-in-right {
-  from {
-    opacity: 0;
-    transform: translateX(40px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes slide-in-left {
-  from {
-    opacity: 0;
-    transform: translateX(-40px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-12px); }
-}
-
-@keyframes pulse-soft {
-  0%, 100% { opacity: 0.6; }
-  50% { opacity: 1; }
-}
-
-@keyframes scale-in {
-  from {
-    opacity: 0;
-    transform: scale(0.9);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-@keyframes bounce-gentle {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-6px); }
-}
-
-@keyframes count-up {
-  from {
-    opacity: 0;
-    transform: translateY(16px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
-
-/* Scroll-triggered animations via IntersectionObserver classes */
-.animate-fade-up {
-  animation: fade-in-up 0.7s ease-out both;
-}
-
-.animate-fade-in {
-  animation: fade-in 0.6s ease-out both;
-}
-
-.animate-slide-right {
-  animation: slide-in-right 0.7s ease-out both;
-}
-
-.animate-slide-left {
-  animation: slide-in-left 0.7s ease-out both;
-}
-
-.animate-float {
-  animation: float 6s ease-in-out infinite;
-}
-
-.animate-pulse-dot {
-  animation: pulse-soft 2s ease-in-out infinite;
-}
-
-.animate-scale-in {
-  animation: scale-in 0.5s ease-out both;
-}
-
-.animate-bounce-gentle {
-  animation: bounce-gentle 2s ease-in-out infinite;
-}
-
-.animate-count {
-  animation: count-up 0.8s ease-out both;
-}
-
-/* Staggered delays (prefixed to avoid Tailwind conflict) */
-.stagger-1 { animation-delay: 100ms; }
-.stagger-2 { animation-delay: 200ms; }
-.stagger-3 { animation-delay: 300ms; }
-.stagger-4 { animation-delay: 400ms; }
-.stagger-5 { animation-delay: 500ms; }
-.stagger-6 { animation-delay: 600ms; }
-.stagger-7 { animation-delay: 700ms; }
-
-/* Hover effects */
-.hover-lift {
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.hover-lift:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
-}
-
-.hover-scale {
-  transition: transform 0.2s ease;
-}
-
-.hover-scale:hover {
-  transform: scale(1.02);
-}
-
-.hover-glow {
-  transition: box-shadow 0.3s ease;
-}
-
-.hover-glow:hover {
-  box-shadow: 0 0 30px rgba(29, 124, 95, 0.15);
-}
-
-/* Button press effect */
-.active-press:active {
-  transform: scale(0.97);
-}
-
-/* Gradient text shimmer on hover */
-.shimmer-text {
-  background-size: 200% auto;
-  transition: background-position 0.5s ease;
-}
-
-.shimmer-text:hover {
-  background-position: right center;
-}
-
 /* Smooth scroll */
 html {
   scroll-behavior: smooth;
 }
 
+/* ═══════════════════════════════════════════════════════════════════
+   DESIGN TOKENS
+   Une seule source de vérité pour la couleur, l'espacement, le rayon,
+   l'élévation et la typographie. Ne pas écrire de valeur hex en dur
+   dans les composants — utiliser ces variables.
+   ═══════════════════════════════════════════════════════════════════ */
+
+@theme {
+  /* ── Marque : vert BizManager, échelle tonale complète ────────────── */
+  --color-brand-50: #f0faf6;
+  --color-brand-100: #dcf3ea;
+  --color-brand-200: #b9e6d5;
+  --color-brand-300: #8ad3ba;
+  --color-brand-400: #55b896;
+  --color-brand-500: #2e9b77;
+  --color-brand-600: #1d7c5f;
+  --color-brand-700: #17654e;
+  --color-brand-800: #14513f;
+  --color-brand-900: #103f31;
+
+  /* ── Neutres : rampe légèrement froide qui s'accorde au vert ──────── */
+  --color-ink-25: #fbfcfc;
+  --color-ink-50: #f6f8f7;
+  --color-ink-100: #edf0ef;
+  --color-ink-200: #dfe4e2;
+  --color-ink-300: #c7cfcc;
+  --color-ink-400: #9aa5a1;
+  --color-ink-500: #737e7a;
+  --color-ink-600: #565f5c;
+  --color-ink-700: #3d4542;
+  --color-ink-800: #2a302e;
+  --color-ink-900: #20232b;
+
+  /* ── Sémantique ───────────────────────────────────────────────────── */
+  --color-danger-50: #fdf3f2;
+  --color-danger-100: #fbe3e1;
+  --color-danger-500: #c2413a;
+  --color-danger-600: #a63b35;
+  --color-danger-700: #872f2a;
+
+  --color-warning-50: #fdf8ec;
+  --color-warning-100: #faedcf;
+  --color-warning-500: #c8890f;
+  --color-warning-600: #a5710c;
+  --color-warning-700: #825a0a;
+
+  --color-info-50: #f1f6fc;
+  --color-info-100: #dde9f8;
+  --color-info-500: #2f6fb5;
+  --color-info-600: #275e9a;
+  --color-info-700: #1f4c7d;
+
+  /* ── Rayon ────────────────────────────────────────────────────────── */
+  --radius-xs: 0.25rem;
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.25rem;
+  --radius-pill: 999px;
+
+  /* ── Élévation : ombres courtes et discrètes, pas de halo diffus ──── */
+  --shadow-xs: 0 1px 2px rgba(32, 35, 43, 0.05);
+  --shadow-sm: 0 1px 3px rgba(32, 35, 43, 0.07), 0 1px 2px rgba(32, 35, 43, 0.04);
+  --shadow-md: 0 4px 10px -2px rgba(32, 35, 43, 0.08), 0 2px 4px -2px rgba(32, 35, 43, 0.05);
+  --shadow-lg: 0 12px 24px -6px rgba(32, 35, 43, 0.1), 0 4px 8px -4px rgba(32, 35, 43, 0.05);
+}
+
 :root {
-  --bg: #d8d9d7;
-  --bg-soft: #ececeb;
+  /* ── Alias sémantiques (utilisés par le CSS applicatif) ───────────── */
+  --bg: var(--color-ink-50);
+  --bg-soft: var(--color-ink-100);
   --surface: #ffffff;
-  --surface-alt: #f6f7f7;
-  --ink: #20232b;
-  --muted: #6a707a;
-  --border: #dde0e4;
-  --brand: #1d7c5f;
-  --brand-dark: #14634c;
-  --danger: #a63b35;
-  --warning: #d18f17;
-  --ok-soft: #daf2e9;
-  
-  /* Responsive spacing */
+  --surface-alt: var(--color-ink-25);
+  --ink: var(--color-ink-900);
+  --ink-2: var(--color-ink-700);
+  --muted: var(--color-ink-500);
+  --faint: var(--color-ink-400);
+  --border: var(--color-ink-200);
+  --border-strong: var(--color-ink-300);
+
+  --brand: var(--color-brand-600);
+  --brand-dark: var(--color-brand-700);
+  --brand-soft: var(--color-brand-50);
+  --brand-soft-border: var(--color-brand-200);
+
+  --danger: var(--color-danger-600);
+  --danger-soft: var(--color-danger-50);
+  --warning: var(--color-warning-500);
+  --warning-soft: var(--color-warning-50);
+  --info: var(--color-info-500);
+  --info-soft: var(--color-info-50);
+  --ok-soft: var(--color-brand-100);
+
+  /* ── Focus : un seul anneau, cohérent partout ─────────────────────── */
+  --ring: 0 0 0 3px rgba(29, 124, 95, 0.28);
+
+  /* ── Espacement responsive (conservé pour compatibilité) ──────────── */
   --padding-mobile: 0.75rem;
   --padding-tablet: 1rem;
   --padding-desktop: 1.5rem;
   --gap-mobile: 0.5rem;
   --gap-tablet: 0.75rem;
   --gap-desktop: 1rem;
+}
+
+/* Anneau de focus unique pour tout élément interactif */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  box-shadow: var(--ring);
+  border-radius: var(--radius-md);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 html {
@@ -216,87 +147,15 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Dashboard pages get the dark bg + gradient */
+/* Surface applicative : un aplat propre, sans dégradé décoratif */
 .app-shell {
   color: var(--ink);
-  background:
-    radial-gradient(circle at 12% 18%, #eeefed 0%, transparent 45%),
-    radial-gradient(circle at 88% 82%, #e8ebe8 0%, transparent 42%),
-    var(--bg);
+  background: var(--bg);
 }
 
 a {
   color: inherit;
   text-decoration: none;
-}
-
-
-.home {
-  width: min(100% - 1rem, 1400px);
-  margin: 1rem auto;
-  padding: 1rem;
-}
-
-@media (min-width: 640px) {
-  .home {
-    width: min(100% - 2rem, 1400px);
-    margin: 2rem auto;
-    padding: 2rem;
-  }
-}
-
-.hero h1 {
-  font-size: clamp(1.5rem, 5vw, 3rem);
-  line-height: 1.2;
-}
-
-.hero p {
-  color: var(--muted);
-  margin-top: 0.5rem;
-  font-size: clamp(0.9rem, 2vw, 1.1rem);
-}
-
-.links-grid {
-  margin-top: 1.5rem;
-  display: grid;
-  gap: 0.6rem;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-}
-
-@media (min-width: 640px) {
-  .links-grid {
-    gap: 0.8rem;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  }
-}
-
-@media (min-width: 1024px) {
-  .links-grid {
-    gap: 1rem;
-  }
-}
-
-.links-grid a {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 0.9rem;
-  padding: 0.75rem;
-  font-weight: 600;
-  font-size: 0.9rem;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-  text-align: center;
-}
-
-@media (min-width: 640px) {
-  .links-grid a {
-    padding: 0.9rem;
-    font-size: 1rem;
-  }
-}
-
-.links-grid a:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 24px rgba(19, 26, 42, 0.08);
 }
 
 /* Dashboard Shell - Responsive */
@@ -1745,9 +1604,7 @@ th {
 }
 
 .dashboard-shell {
-  background:
-    radial-gradient(circle at top left, rgba(255, 255, 255, 0.92) 0%, transparent 32%),
-    linear-gradient(180deg, #f8f9f7 0%, #eef1ee 100%);
+  background: var(--bg);
 }
 
 .dashboard-sidebar {

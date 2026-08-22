@@ -3,17 +3,19 @@
 import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
+import { ArrowLeft, Banknote, Landmark, Package, Smartphone } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { formatPriceCFA } from "@/lib/format";
 
 // Methods that trigger GeniusPay redirect
 const ONLINE_METHODS = new Set(["ORANGE_MONEY", "MTN_MOBILE_MONEY", "BANK_TRANSFER"]);
 
-const METHOD_META: Record<string, { label: string; icon: string; hint: string }> = {
-  ORANGE_MONEY:      { label: "Orange Money",      icon: "🟠", hint: "Paiement sécurisé en ligne" },
-  MTN_MOBILE_MONEY:  { label: "MTN Mobile Money",  icon: "🟡", hint: "Paiement sécurisé en ligne" },
-  BANK_TRANSFER:     { label: "Virement bancaire",  icon: "🏦", hint: "Paiement sécurisé en ligne" },
-  CASH:              { label: "Espèces",            icon: "💵", hint: "Confirmation par WhatsApp" },
-  COD:               { label: "Paiement à la livraison", icon: "📦", hint: "Confirmation par WhatsApp" },
+const METHOD_META: Record<string, { label: string; Icon: LucideIcon; hint: string }> = {
+  ORANGE_MONEY:      { label: "Orange Money",            Icon: Smartphone, hint: "Paiement sécurisé en ligne" },
+  MTN_MOBILE_MONEY:  { label: "MTN Mobile Money",        Icon: Smartphone, hint: "Paiement sécurisé en ligne" },
+  BANK_TRANSFER:     { label: "Virement bancaire",       Icon: Landmark,   hint: "Paiement sécurisé en ligne" },
+  CASH:              { label: "Espèces",                 Icon: Banknote,   hint: "Confirmation par WhatsApp" },
+  COD:               { label: "Paiement à la livraison", Icon: Package,    hint: "Confirmation par WhatsApp" },
 };
 
 const FALLBACK_METHODS = ["ORANGE_MONEY", "MTN_MOBILE_MONEY", "CASH"];
@@ -148,9 +150,9 @@ export default function PublicCheckoutPage() {
       <section className="mx-auto w-full max-w-4xl rounded-3xl border border-emerald-100 bg-white p-5 shadow-[0_24px_80px_rgba(15,23,42,0.10)] sm:p-8">
         <header className="mb-6 flex items-center justify-between border-b border-slate-200 pb-4">
           {slug ? (
-            <Link href={`/shop/${slug}`} className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-600 transition hover:bg-slate-50">←</Link>
+            <Link href={`/shop/${slug}`} aria-label="Retour à la boutique" className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-600 transition hover:bg-slate-50"><ArrowLeft size={18} strokeWidth={2} /></Link>
           ) : (
-            <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-400">←</span>
+            <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-400"><ArrowLeft size={18} strokeWidth={2} /></span>
           )}
           <strong className="text-lg font-semibold text-slate-950">Commande</strong>
           <span className="inline-flex h-10 min-w-10 items-center justify-center rounded-xl bg-emerald-50 px-3 text-sm font-semibold text-emerald-700">Etape 2</span>
@@ -219,7 +221,7 @@ export default function PublicCheckoutPage() {
                               : "border-slate-200 bg-white hover:border-slate-300"
                           }`}
                         >
-                          <span className="text-xl">{meta.icon}</span>
+                          <meta.Icon size={20} strokeWidth={1.9} className="shrink-0 text-slate-600" />
                           <span className="flex-1">
                             <span className="block font-medium text-slate-900">{meta.label}</span>
                             <span className="block text-xs text-slate-500">{meta.hint}</span>

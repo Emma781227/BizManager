@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
+import MarketingHeader from "@/components/marketing/MarketingHeader";
+import MarketingFooter from "@/components/marketing/MarketingFooter";
 
 export const metadata: Metadata = {
-  title: "Politique de confidentialité — BizManager",
+  title: "Politique de confidentialité | BizManager",
   description: "Politique de confidentialité et protection des données personnelles de BizManager.",
 };
 
@@ -10,17 +13,9 @@ const LAST_UPDATED = "21 juillet 2026";
 
 export default function PolitiqueConfidentialitePage() {
   return (
-    <div style={{ background: "#F8FAF9", minHeight: "100vh", fontFamily: "system-ui, sans-serif" }}>
+    <div style={{ background: "#f6f8f7", minHeight: "100vh" }}>
       {/* Header */}
-      <header style={{ background: "#fff", borderBottom: "1px solid #E8ECEA", padding: "0 24px" }}>
-        <div style={{ maxWidth: 900, margin: "0 auto", height: 64, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <Link href="/" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
-            <div style={{ width: 34, height: 34, borderRadius: 9, background: "#0A8F45", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, fontSize: 14 }}>BM</div>
-            <span style={{ fontSize: 16, fontWeight: 700, color: "#1F2A24" }}>BizManager</span>
-          </Link>
-          <Link href="/" style={{ fontSize: 13, color: "#667085", textDecoration: "none" }}>← Retour à l&apos;accueil</Link>
-        </div>
-      </header>
+      <MarketingHeader />
 
       <main style={{ maxWidth: 900, margin: "0 auto", padding: "48px 24px 80px" }}>
         <div style={{ background: "#fff", borderRadius: 20, border: "1px solid #E8ECEA", padding: "48px 56px", boxShadow: "0 2px 12px rgba(16,24,40,.05)" }}>
@@ -47,7 +42,7 @@ export default function PolitiqueConfidentialitePage() {
               <li>Nom complet</li>
               <li>Adresse email</li>
               <li>Numéro de téléphone (optionnel)</li>
-              <li>Mot de passe (stocké sous forme hachée — jamais en clair)</li>
+              <li>Mot de passe (stocké sous forme hachée, jamais en clair)</li>
             </ul>
             <h4 style={h4Style}>Lors de l&apos;utilisation du tableau de bord</h4>
             <ul style={ulStyle}>
@@ -187,11 +182,13 @@ export default function PolitiqueConfidentialitePage() {
           </Section>
 
           <div style={{ marginTop: 40, paddingTop: 24, borderTop: "1px solid #E8ECEA", display: "flex", gap: 16, flexWrap: "wrap" }}>
-            <Link href="/cgu" style={{ fontSize: 14, color: "#0A8F45", textDecoration: "none" }}>Conditions Générales d&apos;Utilisation →</Link>
-            <Link href="/mentions-legales" style={{ fontSize: 14, color: "#0A8F45", textDecoration: "none" }}>Mentions légales →</Link>
+            <Link href="/cgu" style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 14, color: "#1d7c5f", textDecoration: "none" }}>Conditions Générales d&apos;Utilisation <ArrowRight size={13} strokeWidth={2.25} /></Link>
+            <Link href="/mentions-legales" style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 14, color: "#1d7c5f", textDecoration: "none" }}>Mentions légales <ArrowRight size={13} strokeWidth={2.25} /></Link>
           </div>
         </div>
       </main>
+
+      <MarketingFooter />
     </div>
   );
 }

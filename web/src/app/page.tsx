@@ -1,15 +1,46 @@
 import type { Metadata } from "next";
-import React from "react";
+import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import {
+  BadgeCheck,
+  ChevronDown,
+  CreditCard,
+  Globe2,
+  LineChart,
+  Minus,
+  Package,
+  Rocket,
+  ShieldCheck,
+  Store,
+  Check,
+  Users,
+  Wallet,
+  MessageCircle,
+} from "lucide-react";
+
 import { getSessionFromCookieStore } from "@/lib/auth";
+import MarketingHeader from "@/components/marketing/MarketingHeader";
+import MarketingFooter from "@/components/marketing/MarketingFooter";
+import { DashboardPreview, StorefrontPreview } from "@/components/marketing/ProductPreview";
+import {
+  btnLg,
+  btnMd,
+  btnPrimary,
+  btnSecondary,
+  card,
+  container,
+  eyebrow,
+  sectionLead,
+  sectionTitle,
+} from "@/components/marketing/ui";
 
 export const metadata: Metadata = {
-  title: "BizManager — Créez votre boutique en ligne en Afrique",
+  title: "BizManager : créez votre boutique en ligne en Afrique",
   description:
     "Créez votre boutique en ligne en quelques minutes. Gérez vos produits, recevez des commandes et communiquez avec vos clients via WhatsApp. Gratuit pour démarrer.",
   openGraph: {
-    title: "BizManager — Créez votre boutique en ligne en Afrique",
+    title: "BizManager : créez votre boutique en ligne en Afrique",
     description:
       "Créez votre boutique en ligne en quelques minutes. Gérez vos produits, recevez des commandes et communiquez avec vos clients via WhatsApp.",
     type: "website",
@@ -19,101 +50,179 @@ export const metadata: Metadata = {
   },
 };
 
-const LP_CSS = `
-* { box-sizing: border-box; }
-body { margin: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+/* ── Contenu ──────────────────────────────────────────────────────── */
 
-.lp-container { max-width: 1320px; margin: 0 auto; padding: 0 24px; }
+const VALUE_PROPS = [
+  { icon: Wallet, label: "Gratuit pour démarrer", sub: "Sans carte bancaire" },
+  { icon: Globe2, label: "Interface en français", sub: "Pensée pour l’Afrique" },
+  { icon: MessageCircle, label: "WhatsApp intégré", sub: "Commandes et relances" },
+  { icon: Rocket, label: "Prêt en 5 minutes", sub: "Catalogue et paiements" },
+];
 
-.lp-header { background: #fff; border-bottom: 1px solid #E8ECEA; position: sticky; top: 0; z-index: 100; }
-.lp-header-inner { max-width: 1320px; margin: 0 auto; padding: 0 24px; height: 72px; display: flex; align-items: center; justify-content: space-between; }
-.lp-nav { display: flex; gap: 32px; }
-.lp-nav a { font-size: 14px; font-weight: 500; color: #667085; text-decoration: none; transition: color 0.15s; }
-.lp-nav a:hover { color: #0A8F45; }
-.lp-header-btns { display: flex; gap: 10px; }
+const FEATURES = [
+  {
+    icon: Store,
+    title: "Gestion de boutique",
+    body: "Créez votre boutique en ligne, gérez votre catalogue et partagez un lien public avec vos clients.",
+  },
+  {
+    icon: Package,
+    title: "Commandes de bout en bout",
+    body: "Suivez chaque commande : création, confirmation, préparation, livraison et confirmation par code OTP.",
+  },
+  {
+    icon: CreditCard,
+    title: "Paiements",
+    body: "Encaissez par Mobile Money, Orange Money ou virement, et enregistrez les règlements en espèces.",
+  },
+  {
+    icon: MessageCircle,
+    title: "WhatsApp Business",
+    body: "Partagez votre catalogue et relancez vos clients directement depuis le tableau de bord.",
+  },
+];
 
-.lp-hero { display: grid; grid-template-columns: 500px 1fr; gap: 48px; align-items: center; padding: 72px 0 80px; }
+const STEPS = [
+  {
+    title: "Créez votre compte",
+    body: "Inscrivez-vous gratuitement et configurez votre boutique en quelques clics.",
+  },
+  {
+    title: "Ajoutez vos produits",
+    body: "Importez votre catalogue, fixez vos prix et activez votre boutique publique.",
+  },
+  {
+    title: "Recevez vos commandes",
+    body: "Vos clients commandent, vous êtes notifié et vous pilotez tout depuis le tableau de bord.",
+  },
+];
 
-.lp-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; }
+/** Indicateurs mis en avant dans la section « Aperçu » (valeurs d'illustration). */
+const DASHBOARD_HIGHLIGHTS = [
+  { label: "Ventes du mois", value: "1 284 500 CFA", hint: "+18,2 % vs mois dernier" },
+  { label: "Commandes", value: "147", hint: "12 à confirmer" },
+  { label: "Panier moyen", value: "8 738 CFA", hint: "+4,1 %" },
+];
 
-.lp-features-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+const DASHBOARD_BULLETS = [
+  "Alertes automatiques sur les stocks faibles et les ruptures",
+  "Suivi des paiements reçus, partiels et en attente",
+  "Répartition des ventes par canal : WhatsApp, boutique en ligne, manuel",
+];
 
-.lp-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+const DIFFERENTIATORS = [
+  {
+    icon: MessageCircle,
+    title: "Conçu autour de WhatsApp",
+    body: "Vos clients commandent là où ils sont déjà. Pas d’application à installer, pas de compte à créer pour eux.",
+  },
+  {
+    icon: Wallet,
+    title: "Pensé pour le franc CFA",
+    body: "Prix, encaissements et rapports en FCFA, avec Mobile Money et Orange Money via GeniusPay.",
+  },
+  {
+    icon: Users,
+    title: "Multi-boutique et multi-équipe",
+    body: "Gérez plusieurs points de vente et invitez vos collaborateurs avec des rôles et permissions.",
+  },
+];
 
-.lp-previews { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+type Plan = {
+  name: string;
+  price: string;
+  tagline: string;
+  features: { text: string; included: boolean }[];
+  cta: string;
+  href: string;
+  featured?: boolean;
+};
 
-.lp-testimonials { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+const PLANS: Plan[] = [
+  {
+    name: "Starter",
+    price: "0 FCFA",
+    tagline: "Pour démarrer sans risque",
+    href: "/register?plan=starter",
+    cta: "Commencer gratuitement",
+    features: [
+      { text: "1 boutique", included: true },
+      { text: "20 produits", included: true },
+      { text: "Commandes illimitées", included: true },
+      { text: "Partage WhatsApp", included: true },
+      { text: "Analytics avancés", included: false },
+      { text: "Support prioritaire", included: false },
+    ],
+  },
+  {
+    name: "Business",
+    price: "4 500 FCFA",
+    tagline: "Pour les boutiques en croissance",
+    href: "/register?plan=business",
+    cta: "Choisir Business",
+    featured: true,
+    features: [
+      { text: "3 boutiques", included: true },
+      { text: "500 produits", included: true },
+      { text: "Commandes illimitées", included: true },
+      { text: "Analytics complets", included: true },
+      { text: "Gestion clients et équipe", included: true },
+      { text: "Support prioritaire", included: true },
+    ],
+  },
+  {
+    name: "Premium",
+    price: "10 000 FCFA",
+    tagline: "Pour les pros multi-boutiques",
+    href: "/register?plan=premium",
+    cta: "Choisir Premium",
+    features: [
+      { text: "10 boutiques", included: true },
+      { text: "Produits illimités", included: true },
+      { text: "Tout Business inclus", included: true },
+      { text: "Rapports personnalisés", included: true },
+      { text: "Accompagnement dédié", included: true },
+      { text: "Onboarding guidé", included: true },
+    ],
+  },
+];
 
-.lp-pricing { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+const FAQ = [
+  {
+    q: "Est-ce vraiment gratuit pour commencer ?",
+    a: "Oui. Le plan Starter est entièrement gratuit, sans carte bancaire. Il vous permet de créer 1 boutique avec jusqu’à 20 produits et de recevoir des commandes illimitées. Vous ne payez que si vous choisissez un plan supérieur.",
+  },
+  {
+    q: "Comment fonctionne l’intégration WhatsApp ?",
+    a: "BizManager génère un lien de partage de votre boutique que vous envoyez à vos clients via WhatsApp. Vos clients consultent vos produits, passent commande, et vous recevez une notification. Vous pouvez aussi envoyer des messages de suivi depuis le tableau de bord.",
+  },
+  {
+    q: "Mes clients peuvent-ils payer en ligne ?",
+    a: "Oui. BizManager intègre GeniusPay pour accepter les paiements via Orange Money, Mobile Money et virement bancaire. Vous pouvez également enregistrer les paiements en espèces depuis le tableau de bord.",
+  },
+  {
+    q: "L’application fonctionne-t-elle sur mobile ?",
+    a: "Le tableau de bord marchand est accessible depuis n’importe quel navigateur, sur ordinateur comme sur mobile. La boutique publique est entièrement optimisée pour le mobile : vos clients commandent depuis leur téléphone.",
+  },
+  {
+    q: "Puis-je ajouter des membres à mon équipe ?",
+    a: "Oui, dès le plan Business vous pouvez inviter des collaborateurs avec des rôles et des permissions configurables. Chaque membre ne voit que les boutiques auxquelles il a accès.",
+  },
+  {
+    q: "Comment sont sécurisées mes données ?",
+    a: "Vos données sont stockées sur une base PostgreSQL chiffrée et l’application est servie en HTTPS. Les mots de passe sont hachés avec bcrypt. Aucune donnée sensible n’est transmise à des tiers sans votre accord.",
+  },
+  {
+    q: "Puis-je gérer plusieurs boutiques ?",
+    a: "Oui. Le plan Business autorise jusqu’à 3 boutiques, le plan Premium jusqu’à 10. Chaque boutique a son propre catalogue, ses propres commandes et son propre lien public.",
+  },
+  {
+    q: "Comment résilier mon abonnement ?",
+    a: "Vous pouvez résilier à tout moment depuis votre tableau de bord, sans engagement. Vous conservez l’accès jusqu’à la fin de la période payée. Vos données sont supprimées dans un délai de 30 jours après résiliation.",
+  },
+];
 
-.lp-footer-grid { display: grid; grid-template-columns: 280px 1fr 1fr 1fr; gap: 40px; }
-
-@media (max-width: 1024px) {
-  .lp-hero { grid-template-columns: 1fr; gap: 40px; }
-  .lp-features-grid { grid-template-columns: repeat(2, 1fr); }
-  .lp-previews { grid-template-columns: 1fr; }
-  .lp-footer-grid { grid-template-columns: 1fr 1fr; gap: 28px; }
-}
-@media (max-width: 768px) {
-  .lp-nav { display: none; }
-  .lp-stats { grid-template-columns: 1fr; }
-  .lp-steps { grid-template-columns: 1fr; }
-  .lp-testimonials { grid-template-columns: 1fr; }
-  .lp-pricing { grid-template-columns: 1fr; }
-  .lp-footer-grid { grid-template-columns: 1fr; }
-  .lp-features-grid { grid-template-columns: 1fr 1fr; }
-  .lp-hero-btns { flex-direction: column; }
-  .lp-hero-btns a { text-align: center; }
-}
-details summary::-webkit-details-marker { display: none; }
-details summary::marker { display: none; }
-.faq-icon::before { content: "+"; font-size: 16px; font-weight: 700; color: #0A8F45; }
-details[open] .faq-icon::before { content: "−"; color: #fff; }
-details[open] .faq-icon { background: #0A8F45; }
-
-@media (max-width: 480px) {
-  .lp-features-grid { grid-template-columns: 1fr; }
-  .lp-header-inner { padding: 0 14px; height: 60px; }
-  .lp-header-btns { gap: 6px; }
-  .lp-header-btns a { padding: 8px 12px !important; font-size: 12px !important; border-radius: 8px !important; }
-  .lp-logo-text { display: none; }
-}
-`;
-
-const btnGreen = {
-  background: "#0A8F45",
-  color: "#fff",
-  border: "none",
-  borderRadius: 12,
-  padding: "12px 24px",
-  fontSize: 15,
-  fontWeight: 600,
-  cursor: "pointer",
-  textDecoration: "none",
-  display: "inline-block",
-  lineHeight: 1.3,
-} as React.CSSProperties;
-
-const btnOutline = {
-  background: "#fff",
-  color: "#1F2A24",
-  border: "1.5px solid #E8ECEA",
-  borderRadius: 12,
-  padding: "12px 22px",
-  fontSize: 15,
-  fontWeight: 500,
-  cursor: "pointer",
-  textDecoration: "none",
-  display: "inline-block",
-  lineHeight: 1.3,
-} as React.CSSProperties;
-
-const card = {
-  background: "#fff",
-  border: "1.5px solid #E8ECEA",
-  borderRadius: 18,
-  boxShadow: "0 2px 12px rgba(16,24,40,0.06)",
-} as React.CSSProperties;
+/* ── Page ─────────────────────────────────────────────────────────── */
 
 export default async function HomePage() {
   const cookieStore = await cookies();
@@ -121,725 +230,345 @@ export default async function HomePage() {
   if (session) redirect("/dashboard");
 
   return (
-    <>
-      <style>{LP_CSS}</style>
-      <div style={{ background: "#F8FAF9", minHeight: "100vh" }}>
+    <div className="min-h-screen bg-white text-ink-900">
+      <MarketingHeader />
 
-        {/* ── 1. Header ── */}
-        <header className="lp-header">
-          <div className="lp-header-inner">
-            <a href="/" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
-              <div style={{ width: 36, height: 36, borderRadius: 10, background: "#0A8F45", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, fontSize: 16, flexShrink: 0 }}>BM</div>
-              <span className="lp-logo-text" style={{ fontSize: 17, fontWeight: 700, color: "#1F2A24" }}>BizManager</span>
+      {/* ── Hero ─────────────────────────────────────────────────── */}
+      <section className="border-b border-ink-100 bg-ink-50">
+        <div className={`${container} grid items-center gap-12 py-16 lg:grid-cols-[minmax(0,30rem)_minmax(0,1fr)] lg:gap-12 lg:py-20`}>
+          <div>
+            <span className="inline-flex items-center gap-2 rounded-full border border-brand-200 bg-brand-50 px-3 py-1 text-[0.8125rem] font-semibold text-brand-700">
+              <BadgeCheck size={14} strokeWidth={2.25} />
+              Boutique · WhatsApp · Paiements
+            </span>
+
+            <h1 className="mt-6 text-[2.5rem] font-bold leading-[1.08] tracking-[-0.02em] text-ink-900 sm:text-[3.25rem]">
+              Gérez votre boutique simplement.
+            </h1>
+
+            <p className="mt-5 max-w-[34rem] text-[1.0625rem] leading-relaxed text-ink-500">
+              BizManager réunit vos produits, vos commandes, vos clients et vos paiements
+              au même endroit. Vos clients, eux, commandent sur WhatsApp.
+            </p>
+
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <Link href="/register" className={`${btnPrimary} ${btnLg}`}>
+                Créer ma boutique
+              </Link>
+              <Link href="#how" className={`${btnSecondary} ${btnLg}`}>
+                Comment ça marche
+              </Link>
+            </div>
+
+            <ul className="mt-7 flex flex-wrap gap-x-5 gap-y-2">
+              {["Gratuit pour démarrer", "Sans carte bancaire", "En français"].map((item) => (
+                <li key={item} className="flex items-center gap-1.5 text-[0.8125rem] text-ink-500">
+                  <Check size={14} strokeWidth={2.5} className="text-brand-600" />
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="lg:pl-4">
+            <DashboardPreview />
+          </div>
+        </div>
+      </section>
+
+      {/* ── Bandeau valeurs ──────────────────────────────────────── */}
+      <section className="border-b border-ink-100">
+        <div className={`${container} grid divide-ink-100 py-2 sm:grid-cols-2 sm:divide-x lg:grid-cols-4`}>
+          {VALUE_PROPS.map(({ icon: Icon, label, sub }) => (
+            <div key={label} className="flex items-center gap-3 px-1 py-5 sm:px-6">
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
+                <Icon size={18} strokeWidth={2} />
+              </span>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-ink-900">{label}</p>
+                <p className="mt-0.5 text-[0.8125rem] text-ink-500">{sub}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── Fonctionnalités ──────────────────────────────────────── */}
+      <section id="features" className="scroll-mt-20 py-20">
+        <div className={container}>
+          <div className="max-w-2xl">
+            <p className={eyebrow}>Fonctionnalités</p>
+            <h2 className={`${sectionTitle} mt-3`}>Tout ce qu’il vous faut pour vendre</h2>
+            <p className={sectionLead}>
+              Une plateforme complète, sans module à assembler ni configuration technique.
+            </p>
+          </div>
+
+          <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {FEATURES.map(({ icon: Icon, title, body }) => (
+              <article key={title} className={`${card} p-6`}>
+                <span className="flex size-11 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
+                  <Icon size={20} strokeWidth={1.9} />
+                </span>
+                <h3 className="mt-5 text-[1.0625rem] font-semibold text-ink-900">{title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-ink-500">{body}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Comment ça marche ────────────────────────────────────── */}
+      <section id="how" className="scroll-mt-20 border-y border-ink-100 bg-ink-50 py-20">
+        <div className={container}>
+          <div className="max-w-2xl">
+            <p className={eyebrow}>Mise en route</p>
+            <h2 className={`${sectionTitle} mt-3`}>Votre boutique en ligne en trois étapes</h2>
+            <p className={sectionLead}>Comptez moins de cinq minutes de la création du compte au premier partage.</p>
+          </div>
+
+          <ol className="mt-10 grid gap-5 lg:grid-cols-3">
+            {STEPS.map((step, index) => (
+              <li key={step.title} className={`${card} relative p-6`}>
+                <span className="flex size-9 items-center justify-center rounded-lg bg-brand-600 text-sm font-bold text-white">
+                  {index + 1}
+                </span>
+                <h3 className="mt-5 text-[1.0625rem] font-semibold text-ink-900">{step.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-ink-500">{step.body}</p>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </section>
+
+      {/* ── Aperçu produit ───────────────────────────────────────── */}
+      <section id="product" className="scroll-mt-20 py-20">
+        <div className={container}>
+          <div className="max-w-2xl">
+            <p className={eyebrow}>Aperçu</p>
+            <h2 className={`${sectionTitle} mt-3`}>Deux faces, une seule plateforme</h2>
+            <p className={sectionLead}>
+              Un tableau de bord complet pour vous, une boutique rapide et mobile pour vos clients.
+            </p>
+          </div>
+
+          <div className="mt-10 grid gap-5 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
+            <article className={`${card} overflow-hidden p-6`}>
+              <div className="flex items-center gap-2 text-brand-700">
+                <LineChart size={16} strokeWidth={2} />
+                <span className="text-[0.75rem] font-semibold uppercase tracking-[0.1em]">
+                  Tableau de bord
+                </span>
+              </div>
+              <h3 className="mt-3 text-xl font-semibold text-ink-900">Pilotez votre activité</h3>
+              <p className="mt-2 max-w-lg text-sm leading-relaxed text-ink-500">
+                Chiffre d’affaires, commandes en cours, panier moyen et stock faible : tout
+                l’essentiel visible dès l’ouverture.
+              </p>
+
+              <dl className="mt-6 grid gap-px overflow-hidden rounded-lg border border-ink-200 bg-ink-200 sm:grid-cols-3">
+                {DASHBOARD_HIGHLIGHTS.map((item) => (
+                  <div key={item.label} className="bg-white p-4">
+                    <dt className="text-[0.75rem] font-medium text-ink-500">{item.label}</dt>
+                    <dd className="mt-1.5 text-lg font-bold tracking-tight text-ink-900">{item.value}</dd>
+                    <dd className="mt-0.5 text-[0.75rem] text-ink-400">{item.hint}</dd>
+                  </div>
+                ))}
+              </dl>
+
+              <ul className="mt-5 space-y-2.5">
+                {DASHBOARD_BULLETS.map((bullet) => (
+                  <li key={bullet} className="flex items-start gap-2.5">
+                    <Check size={15} strokeWidth={2.5} className="mt-0.5 shrink-0 text-brand-600" />
+                    <span className="text-sm text-ink-600">{bullet}</span>
+                  </li>
+                ))}
+              </ul>
+            </article>
+
+            <article className={`${card} flex flex-col p-6`}>
+              <div className="flex items-center gap-2 text-brand-700">
+                <Store size={16} strokeWidth={2} />
+                <span className="text-[0.75rem] font-semibold uppercase tracking-[0.1em]">
+                  Boutique publique
+                </span>
+              </div>
+              <h3 className="mt-3 text-xl font-semibold text-ink-900">Un lien, et c’est tout</h3>
+              <p className="mt-2 text-sm leading-relaxed text-ink-500">
+                Partagez l’adresse de votre boutique. Vos clients parcourent le catalogue et
+                commandent depuis leur téléphone.
+              </p>
+              <div className="mt-6 flex flex-1 items-end justify-center rounded-lg bg-ink-50 pt-6">
+                <StorefrontPreview />
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Différenciateurs ─────────────────────────────────────── */}
+      <section className="border-y border-ink-100 bg-ink-50 py-20">
+        <div className={container}>
+          <div className="max-w-2xl">
+            <p className={eyebrow}>Pourquoi BizManager</p>
+            <h2 className={`${sectionTitle} mt-3`}>Construit pour le commerce africain</h2>
+            <p className={sectionLead}>
+              Pas un outil générique traduit en français, mais une plateforme pensée pour vos usages.
+            </p>
+          </div>
+
+          <div className="mt-10 grid gap-5 lg:grid-cols-3">
+            {DIFFERENTIATORS.map(({ icon: Icon, title, body }) => (
+              <article key={title} className={`${card} p-6`}>
+                <span className="flex size-11 items-center justify-center rounded-lg bg-white text-brand-600 ring-1 ring-inset ring-brand-200">
+                  <Icon size={20} strokeWidth={1.9} />
+                </span>
+                <h3 className="mt-5 text-[1.0625rem] font-semibold text-ink-900">{title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-ink-500">{body}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Tarifs ───────────────────────────────────────────────── */}
+      <section id="pricing" className="scroll-mt-20 py-20">
+        <div className={container}>
+          <div className="max-w-2xl">
+            <p className={eyebrow}>Tarifs</p>
+            <h2 className={`${sectionTitle} mt-3`}>Choisissez votre plan</h2>
+            <p className={sectionLead}>Démarrez gratuitement, changez de plan quand votre activité grandit.</p>
+          </div>
+
+          <div className="mt-10 grid gap-5 lg:grid-cols-3">
+            {PLANS.map((plan) => (
+              <article
+                key={plan.name}
+                className={
+                  plan.featured
+                    ? "relative rounded-xl border-2 border-brand-600 bg-white p-7 shadow-md"
+                    : `${card} p-7`
+                }
+              >
+                {plan.featured && (
+                  <span className="absolute -top-3 left-7 rounded-full bg-brand-600 px-3 py-1 text-[0.6875rem] font-semibold uppercase tracking-[0.08em] text-white">
+                    Le plus populaire
+                  </span>
+                )}
+
+                <h3
+                  className={`text-sm font-semibold uppercase tracking-[0.08em] ${
+                    plan.featured ? "text-brand-700" : "text-ink-500"
+                  }`}
+                >
+                  {plan.name}
+                </h3>
+
+                <p className="mt-4 flex items-baseline gap-1.5">
+                  <span className="text-[2rem] font-bold tracking-tight text-ink-900">{plan.price}</span>
+                  <span className="text-sm text-ink-500">/mois</span>
+                </p>
+                <p className="mt-1.5 text-sm text-ink-500">{plan.tagline}</p>
+
+                <ul className="mt-6 space-y-2.5 border-t border-ink-100 pt-6">
+                  {plan.features.map((feature) => (
+                    <li key={feature.text} className="flex items-start gap-2.5">
+                      {feature.included ? (
+                        <Check size={16} strokeWidth={2.5} className="mt-0.5 shrink-0 text-brand-600" />
+                      ) : (
+                        <Minus size={16} strokeWidth={2.5} className="mt-0.5 shrink-0 text-ink-300" />
+                      )}
+                      <span
+                        className={`text-sm ${feature.included ? "text-ink-700" : "text-ink-400"}`}
+                      >
+                        {feature.text}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+
+                <Link
+                  href={plan.href}
+                  className={`${plan.featured ? btnPrimary : btnSecondary} ${btnMd} mt-7 w-full`}
+                >
+                  {plan.cta}
+                </Link>
+              </article>
+            ))}
+          </div>
+
+          <p className="mt-6 flex items-center justify-center gap-2 text-[0.8125rem] text-ink-500">
+            <ShieldCheck size={15} strokeWidth={2} className="text-ink-400" />
+            Sans engagement, résiliable à tout moment depuis votre tableau de bord.
+          </p>
+        </div>
+      </section>
+
+      {/* ── FAQ ──────────────────────────────────────────────────── */}
+      <section id="faq" className="scroll-mt-20 border-t border-ink-100 bg-ink-50 py-20">
+        <div className={container}>
+          <div className="mx-auto max-w-2xl text-center">
+            <p className={eyebrow}>FAQ</p>
+            <h2 className={`${sectionTitle} mt-3`}>Questions fréquentes</h2>
+            <p className={sectionLead}>Tout ce qu’il faut savoir avant de démarrer.</p>
+          </div>
+
+          <div className="mx-auto mt-10 max-w-[45rem] space-y-3">
+            {FAQ.map((item) => (
+              <details
+                key={item.q}
+                className="group overflow-hidden rounded-lg border border-ink-200 bg-white"
+              >
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-[0.9375rem] font-semibold text-ink-900">
+                  {item.q}
+                  <ChevronDown
+                    size={18}
+                    strokeWidth={2}
+                    className="shrink-0 text-ink-400 transition-transform duration-200 group-open:rotate-180"
+                  />
+                </summary>
+                <div className="border-t border-ink-100 px-5 py-4 text-sm leading-relaxed text-ink-500">
+                  {item.a}
+                </div>
+              </details>
+            ))}
+          </div>
+
+          <div className="mt-10 text-center">
+            <p className="text-sm text-ink-500">Vous avez une autre question ?</p>
+            <a
+              href="mailto:contact@bizmanager.africa"
+              className={`${btnSecondary} ${btnMd} mt-3`}
+            >
+              Nous contacter
             </a>
-            <nav className="lp-nav">
-              <a href="#features">Fonctionnalités</a>
-              <a href="#how">Comment ça marche</a>
-              <a href="#pricing">Tarifs</a>
-              <a href="#faq">FAQ</a>
-            </nav>
-            <div className="lp-header-btns">
-              <a href="/login" className="lp-btn-secondary" style={btnOutline}>Se connecter</a>
-              <a href="/register" style={{ ...btnGreen, padding: "10px 20px", fontSize: 14 }}>Commencer</a>
-            </div>
           </div>
-        </header>
+        </div>
+      </section>
 
-        {/* ── 2. Hero ── */}
-        <section style={{ paddingTop: 0, paddingBottom: 0 }}>
-          <div className="lp-container">
-            <div className="lp-hero">
-              {/* Left column — text */}
-              <div>
-                <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#EAF7EF", border: "1px solid #B6E8CC", borderRadius: 999, padding: "6px 14px", fontSize: 13, fontWeight: 600, color: "#0A8F45", marginBottom: 24 }}>
-                  Gestion de boutique · WhatsApp · Paiements
-                </div>
-                <h1 style={{ fontSize: 58, fontWeight: 800, lineHeight: 1.1, color: "#1F2A24", margin: 0 }}>
-                  Gérez votre boutique simplement.
-                </h1>
-                <p style={{ fontSize: 19, color: "#667085", marginTop: 20, lineHeight: 1.6, marginBottom: 0 }}>
-                  BizManager aide les commerçants à gérer produits, commandes, clients et paiements — tout depuis un seul endroit.
-                </p>
-                <div className="lp-hero-btns" style={{ marginTop: 32, display: "flex", gap: 14, flexWrap: "wrap" }}>
-                  <a href="/register" style={{ ...btnGreen, padding: "14px 28px", fontSize: 16 }}>
-                    Créer ma boutique →
-                  </a>
-                  <a href="#how" style={{ ...btnOutline, padding: "14px 28px", fontSize: 16 }}>
-                    Voir comment ça marche
-                  </a>
-                </div>
-                <p style={{ marginTop: 20, fontSize: 13, color: "#98A2B3", marginBottom: 0 }}>
-                  ✓ Gratuit pour démarrer  ·  ✓ Sans carte bancaire  ·  ✓ En français
-                </p>
-              </div>
-
-              {/* Right column — Laptop + Phone mockup */}
-              <div style={{ position: "relative", width: "100%", maxWidth: 780, marginLeft: "auto" }}>
-                {/* Laptop SVG */}
-                <svg viewBox="0 0 780 460" style={{ width: "100%", height: "auto" }} xmlns="http://www.w3.org/2000/svg">
-                  {/* Laptop body */}
-                  <rect x="0" y="0" width="780" height="440" rx="16" fill="#1F2A24" />
-                  {/* Screen area */}
-                  <rect x="12" y="10" width="756" height="400" rx="8" fill="#F8FAF9" />
-                  {/* Keyboard bar */}
-                  <rect x="0" y="440" width="780" height="20" rx="4" fill="#2D3B35" />
-                  {/* Hinge */}
-                  <rect x="340" y="440" width="100" height="4" fill="#3D4B45" />
-
-                  {/* ── Sidebar ── */}
-                  <rect x="24" y="20" width="140" height="380" rx="6" fill="#1F2A24" />
-                  {/* Logo icon in sidebar */}
-                  <rect x="34" y="30" width="30" height="30" rx="8" fill="#0A8F45" />
-                  <text x="49" y="51" textAnchor="middle" fill="#fff" fontSize="11" fontWeight="800">BM</text>
-                  {/* Nav item 1 — active */}
-                  <rect x="30" y="74" width="120" height="28" rx="6" fill="#0A8F45" fillOpacity="0.25" />
-                  <rect x="38" y="81" width="12" height="12" rx="3" fill="#0A8F45" />
-                  <rect x="56" y="84" width="64" height="7" rx="3" fill="#0A8F45" />
-                  {/* Nav item 2 */}
-                  <rect x="38" y="115" width="12" height="12" rx="3" fill="#3D4B45" />
-                  <rect x="56" y="118" width="56" height="7" rx="3" fill="#3D4B45" />
-                  {/* Nav item 3 */}
-                  <rect x="38" y="141" width="12" height="12" rx="3" fill="#3D4B45" />
-                  <rect x="56" y="144" width="48" height="7" rx="3" fill="#3D4B45" />
-                  {/* Nav item 4 */}
-                  <rect x="38" y="167" width="12" height="12" rx="3" fill="#3D4B45" />
-                  <rect x="56" y="170" width="60" height="7" rx="3" fill="#3D4B45" />
-                  {/* Nav item 5 */}
-                  <rect x="38" y="193" width="12" height="12" rx="3" fill="#3D4B45" />
-                  <rect x="56" y="196" width="52" height="7" rx="3" fill="#3D4B45" />
-                  {/* Divider */}
-                  <rect x="34" y="222" width="112" height="1" fill="#2D3B35" />
-                  {/* Nav item 6 */}
-                  <rect x="38" y="232" width="12" height="12" rx="3" fill="#3D4B45" />
-                  <rect x="56" y="235" width="44" height="7" rx="3" fill="#3D4B45" />
-                  {/* User avatar at bottom */}
-                  <circle cx="44" cy="374" r="14" fill="#0A8F45" fillOpacity="0.4" />
-                  <rect x="64" y="368" width="50" height="6" rx="3" fill="#3D4B45" />
-                  <rect x="64" y="378" width="36" height="5" rx="2.5" fill="#2D3B35" />
-
-                  {/* ── Main area ── */}
-                  {/* Top bar */}
-                  <rect x="176" y="20" width="580" height="38" rx="6" fill="#fff" stroke="#E8ECEA" strokeWidth="1" />
-                  <rect x="188" y="31" width="80" height="8" rx="4" fill="#E8ECEA" />
-                  <rect x="286" y="31" width="60" height="8" rx="4" fill="#E8ECEA" />
-                  <circle cx="720" cy="35" r="12" fill="#EAF7EF" />
-                  <rect x="714" y="31" width="12" height="8" rx="3" fill="#0A8F45" fillOpacity="0.5" />
-                  <circle cx="745" cy="35" r="8" fill="#F0F0F0" />
-
-                  {/* KPI Cards row */}
-                  {/* Card 1 */}
-                  <rect x="176" y="68" width="183" height="64" rx="8" fill="#fff" stroke="#E8ECEA" strokeWidth="1" />
-                  <circle cx="198" cy="86" r="8" fill="#EAF7EF" />
-                  <rect x="210" y="82" width="60" height="7" rx="3" fill="#E8ECEA" />
-                  <rect x="186" y="103" width="80" height="12" rx="4" fill="#1F2A24" fillOpacity="0.15" />
-                  <rect x="274" y="105" width="40" height="8" rx="3" fill="#0A8F45" fillOpacity="0.4" />
-
-                  {/* Card 2 */}
-                  <rect x="367" y="68" width="183" height="64" rx="8" fill="#fff" stroke="#E8ECEA" strokeWidth="1" />
-                  <circle cx="389" cy="86" r="8" fill="#FFF4E0" />
-                  <rect x="401" y="82" width="60" height="7" rx="3" fill="#E8ECEA" />
-                  <rect x="377" y="103" width="80" height="12" rx="4" fill="#1F2A24" fillOpacity="0.15" />
-                  <rect x="465" y="105" width="40" height="8" rx="3" fill="#D18F17" fillOpacity="0.5" />
-
-                  {/* Card 3 */}
-                  <rect x="558" y="68" width="198" height="64" rx="8" fill="#fff" stroke="#E8ECEA" strokeWidth="1" />
-                  <circle cx="580" cy="86" r="8" fill="#E8F0FE" />
-                  <rect x="592" y="82" width="60" height="7" rx="3" fill="#E8ECEA" />
-                  <rect x="568" y="103" width="80" height="12" rx="4" fill="#1F2A24" fillOpacity="0.15" />
-                  <rect x="656" y="105" width="40" height="8" rx="3" fill="#4A90D9" fillOpacity="0.5" />
-
-                  {/* Chart area */}
-                  <rect x="176" y="142" width="380" height="130" rx="8" fill="#fff" stroke="#E8ECEA" strokeWidth="1" />
-                  {/* Chart title stub */}
-                  <rect x="188" y="154" width="90" height="8" rx="4" fill="#E8ECEA" />
-                  <rect x="286" y="154" width="50" height="8" rx="4" fill="#EAF7EF" />
-                  {/* Grid lines */}
-                  <line x1="188" y1="240" x2="544" y2="240" stroke="#F0F2F1" strokeWidth="1" />
-                  <line x1="188" y1="220" x2="544" y2="220" stroke="#F0F2F1" strokeWidth="1" />
-                  <line x1="188" y1="200" x2="544" y2="200" stroke="#F0F2F1" strokeWidth="1" />
-                  <line x1="188" y1="180" x2="544" y2="180" stroke="#F0F2F1" strokeWidth="1" />
-                  {/* Bars */}
-                  <rect x="210" y="210" width="36" height="30" rx="4" fill="#DDF6E7" />
-                  <rect x="268" y="195" width="36" height="45" rx="4" fill="#DDF6E7" />
-                  <rect x="326" y="175" width="36" height="65" rx="4" fill="#0A8F45" />
-                  <rect x="384" y="205" width="36" height="35" rx="4" fill="#DDF6E7" />
-                  <rect x="442" y="188" width="36" height="52" rx="4" fill="#DDF6E7" />
-                  {/* X axis labels */}
-                  <rect x="210" y="245" width="30" height="5" rx="2" fill="#E8ECEA" />
-                  <rect x="268" y="245" width="30" height="5" rx="2" fill="#E8ECEA" />
-                  <rect x="326" y="245" width="30" height="5" rx="2" fill="#E8ECEA" />
-                  <rect x="384" y="245" width="30" height="5" rx="2" fill="#E8ECEA" />
-                  <rect x="442" y="245" width="30" height="5" rx="2" fill="#E8ECEA" />
-
-                  {/* Side mini chart */}
-                  <rect x="566" y="142" width="190" height="130" rx="8" fill="#fff" stroke="#E8ECEA" strokeWidth="1" />
-                  <rect x="578" y="154" width="70" height="8" rx="4" fill="#E8ECEA" />
-                  {/* Donut-like chart placeholder */}
-                  <circle cx="653" cy="210" r="36" fill="none" stroke="#EAF7EF" strokeWidth="14" />
-                  <circle cx="653" cy="210" r="36" fill="none" stroke="#0A8F45" strokeWidth="14" strokeDasharray="113 113" strokeDashoffset="28" transform="rotate(-90 653 210)" />
-                  <rect x="638" y="205" width="30" height="10" rx="4" fill="#1F2A24" fillOpacity="0.15" />
-
-                  {/* Table */}
-                  <rect x="176" y="282" width="580" height="104" rx="8" fill="#fff" stroke="#E8ECEA" strokeWidth="1" />
-                  {/* Header row */}
-                  <rect x="176" y="282" width="580" height="26" rx="8" fill="#F8FAF9" />
-                  <rect x="176" y="296" width="580" height="12" fill="#F8FAF9" />
-                  <rect x="188" y="289" width="60" height="6" rx="3" fill="#E8ECEA" />
-                  <rect x="300" y="289" width="50" height="6" rx="3" fill="#E8ECEA" />
-                  <rect x="420" y="289" width="50" height="6" rx="3" fill="#E8ECEA" />
-                  <rect x="540" y="289" width="50" height="6" rx="3" fill="#E8ECEA" />
-                  {/* Row 1 */}
-                  <rect x="176" y="308" width="580" height="26" fill="#fff" />
-                  <rect x="188" y="318" width="70" height="6" rx="3" fill="#1F2A24" fillOpacity="0.2" />
-                  <rect x="300" y="318" width="40" height="6" rx="3" fill="#E8ECEA" />
-                  <rect x="420" y="316" width="36" height="10" rx="5" fill="#EAF7EF" />
-                  <rect x="422" y="319" width="32" height="5" rx="2" fill="#0A8F45" fillOpacity="0.6" />
-                  <rect x="540" y="318" width="50" height="6" rx="3" fill="#E8ECEA" />
-                  {/* Row 2 */}
-                  <rect x="176" y="334" width="580" height="26" fill="#FAFCFB" />
-                  <rect x="188" y="344" width="56" height="6" rx="3" fill="#1F2A24" fillOpacity="0.2" />
-                  <rect x="300" y="344" width="44" height="6" rx="3" fill="#E8ECEA" />
-                  <rect x="420" y="342" width="36" height="10" rx="5" fill="#FFF4E0" />
-                  <rect x="422" y="345" width="32" height="5" rx="2" fill="#D18F17" fillOpacity="0.6" />
-                  <rect x="540" y="344" width="50" height="6" rx="3" fill="#E8ECEA" />
-                  {/* Row 3 */}
-                  <rect x="176" y="360" width="580" height="26" fill="#fff" />
-                  <rect x="188" y="370" width="64" height="6" rx="3" fill="#1F2A24" fillOpacity="0.2" />
-                  <rect x="300" y="370" width="36" height="6" rx="3" fill="#E8ECEA" />
-                  <rect x="420" y="368" width="36" height="10" rx="5" fill="#EAF7EF" />
-                  <rect x="422" y="371" width="32" height="5" rx="2" fill="#0A8F45" fillOpacity="0.6" />
-                  <rect x="540" y="370" width="50" height="6" rx="3" fill="#E8ECEA" />
-                </svg>
-
-                {/* Phone mockup overlapping */}
-                <div style={{ position: "absolute", right: -20, bottom: 0 }}>
-                  <svg viewBox="0 0 160 300" width={150} height={280} xmlns="http://www.w3.org/2000/svg">
-                    {/* Phone body */}
-                    <rect x="0" y="0" width="160" height="300" rx="24" fill="#1F2A24" />
-                    {/* Screen */}
-                    <rect x="8" y="20" width="144" height="262" rx="18" fill="#F8FAF9" />
-                    {/* Notch */}
-                    <rect x="55" y="20" width="50" height="16" rx="8" fill="#1F2A24" />
-                    {/* Header bar */}
-                    <rect x="8" y="40" width="144" height="34" rx="0" fill="#0A8F45" />
-                    <rect x="8" y="58" width="144" height="16" fill="#0A8F45" />
-                    <rect x="18" y="48" width="50" height="7" rx="3" fill="#fff" fillOpacity="0.7" />
-                    <circle cx="138" cy="52" r="8" fill="#08763A" />
-                    {/* Product card 1 */}
-                    <rect x="12" y="82" width="136" height="76" rx="10" fill="#fff" stroke="#E8ECEA" strokeWidth="1" />
-                    <rect x="12" y="82" width="136" height="36" rx="10" fill="#EAF7EF" />
-                    <rect x="12" y="100" width="136" height="18" fill="#EAF7EF" />
-                    {/* Product image placeholder icon */}
-                    <rect x="56" y="88" width="48" height="24" rx="4" fill="#0A8F45" fillOpacity="0.2" />
-                    <circle cx="80" cy="98" r="6" fill="#0A8F45" fillOpacity="0.3" />
-                    {/* Product name */}
-                    <rect x="22" y="126" width="70" height="7" rx="3" fill="#1F2A24" fillOpacity="0.25" />
-                    {/* Price */}
-                    <rect x="22" y="139" width="50" height="7" rx="3" fill="#0A8F45" fillOpacity="0.5" />
-                    {/* Cart button */}
-                    <rect x="108" y="133" width="32" height="16" rx="8" fill="#0A8F45" />
-                    <text x="124" y="144" textAnchor="middle" fill="#fff" fontSize="8" fontWeight="700">+</text>
-                    {/* Product card 2 */}
-                    <rect x="12" y="168" width="136" height="76" rx="10" fill="#fff" stroke="#E8ECEA" strokeWidth="1" />
-                    <rect x="12" y="168" width="136" height="36" rx="10" fill="#FFF4E0" />
-                    <rect x="12" y="186" width="136" height="18" fill="#FFF4E0" />
-                    <rect x="56" y="174" width="48" height="24" rx="4" fill="#D18F17" fillOpacity="0.2" />
-                    <circle cx="80" cy="184" r="6" fill="#D18F17" fillOpacity="0.3" />
-                    <rect x="22" y="212" width="60" height="7" rx="3" fill="#1F2A24" fillOpacity="0.25" />
-                    <rect x="22" y="225" width="44" height="7" rx="3" fill="#0A8F45" fillOpacity="0.5" />
-                    <rect x="108" y="219" width="32" height="16" rx="8" fill="#0A8F45" />
-                    <text x="124" y="230" textAnchor="middle" fill="#fff" fontSize="8" fontWeight="700">+</text>
-                    {/* Add to cart button bottom */}
-                    <rect x="12" y="256" width="136" height="22" rx="8" fill="#0A8F45" />
-                    <rect x="42" y="263" width="76" height="7" rx="3" fill="#fff" fillOpacity="0.8" />
-                  </svg>
-                </div>
-              </div>
+      {/* ── Appel à l’action ─────────────────────────────────────── */}
+      <section className="py-20">
+        <div className={container}>
+          <div className="flex flex-col items-start justify-between gap-8 rounded-2xl bg-brand-700 px-8 py-12 sm:px-12 lg:flex-row lg:items-center">
+            <div className="max-w-xl">
+              <h2 className="text-[1.75rem] font-bold tracking-tight text-white sm:text-[2rem]">
+                Prêt à lancer votre boutique ?
+              </h2>
+              <p className="mt-3 text-[1.0625rem] leading-relaxed text-brand-100">
+                Créez votre boutique gratuitement et recevez vos premières commandes dès aujourd’hui.
+              </p>
             </div>
+            <Link
+              href="/register"
+              className={`${btnLg} shrink-0 rounded-lg bg-white font-semibold text-brand-700 transition-colors hover:bg-brand-50`}
+            >
+              Commencer gratuitement
+            </Link>
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* ── 3. Valeurs clés ── */}
-        <section style={{ marginTop: 0, background: "#fff", borderTop: "1.5px solid #E8ECEA", borderBottom: "1.5px solid #E8ECEA" }}>
-          <div className="lp-container">
-            <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 0, padding: "22px 0" }}>
-              {[
-                { icon: "🆓", label: "Gratuit pour démarrer", sub: "Sans carte bancaire requise" },
-                { icon: "🇫🇷", label: "Interface en français", sub: "Conçu pour les marchés africains" },
-                { icon: "📱", label: "WhatsApp intégré", sub: "Commandes et notifications directes" },
-                { icon: "⚡", label: "Boutique en 5 minutes", sub: "Catalogue, commandes, paiements" },
-              ].map((item, i, arr) => (
-                <div key={item.label} style={{
-                  flex: "1 1 200px", padding: "12px 28px", textAlign: "center",
-                  borderRight: i < arr.length - 1 ? "1.5px solid #E8ECEA" : "none",
-                }}>
-                  <div style={{ fontSize: 22, marginBottom: 6 }}>{item.icon}</div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: "#1F2A24" }}>{item.label}</div>
-                  <div style={{ fontSize: 12, color: "#98A2B3", marginTop: 2 }}>{item.sub}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ── 4. Features ── */}
-        <section id="features" style={{ marginTop: 60, paddingBottom: 0 }}>
-          <div className="lp-container">
-            <div style={{ textAlign: "center", marginBottom: 40 }}>
-              <h2 style={{ fontSize: 38, fontWeight: 800, color: "#1F2A24", margin: 0 }}>Tout ce qu&apos;il vous faut</h2>
-              <p style={{ fontSize: 17, color: "#667085", marginTop: 10, marginBottom: 0 }}>Une plateforme complète pour les commerçants modernes.</p>
-            </div>
-            <div className="lp-features-grid">
-              <div style={{ ...card, padding: 28 }}>
-                <div style={{ width: 56, height: 56, borderRadius: "50%", background: "#EAF7EF", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, marginBottom: 16 }}>🏪</div>
-                <h3 style={{ fontSize: 17, fontWeight: 700, color: "#1F2A24", margin: "0 0 8px 0" }}>Gestion de boutique</h3>
-                <p style={{ fontSize: 14, color: "#667085", lineHeight: 1.6, margin: 0 }}>Créez votre boutique en ligne, gérez votre catalogue et partagez facilement avec vos clients.</p>
-              </div>
-              <div style={{ ...card, padding: 28 }}>
-                <div style={{ width: 56, height: 56, borderRadius: "50%", background: "#EAF7EF", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, marginBottom: 16 }}>📦</div>
-                <h3 style={{ fontSize: 17, fontWeight: 700, color: "#1F2A24", margin: "0 0 8px 0" }}>Commandes</h3>
-                <p style={{ fontSize: 14, color: "#667085", lineHeight: 1.6, margin: 0 }}>Suivez chaque commande de A à Z : création, confirmation, préparation, livraison.</p>
-              </div>
-              <div style={{ ...card, padding: 28 }}>
-                <div style={{ width: 56, height: 56, borderRadius: "50%", background: "#EAF7EF", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, marginBottom: 16 }}>💳</div>
-                <h3 style={{ fontSize: 17, fontWeight: 700, color: "#1F2A24", margin: "0 0 8px 0" }}>Paiements</h3>
-                <p style={{ fontSize: 14, color: "#667085", lineHeight: 1.6, margin: 0 }}>Enregistrez les paiements, suivez les impayés et gérez plusieurs modes de règlement.</p>
-              </div>
-              <div style={{ ...card, padding: 28 }}>
-                <div style={{ width: 56, height: 56, borderRadius: "50%", background: "#EAF7EF", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, marginBottom: 16 }}>📱</div>
-                <h3 style={{ fontSize: 17, fontWeight: 700, color: "#1F2A24", margin: "0 0 8px 0" }}>WhatsApp Business</h3>
-                <p style={{ fontSize: 14, color: "#667085", lineHeight: 1.6, margin: 0 }}>Partagez votre boutique et communiquez avec vos clients directement via WhatsApp.</p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ── 5. How it works ── */}
-        <section id="how" style={{ marginTop: 60 }}>
-          <div className="lp-container">
-            <div style={{ textAlign: "center", marginBottom: 40 }}>
-              <h2 style={{ fontSize: 38, fontWeight: 800, color: "#1F2A24", margin: 0 }}>Comment ça marche ?</h2>
-              <p style={{ fontSize: 17, color: "#667085", marginTop: 10, marginBottom: 0 }}>En moins de 5 minutes, votre boutique est prête.</p>
-            </div>
-            <div className="lp-steps">
-              <div style={{ ...card, padding: 28 }}>
-                <div style={{ width: 44, height: 44, borderRadius: "50%", background: "#0A8F45", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 18, marginBottom: 20 }}>1</div>
-                <h3 style={{ fontSize: 18, fontWeight: 700, color: "#1F2A24", margin: "0 0 10px 0" }}>Créez votre compte</h3>
-                <p style={{ fontSize: 14, color: "#667085", lineHeight: 1.6, margin: 0 }}>Inscrivez-vous gratuitement et configurez votre boutique en quelques clics.</p>
-              </div>
-              <div style={{ ...card, padding: 28 }}>
-                <div style={{ width: 44, height: 44, borderRadius: "50%", background: "#0A8F45", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 18, marginBottom: 20 }}>2</div>
-                <h3 style={{ fontSize: 18, fontWeight: 700, color: "#1F2A24", margin: "0 0 10px 0" }}>Ajoutez vos produits</h3>
-                <p style={{ fontSize: 14, color: "#667085", lineHeight: 1.6, margin: 0 }}>Importez votre catalogue, fixez vos prix et activez votre boutique publique.</p>
-              </div>
-              <div style={{ ...card, padding: 28 }}>
-                <div style={{ width: 44, height: 44, borderRadius: "50%", background: "#0A8F45", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 18, marginBottom: 20 }}>3</div>
-                <h3 style={{ fontSize: 18, fontWeight: 700, color: "#1F2A24", margin: "0 0 10px 0" }}>Recevez vos commandes</h3>
-                <p style={{ fontSize: 14, color: "#667085", lineHeight: 1.6, margin: 0 }}>Vos clients commandent, vous recevez les notifications et gérez tout depuis le dashboard.</p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ── 6. Product Previews ── */}
-        <section id="product" style={{ marginTop: 60 }}>
-          <div className="lp-container">
-            <div style={{ textAlign: "center", marginBottom: 40 }}>
-              <h2 style={{ fontSize: 38, fontWeight: 800, color: "#1F2A24", margin: 0 }}>Découvrez le produit</h2>
-              <p style={{ fontSize: 17, color: "#667085", marginTop: 10, marginBottom: 0 }}>Un dashboard marchand complet et une boutique publique moderne.</p>
-            </div>
-            <div className="lp-previews">
-              {/* Dashboard preview */}
-              <div style={{ ...card, padding: 24, overflow: "hidden" }}>
-                <div style={{ display: "inline-block", background: "#EAF7EF", color: "#0A8F45", fontSize: 12, fontWeight: 600, borderRadius: 999, padding: "4px 12px", marginBottom: 14 }}>Dashboard</div>
-                <h3 style={{ fontSize: 22, fontWeight: 700, color: "#1F2A24", margin: "0 0 8px 0" }}>Votre tableau de bord</h3>
-                <p style={{ fontSize: 14, color: "#667085", marginBottom: 20, lineHeight: 1.6, marginTop: 0 }}>Suivez vos ventes, gérez vos commandes et analysez vos performances en temps réel.</p>
-                <div style={{ background: "#F8FAF9", borderRadius: 12, height: 220, overflow: "hidden", border: "1px solid #E8ECEA" }}>
-                  <svg viewBox="0 0 460 220" style={{ width: "100%", height: "100%" }} xmlns="http://www.w3.org/2000/svg">
-                    {/* Mini sidebar */}
-                    <rect x="0" y="0" width="70" height="220" fill="#1F2A24" />
-                    <rect x="8" y="10" width="24" height="24" rx="6" fill="#0A8F45" />
-                    <rect x="10" y="48" width="50" height="18" rx="4" fill="#0A8F45" fillOpacity="0.3" />
-                    <rect x="16" y="54" width="38" height="6" rx="3" fill="#0A8F45" />
-                    <rect x="16" y="78" width="38" height="6" rx="3" fill="#2D3B35" />
-                    <rect x="16" y="96" width="38" height="6" rx="3" fill="#2D3B35" />
-                    <rect x="16" y="114" width="38" height="6" rx="3" fill="#2D3B35" />
-                    <rect x="16" y="132" width="38" height="6" rx="3" fill="#2D3B35" />
-                    {/* Main area */}
-                    <rect x="70" y="0" width="390" height="32" fill="#fff" stroke="#E8ECEA" strokeWidth="1" />
-                    <rect x="80" y="12" width="60" height="8" rx="4" fill="#E8ECEA" />
-                    <circle cx="440" cy="16" r="10" fill="#EAF7EF" />
-                    {/* KPI row */}
-                    <rect x="78" y="40" width="110" height="44" rx="6" fill="#fff" stroke="#E8ECEA" strokeWidth="1" />
-                    <circle cx="92" cy="54" r="6" fill="#EAF7EF" />
-                    <rect x="102" y="50" width="50" height="6" rx="3" fill="#E8ECEA" />
-                    <rect x="84" y="67" width="60" height="8" rx="4" fill="#1F2A24" fillOpacity="0.2" />
-                    <rect x="202" y="40" width="110" height="44" rx="6" fill="#fff" stroke="#E8ECEA" strokeWidth="1" />
-                    <circle cx="216" cy="54" r="6" fill="#FFF4E0" />
-                    <rect x="226" y="50" width="50" height="6" rx="3" fill="#E8ECEA" />
-                    <rect x="208" y="67" width="60" height="8" rx="4" fill="#1F2A24" fillOpacity="0.2" />
-                    <rect x="326" y="40" width="126" height="44" rx="6" fill="#fff" stroke="#E8ECEA" strokeWidth="1" />
-                    <circle cx="340" cy="54" r="6" fill="#E8F0FE" />
-                    <rect x="350" y="50" width="50" height="6" rx="3" fill="#E8ECEA" />
-                    <rect x="332" y="67" width="60" height="8" rx="4" fill="#1F2A24" fillOpacity="0.2" />
-                    {/* Chart */}
-                    <rect x="78" y="92" width="220" height="114" rx="6" fill="#fff" stroke="#E8ECEA" strokeWidth="1" />
-                    <rect x="88" y="102" width="60" height="6" rx="3" fill="#E8ECEA" />
-                    <line x1="88" y1="178" x2="286" y2="178" stroke="#F0F2F1" strokeWidth="1" />
-                    <line x1="88" y1="162" x2="286" y2="162" stroke="#F0F2F1" strokeWidth="1" />
-                    <line x1="88" y1="146" x2="286" y2="146" stroke="#F0F2F1" strokeWidth="1" />
-                    <rect x="98" y="160" width="20" height="18" rx="3" fill="#DDF6E7" />
-                    <rect x="128" y="150" width="20" height="28" rx="3" fill="#DDF6E7" />
-                    <rect x="158" y="140" width="20" height="38" rx="3" fill="#0A8F45" />
-                    <rect x="188" y="155" width="20" height="23" rx="3" fill="#DDF6E7" />
-                    <rect x="218" y="148" width="20" height="30" rx="3" fill="#DDF6E7" />
-                    {/* Table */}
-                    <rect x="306" y="92" width="146" height="114" rx="6" fill="#fff" stroke="#E8ECEA" strokeWidth="1" />
-                    <rect x="306" y="92" width="146" height="20" rx="6" fill="#F8FAF9" />
-                    <rect x="306" y="100" width="146" height="12" fill="#F8FAF9" />
-                    <rect x="316" y="98" width="40" height="5" rx="2" fill="#E8ECEA" />
-                    <rect x="316" y="120" width="50" height="5" rx="2" fill="#1F2A24" fillOpacity="0.2" />
-                    <rect x="380" y="120" width="30" height="5" rx="2" fill="#E8ECEA" />
-                    <rect x="316" y="134" width="44" height="5" rx="2" fill="#1F2A24" fillOpacity="0.2" />
-                    <rect x="380" y="134" width="30" height="5" rx="2" fill="#E8ECEA" />
-                    <rect x="316" y="148" width="48" height="5" rx="2" fill="#1F2A24" fillOpacity="0.2" />
-                    <rect x="380" y="148" width="30" height="5" rx="2" fill="#E8ECEA" />
-                    <rect x="316" y="162" width="40" height="5" rx="2" fill="#1F2A24" fillOpacity="0.2" />
-                    <rect x="380" y="162" width="30" height="5" rx="2" fill="#E8ECEA" />
-                    <rect x="316" y="176" width="52" height="5" rx="2" fill="#1F2A24" fillOpacity="0.2" />
-                    <rect x="380" y="176" width="30" height="5" rx="2" fill="#E8ECEA" />
-                  </svg>
-                </div>
-              </div>
-
-              {/* Storefront preview */}
-              <div style={{ ...card, padding: 24, overflow: "hidden" }}>
-                <div style={{ display: "inline-block", background: "#EAF7EF", color: "#0A8F45", fontSize: 12, fontWeight: 600, borderRadius: 999, padding: "4px 12px", marginBottom: 14 }}>Storefront</div>
-                <h3 style={{ fontSize: 22, fontWeight: 700, color: "#1F2A24", margin: "0 0 8px 0" }}>Votre boutique publique</h3>
-                <p style={{ fontSize: 14, color: "#667085", marginBottom: 20, lineHeight: 1.6, marginTop: 0 }}>Partagez un lien direct à vos clients. Ils voient vos produits, passent commande, c&apos;est tout.</p>
-                <div style={{ display: "flex", justifyContent: "center", alignItems: "flex-start", height: 220 }}>
-                  <div style={{ height: 220, width: 120, background: "#F8FAF9", borderRadius: 20, border: "2px solid #E8ECEA", overflow: "hidden" }}>
-                    <svg viewBox="0 0 120 220" style={{ width: "100%", height: "100%" }} xmlns="http://www.w3.org/2000/svg">
-                      {/* Phone header */}
-                      <rect x="0" y="0" width="120" height="28" fill="#0A8F45" />
-                      <rect x="8" y="10" width="44" height="8" rx="4" fill="#fff" fillOpacity="0.7" />
-                      <circle cx="106" cy="14" r="8" fill="#08763A" />
-                      {/* Product grid */}
-                      <rect x="6" y="36" width="50" height="60" rx="8" fill="#fff" stroke="#E8ECEA" strokeWidth="1" />
-                      <rect x="6" y="36" width="50" height="32" rx="8" fill="#EAF7EF" />
-                      <rect x="6" y="52" width="50" height="16" fill="#EAF7EF" />
-                      <circle cx="31" cy="50" r="8" fill="#0A8F45" fillOpacity="0.25" />
-                      <rect x="12" y="76" width="30" height="5" rx="2" fill="#1F2A24" fillOpacity="0.3" />
-                      <rect x="12" y="85" width="22" height="5" rx="2" fill="#0A8F45" fillOpacity="0.5" />
-
-                      <rect x="64" y="36" width="50" height="60" rx="8" fill="#fff" stroke="#E8ECEA" strokeWidth="1" />
-                      <rect x="64" y="36" width="50" height="32" rx="8" fill="#FFF4E0" />
-                      <rect x="64" y="52" width="50" height="16" fill="#FFF4E0" />
-                      <circle cx="89" cy="50" r="8" fill="#D18F17" fillOpacity="0.25" />
-                      <rect x="70" y="76" width="30" height="5" rx="2" fill="#1F2A24" fillOpacity="0.3" />
-                      <rect x="70" y="85" width="22" height="5" rx="2" fill="#0A8F45" fillOpacity="0.5" />
-
-                      <rect x="6" y="104" width="50" height="60" rx="8" fill="#fff" stroke="#E8ECEA" strokeWidth="1" />
-                      <rect x="6" y="104" width="50" height="32" rx="8" fill="#E8F0FE" />
-                      <rect x="6" y="120" width="50" height="16" fill="#E8F0FE" />
-                      <circle cx="31" cy="118" r="8" fill="#4A90D9" fillOpacity="0.25" />
-                      <rect x="12" y="144" width="30" height="5" rx="2" fill="#1F2A24" fillOpacity="0.3" />
-                      <rect x="12" y="153" width="22" height="5" rx="2" fill="#0A8F45" fillOpacity="0.5" />
-
-                      <rect x="64" y="104" width="50" height="60" rx="8" fill="#fff" stroke="#E8ECEA" strokeWidth="1" />
-                      <rect x="64" y="104" width="50" height="32" rx="8" fill="#FCE8E8" />
-                      <rect x="64" y="120" width="50" height="16" fill="#FCE8E8" />
-                      <circle cx="89" cy="118" r="8" fill="#A63B35" fillOpacity="0.2" />
-                      <rect x="70" y="144" width="30" height="5" rx="2" fill="#1F2A24" fillOpacity="0.3" />
-                      <rect x="70" y="153" width="22" height="5" rx="2" fill="#0A8F45" fillOpacity="0.5" />
-
-                      {/* CTA button */}
-                      <rect x="6" y="174" width="108" height="28" rx="8" fill="#0A8F45" />
-                      <rect x="28" y="185" width="64" height="7" rx="3" fill="#fff" fillOpacity="0.85" />
-                      {/* Bottom bar */}
-                      <rect x="0" y="206" width="120" height="14" fill="#F0F2F1" />
-                      <rect x="42" y="209" width="36" height="5" rx="2" fill="#E8ECEA" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ── 7. Testimonials ── */}
-        <section id="testimonials" style={{ marginTop: 60 }}>
-          <div className="lp-container">
-            <div style={{ textAlign: "center", marginBottom: 40 }}>
-              <h2 style={{ fontSize: 38, fontWeight: 800, color: "#1F2A24", margin: 0 }}>Ce que disent nos utilisateurs</h2>
-              <p style={{ fontSize: 15, color: "#667085", marginTop: 8, marginBottom: 0 }}>Les premiers commerçants à tester BizManager partagent leur expérience.</p>
-            </div>
-            <div className="lp-testimonials">
-              <div style={{ ...card, padding: 24 }}>
-                <div style={{ color: "#F08A24", fontSize: 13, marginBottom: 14 }}>★★★★★</div>
-                <p style={{ fontSize: 14, color: "#1F2A24", lineHeight: 1.7, fontStyle: "italic", margin: "0 0 20px 0" }}>
-                  &quot;BizManager m&apos;a permis de gérer mes 50 commandes quotidiennes sans stress. Indispensable !&quot;
-                </p>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <div style={{ width: 44, height: 44, borderRadius: "50%", background: "#DDF6E7", color: "#0A8F45", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 14, flexShrink: 0 }}>AD</div>
-                  <div>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: "#1F2A24" }}>Awa Diallo</div>
-                    <div style={{ fontSize: 12, color: "#98A2B3", marginTop: 2 }}>Boutique de vêtements · Dakar</div>
-                  </div>
-                </div>
-              </div>
-              <div style={{ ...card, padding: 24 }}>
-                <div style={{ color: "#F08A24", fontSize: 13, marginBottom: 14 }}>★★★★★</div>
-                <p style={{ fontSize: 14, color: "#1F2A24", lineHeight: 1.7, fontStyle: "italic", margin: "0 0 20px 0" }}>
-                  &quot;Je partage mon lien WhatsApp et mes clients commandent directement. C&apos;est magique.&quot;
-                </p>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <div style={{ width: 44, height: 44, borderRadius: "50%", background: "#DDF6E7", color: "#0A8F45", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 14, flexShrink: 0 }}>KT</div>
-                  <div>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: "#1F2A24" }}>Kofi Tano</div>
-                    <div style={{ fontSize: 12, color: "#98A2B3", marginTop: 2 }}>Électronique · Abidjan</div>
-                  </div>
-                </div>
-              </div>
-              <div style={{ ...card, padding: 24 }}>
-                <div style={{ color: "#F08A24", fontSize: 13, marginBottom: 14 }}>★★★★★</div>
-                <p style={{ fontSize: 14, color: "#1F2A24", lineHeight: 1.7, fontStyle: "italic", margin: "0 0 20px 0" }}>
-                  &quot;Les rapports de ventes m&apos;aident à prendre les bonnes décisions chaque semaine.&quot;
-                </p>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <div style={{ width: 44, height: 44, borderRadius: "50%", background: "#DDF6E7", color: "#0A8F45", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 14, flexShrink: 0 }}>FM</div>
-                  <div>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: "#1F2A24" }}>Fatou Mbaye</div>
-                    <div style={{ fontSize: 12, color: "#98A2B3", marginTop: 2 }}>Cosmétiques · Yaoundé</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ── 8. Pricing ── */}
-        <section id="pricing" style={{ marginTop: 60 }}>
-          <div className="lp-container">
-            <div style={{ textAlign: "center", marginBottom: 40 }}>
-              <h2 style={{ fontSize: 38, fontWeight: 800, color: "#1F2A24", margin: 0 }}>Choisissez votre plan</h2>
-              <p style={{ fontSize: 17, color: "#667085", marginTop: 10, marginBottom: 0 }}>Démarrez gratuitement, évoluez quand vous en avez besoin.</p>
-            </div>
-            <div className="lp-pricing">
-              {/* Starter */}
-              <div style={{ ...card, padding: 28 }}>
-                <div style={{ fontSize: 16, fontWeight: 700, color: "#667085", marginBottom: 16 }}>Starter</div>
-                <div style={{ display: "flex", alignItems: "flex-end", gap: 4, marginBottom: 6 }}>
-                  <span style={{ fontSize: 42, fontWeight: 800, color: "#1F2A24", lineHeight: 1 }}>0 FCFA</span>
-                  <span style={{ fontSize: 14, color: "#667085", marginBottom: 4 }}>/mois</span>
-                </div>
-                <p style={{ fontSize: 14, color: "#667085", marginTop: 0, marginBottom: 0 }}>Pour commencer à zéro</p>
-                <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 8 }}>
-                  {[
-                    { text: "1 boutique", ok: true },
-                    { text: "20 produits", ok: true },
-                    { text: "Commandes illimitées", ok: true },
-                    { text: "Partage WhatsApp", ok: true },
-                    { text: "Analytics avancés", ok: false },
-                    { text: "Support prioritaire", ok: false },
-                  ].map((item) => (
-                    <div key={item.text} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span style={{ color: item.ok ? "#0A8F45" : "#D0D5DD", fontSize: 14, fontWeight: 700, flexShrink: 0 }}>{item.ok ? "✓" : "✗"}</span>
-                      <span style={{ fontSize: 14, color: "#667085" }}>{item.text}</span>
-                    </div>
-                  ))}
-                </div>
-                <a href="/register?plan=starter" style={{ ...btnOutline, width: "100%", textAlign: "center", marginTop: 24, display: "block" }}>
-                  Commencer gratuitement
-                </a>
-              </div>
-
-              {/* Business — Featured */}
-              <div style={{ background: "#fff", border: "2px solid #0A8F45", borderRadius: 20, padding: 28, position: "relative", boxShadow: "0 8px 32px rgba(10,143,69,0.14)" }}>
-                <div style={{ position: "absolute", top: -14, left: "50%", transform: "translateX(-50%)", background: "#0A8F45", color: "#fff", fontSize: 12, fontWeight: 600, borderRadius: 999, padding: "4px 16px", whiteSpace: "nowrap" }}>
-                  Le plus populaire
-                </div>
-                <div style={{ fontSize: 16, fontWeight: 700, color: "#0A8F45", marginBottom: 16 }}>Business</div>
-                <div style={{ display: "flex", alignItems: "flex-end", gap: 4, marginBottom: 6 }}>
-                  <span style={{ fontSize: 42, fontWeight: 800, color: "#1F2A24", lineHeight: 1 }}>4 500 FCFA</span>
-                  <span style={{ fontSize: 14, color: "#667085", marginBottom: 4 }}>/mois</span>
-                </div>
-                <p style={{ fontSize: 14, color: "#667085", marginTop: 0, marginBottom: 0 }}>Pour les boutiques en croissance</p>
-                <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 8 }}>
-                  {[
-                    "3 boutiques",
-                    "500 produits",
-                    "Commandes illimitées",
-                    "Analytics complets",
-                    "Gestion clients",
-                    "Support prioritaire",
-                  ].map((text) => (
-                    <div key={text} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span style={{ color: "#0A8F45", fontSize: 14, fontWeight: 700, flexShrink: 0 }}>✓</span>
-                      <span style={{ fontSize: 14, color: "#667085" }}>{text}</span>
-                    </div>
-                  ))}
-                </div>
-                <a href="/register?plan=business" style={{ ...btnGreen, width: "100%", textAlign: "center", marginTop: 24, display: "block" }}>
-                  Choisir Business
-                </a>
-              </div>
-
-              {/* Premium */}
-              <div style={{ ...card, padding: 28 }}>
-                <div style={{ fontSize: 16, fontWeight: 700, color: "#667085", marginBottom: 16 }}>Premium</div>
-                <div style={{ display: "flex", alignItems: "flex-end", gap: 4, marginBottom: 6 }}>
-                  <span style={{ fontSize: 42, fontWeight: 800, color: "#1F2A24", lineHeight: 1 }}>10 000 FCFA</span>
-                  <span style={{ fontSize: 14, color: "#667085", marginBottom: 4 }}>/mois</span>
-                </div>
-                <p style={{ fontSize: 14, color: "#667085", marginTop: 0, marginBottom: 0 }}>Pour les pros multi-boutiques</p>
-                <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 8 }}>
-                  {[
-                    "Boutiques illimitées",
-                    "Tout Business inclus",
-                    "API access",
-                    "Rapports personnalisés",
-                    "Manager dédié",
-                    "Onboarding guidé",
-                  ].map((text) => (
-                    <div key={text} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span style={{ color: "#0A8F45", fontSize: 14, fontWeight: 700, flexShrink: 0 }}>✓</span>
-                      <span style={{ fontSize: 14, color: "#667085" }}>{text}</span>
-                    </div>
-                  ))}
-                </div>
-                <a href="/register?plan=premium" style={{ ...btnOutline, width: "100%", textAlign: "center", marginTop: 24, display: "block" }}>
-                  Choisir Premium
-                </a>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ── 9. FAQ ── */}
-        <section id="faq" style={{ marginTop: 60 }}>
-          <div className="lp-container">
-            <div style={{ textAlign: "center", marginBottom: 40 }}>
-              <h2 style={{ fontSize: 38, fontWeight: 800, color: "#1F2A24", margin: 0 }}>Questions fréquentes</h2>
-              <p style={{ fontSize: 17, color: "#667085", marginTop: 10, marginBottom: 0 }}>Tout ce que vous devez savoir avant de démarrer.</p>
-            </div>
-            <div style={{ maxWidth: 720, margin: "0 auto", display: "flex", flexDirection: "column", gap: 12 }}>
-              {[
-                {
-                  q: "Est-ce vraiment gratuit pour commencer ?",
-                  a: "Oui, le plan Starter est entièrement gratuit, sans carte bancaire. Il vous permet de créer 1 boutique avec jusqu'à 20 produits et de recevoir des commandes illimitées. Vous ne payez que si vous souhaitez passer à un plan supérieur.",
-                },
-                {
-                  q: "Comment fonctionne l'intégration WhatsApp ?",
-                  a: "BizManager génère un lien de partage de votre boutique que vous envoyez à vos clients via WhatsApp. Vos clients voient vos produits, passent commande et vous recevez une notification. Vous pouvez aussi envoyer des messages de suivi directement depuis le dashboard.",
-                },
-                {
-                  q: "Mes clients peuvent-ils payer en ligne ?",
-                  a: "Oui. BizManager intègre GeniusPay pour accepter les paiements en ligne via Orange Money, Mobile Money et virement bancaire. Vous pouvez aussi enregistrer les paiements en espèces (cash) depuis le dashboard.",
-                },
-                {
-                  q: "L'application fonctionne-t-elle sur mobile ?",
-                  a: "Le dashboard marchand est accessible depuis n'importe quel navigateur, desktop ou mobile. La boutique publique de vos clients est entièrement optimisée mobile — vos clients commandent depuis leur téléphone.",
-                },
-                {
-                  q: "Puis-je ajouter des membres à mon équipe ?",
-                  a: "Oui, dès le plan Business vous pouvez inviter des collaborateurs (managers, vendeurs) avec des rôles et permissions configurables. Chaque membre voit uniquement les boutiques auxquelles il a accès.",
-                },
-                {
-                  q: "Comment sont sécurisées mes données ?",
-                  a: "Vos données sont stockées sur une base PostgreSQL chiffrée (Neon) et l'application est hébergée sur Vercel avec HTTPS. Les mots de passe sont hachés avec bcrypt. Aucune donnée sensible n'est transmise à des tiers sans votre accord.",
-                },
-                {
-                  q: "Puis-je gérer plusieurs boutiques ?",
-                  a: "Oui. Le plan Business autorise jusqu'à 3 boutiques, le plan Premium jusqu'à 10. Chaque boutique a son propre catalogue, ses propres commandes et son propre lien public.",
-                },
-                {
-                  q: "Comment résilier mon abonnement ?",
-                  a: "Vous pouvez résilier à tout moment depuis votre tableau de bord, sans engagement. Vous conservez l'accès jusqu'à la fin de la période payée. Vos données sont supprimées dans un délai de 30 jours après résiliation.",
-                },
-              ].map((item) => (
-                <details key={item.q} style={{ background: "#fff", border: "1.5px solid #E8ECEA", borderRadius: 14, overflow: "hidden" }}>
-                  <summary style={{ padding: "18px 22px", fontSize: 15, fontWeight: 600, color: "#1F2A24", cursor: "pointer", listStyle: "none", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16 }}>
-                    {item.q}
-                    <span className="faq-icon" style={{ flexShrink: 0, width: 22, height: 22, borderRadius: "50%", background: "#EAF7EF", display: "flex", alignItems: "center", justifyContent: "center" }} />
-                  </summary>
-                  <div style={{ padding: "0 22px 18px", fontSize: 14, color: "#667085", lineHeight: 1.75, borderTop: "1px solid #F4F6F5" }}>
-                    <div style={{ paddingTop: 14 }}>{item.a}</div>
-                  </div>
-                </details>
-              ))}
-            </div>
-            <div style={{ textAlign: "center", marginTop: 32 }}>
-              <p style={{ fontSize: 14, color: "#667085", margin: "0 0 12px 0" }}>Vous avez d&apos;autres questions ?</p>
-              <a href="mailto:contact@bizmanager.africa" style={{ ...btnOutline, fontSize: 14, padding: "10px 22px" }}>Contactez-nous</a>
-            </div>
-          </div>
-        </section>
-
-        {/* ── 10. CTA ── */}
-        <section style={{ marginTop: 48 }}>
-          <div className="lp-container">
-            <div style={{ background: "linear-gradient(135deg, #0A8F45 0%, #08763A 100%)", borderRadius: 20, padding: "48px 56px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 24 }}>
-              <div>
-                <h2 style={{ fontSize: 30, fontWeight: 800, color: "#fff", margin: 0 }}>Prêt à lancer votre boutique ?</h2>
-                <p style={{ fontSize: 16, color: "rgba(255,255,255,0.8)", marginTop: 8, marginBottom: 0 }}>Créez votre boutique en ligne gratuitement et commencez à recevoir des commandes dès aujourd&apos;hui.</p>
-              </div>
-              <a href="/register" style={{ background: "#fff", color: "#0A8F45", borderRadius: 12, padding: "14px 32px", fontSize: 16, fontWeight: 700, textDecoration: "none", display: "inline-block", whiteSpace: "nowrap" }}>
-                Commencer gratuitement →
-              </a>
-            </div>
-          </div>
-        </section>
-
-        {/* ── 11. Footer ── */}
-        <footer style={{ marginTop: 32, paddingTop: 40, paddingBottom: 40, borderTop: "1.5px solid #E8ECEA" }}>
-          <div className="lp-container">
-            <div className="lp-footer-grid">
-              {/* Brand */}
-              <div>
-                <a href="/" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none", marginBottom: 12 }}>
-                  <div style={{ width: 36, height: 36, borderRadius: 10, background: "#0A8F45", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, fontSize: 16 }}>BM</div>
-                  <span style={{ fontSize: 17, fontWeight: 700, color: "#1F2A24" }}>BizManager</span>
-                </a>
-                <p style={{ fontSize: 13, color: "#667085", marginTop: 12, lineHeight: 1.6, maxWidth: 220, marginBottom: 0 }}>
-                  La plateforme de gestion tout-en-un pour les commerçants africains.
-                </p>
-                <p style={{ fontSize: 12, color: "#98A2B3", marginTop: 16, marginBottom: 0 }}>© 2026 BizManager</p>
-              </div>
-
-              {/* Produit */}
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: "#1F2A24", marginBottom: 14, textTransform: "uppercase", letterSpacing: "0.06em" }}>Produit</div>
-                {["Fonctionnalités", "Tarifs", "Mises à jour", "Feuille de route"].map((link) => (
-                  <a key={link} href="#" style={{ fontSize: 14, color: "#667085", textDecoration: "none", display: "block", marginBottom: 10, lineHeight: 1.6 }}>{link}</a>
-                ))}
-              </div>
-
-              {/* Ressources */}
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: "#1F2A24", marginBottom: 14, textTransform: "uppercase", letterSpacing: "0.06em" }}>Ressources</div>
-                {["Documentation", "FAQ", "Blog", "Tutoriels"].map((link) => (
-                  <a key={link} href="#" style={{ fontSize: 14, color: "#667085", textDecoration: "none", display: "block", marginBottom: 10, lineHeight: 1.6 }}>{link}</a>
-                ))}
-              </div>
-
-              {/* Légal */}
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: "#1F2A24", marginBottom: 14, textTransform: "uppercase", letterSpacing: "0.06em" }}>Légal</div>
-                {[
-                  { label: "Mentions légales",           href: "/mentions-legales" },
-                  { label: "CGU",                        href: "/cgu" },
-                  { label: "Politique de confidentialité", href: "/politique-de-confidentialite" },
-                  { label: "Contact",                    href: "mailto:contact@bizmanager.africa" },
-                ].map((link) => (
-                  <a key={link.label} href={link.href} style={{ fontSize: 14, color: "#667085", textDecoration: "none", display: "block", marginBottom: 10, lineHeight: 1.6 }}>{link.label}</a>
-                ))}
-              </div>
-            </div>
-          </div>
-        </footer>
-
-      </div>
-    </>
+      <MarketingFooter />
+    </div>
   );
 }

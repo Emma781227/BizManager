@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
+import { Check } from "lucide-react";
 
 export default function ConfirmationPage() {
   const routeParams = useParams<{ slug: string }>();
@@ -14,8 +15,8 @@ export default function ConfirmationPage() {
   return (
     <main className="min-h-screen bg-[linear-gradient(180deg,#f7faf7_0%,#eef5f0_100%)] px-4 py-8 text-slate-900 sm:px-6 lg:px-8">
       <section className="mx-auto w-full max-w-3xl rounded-3xl border border-emerald-100 bg-white p-6 shadow-[0_24px_80px_rgba(15,23,42,0.10)] sm:p-8">
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-600 text-2xl font-semibold text-white">
-          ✓
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-600 text-white">
+          <Check size={26} strokeWidth={2.5} />
         </div>
 
         <h1 className="mt-5 text-center text-3xl font-semibold tracking-tight text-slate-950">Merci !</h1>

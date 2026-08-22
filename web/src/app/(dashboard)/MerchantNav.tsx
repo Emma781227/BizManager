@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Search, X, Menu } from "lucide-react";
+import { Search, X, Menu, Package, ShoppingBag, User } from "lucide-react";
 import { useActiveShop } from "@/hooks/useActiveShop";
 
 type NavItem = {
@@ -25,7 +25,7 @@ function isActive(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-const TYPE_ICON: Record<string, string> = { product: "📦", order: "🛒", customer: "👤" };
+const TYPE_ICON = { product: Package, order: ShoppingBag, customer: User } as const;
 
 export default function MerchantNav({ links, email }: { links: NavItem[]; email: string }) {
   const pathname  = usePathname();
@@ -101,7 +101,7 @@ export default function MerchantNav({ links, email }: { links: NavItem[]; email:
           })),
           ...(ordD.data ?? []).slice(0, 3).map(o => ({
             type: "order" as const, id: o.id,
-            label: `#${o.id.slice(-6).toUpperCase()} — ${o.customer?.fullName ?? ""}`,
+            label: `#${o.id.slice(-6).toUpperCase()} · ${o.customer?.fullName ?? ""}`,
             sub: `${parseFloat(String(o.totalAmount)).toLocaleString("fr-FR")} FCFA`,
             href: "/orders",
           })),
@@ -219,7 +219,10 @@ export default function MerchantNav({ links, email }: { links: NavItem[]; email:
                   onMouseEnter={e => (e.currentTarget.style.background = "#F8FAF9")}
                   onMouseLeave={e => (e.currentTarget.style.background = "none")}
                 >
-                  <span style={{ fontSize: 13 }}>{TYPE_ICON[r.type]}</span>
+                  {(() => {
+                    const ResultIcon = TYPE_ICON[r.type];
+                    return <ResultIcon size={15} strokeWidth={1.9} style={{ color: "#737e7a", flexShrink: 0 }} />;
+                  })()}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 12, fontWeight: 600, color: "#1F2A24", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {r.label}
@@ -367,7 +370,7 @@ export default function MerchantNav({ links, email }: { links: NavItem[]; email:
               })}
             </div>
 
-            {/* Logout — sticky at bottom */}
+            {/* Logout - sticky at bottom */}
             <div style={{
               padding: "12px 16px 24px", borderTop: "1px solid #E8ECEA",
               position: "sticky", bottom: 0, background: "#f7faf8",

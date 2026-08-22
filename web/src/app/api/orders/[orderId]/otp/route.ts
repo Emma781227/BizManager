@@ -90,7 +90,7 @@ export async function POST(request: NextRequest, context: RouteParams) {
         html: `
           <div style="font-family:Arial,sans-serif;line-height:1.5;color:#1f2937;max-width:480px;margin:0 auto">
             <div style="background:#0A8F45;padding:20px 24px;border-radius:12px 12px 0 0">
-              <h2 style="margin:0;color:#fff;font-size:17px">Confirmation de livraison — ${order.shop.name}</h2>
+              <h2 style="margin:0;color:#fff;font-size:17px">Confirmation de livraison · ${order.shop.name}</h2>
             </div>
             <div style="background:#fff;padding:24px;border:1px solid #e8ecea;border-top:none;border-radius:0 0 12px 12px">
               <p style="margin:0 0 14px;font-size:14px">

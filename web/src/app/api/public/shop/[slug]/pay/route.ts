@@ -102,7 +102,7 @@ export async function POST(request: NextRequest, context: RouteParams) {
       if (!item.variantId) return NextResponse.json({ error: `Veuillez sélectionner une variante pour "${product.name}"` }, { status: 400 });
       const variant = product.variants.find(v => v.id === item.variantId);
       if (!variant) return NextResponse.json({ error: `Variante introuvable pour "${product.name}"` }, { status: 404 });
-      if (variant.stock < item.quantity) return NextResponse.json({ error: `Stock insuffisant pour "${product.name} — ${variant.label}".` }, { status: 409 });
+      if (variant.stock < item.quantity) return NextResponse.json({ error: `Stock insuffisant pour "${product.name} (${variant.label})".` }, { status: 409 });
       const unitPrice = variant.priceOverride != null ? Number(variant.priceOverride) : Number(product.unitPrice);
       resolvedItems.push({ productId: item.productId, variantId: variant.id, variantLabel: variant.label, quantity: item.quantity, unitPrice });
     } else {
@@ -187,7 +187,7 @@ export async function POST(request: NextRequest, context: RouteParams) {
     const payment = await initiatePayment({
       amount:      totalAmount,
       currency:    "XOF",
-      description: `Commande ${shop.name} — ${resolvedItems.length} article(s)`,
+      description: `Commande ${shop.name} · ${resolvedItems.length} article(s)`,
       customer:    { name: customerName, email: customerEmail, phone: customerPhone },
       successUrl:  `${statusBase}&result=success`,
       errorUrl:    `${statusBase}&result=error`,
@@ -220,7 +220,7 @@ export async function POST(request: NextRequest, context: RouteParams) {
     customerName, customerPhone, address: customerAddress ?? null, note: notes ?? null,
     items: resolvedItems.map(item => {
       const product = products.find(p => p.id === item.productId)!;
-      return { productName: item.variantLabel ? `${product.name} — ${item.variantLabel}` : product.name, quantity: item.quantity, unitPrice: item.unitPrice, lineTotal: item.unitPrice * item.quantity };
+      return { productName: item.variantLabel ? `${product.name} (${item.variantLabel})` : product.name, quantity: item.quantity, unitPrice: item.unitPrice, lineTotal: item.unitPrice * item.quantity };
     }),
     totalAmount,
   });
