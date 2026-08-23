@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { AlertTriangle, Info, Image, Tag, Clock } from "lucide-react";
+import { AlertTriangle, Info, Image, Tag, Clock, ArrowRight, Check, X } from "lucide-react";
 
 // ─── CSS ──────────────────────────────────────────────────────────────────────
 const CSS = `
@@ -33,8 +33,8 @@ const CSS = `
 .sm-toggle.on { background:#0A8F45; }
 .sm-toggle::after { content:''; position:absolute; top:4px; left:4px; width:16px; height:16px; background:#fff; border-radius:50%; transition:transform .2s; box-shadow:0 1px 3px rgba(0,0,0,0.15); }
 .sm-toggle.on::after { transform:translateX(18px); }
-.sm-slug-ok   { color:#0A8F45; font-size:12px; font-weight:600; }
-.sm-slug-err  { color:#EF4444; font-size:12px; font-weight:600; }
+.sm-slug-ok   { display:inline-flex; align-items:center; gap:4px; color:#0A8F45; font-size:12px; font-weight:600; }
+.sm-slug-err  { display:inline-flex; align-items:center; gap:4px; color:#EF4444; font-size:12px; font-weight:600; }
 .sm-slug-chk  { color:#98A2B3; font-size:12px; }
 .sm-phone-row { display:flex; gap:8px; }
 .sm-phone-row .sm-input { flex:1; min-width:0; }
@@ -237,7 +237,7 @@ export default function CreateShopModal({ open, onClose, onCreated }: CreateShop
               <h2 style={{fontSize:20, fontWeight:800, color:"#1F2A24", margin:0}}>Créer une boutique</h2>
               <p style={{fontSize:13, color:"#667085", margin:"4px 0 0"}}>Ajoutez une nouvelle boutique à votre espace marchand.</p>
             </div>
-            <button onClick={handleClose} style={{background:"none",border:"1.5px solid #E8ECEA",borderRadius:8,width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",color:"#667085",fontSize:16,flexShrink:0}}>✕</button>
+            <button onClick={handleClose} style={{background:"none",border:"1.5px solid #E8ECEA",borderRadius:8,width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",color:"#667085",flexShrink:0}} aria-label="Fermer"><X size={16} strokeWidth={2} /></button>
           </div>
 
           <div className="sm-body">
@@ -253,7 +253,7 @@ export default function CreateShopModal({ open, onClose, onCreated }: CreateShop
                     Plan {quota.plan.displayName} : vous utilisez {quota.usage.shops} / {quota.plan.maxShops} boutique{quota.plan.maxShops > 1 ? "s" : ""}.
                   </div>
                   {quota.usage.shops >= quota.plan.maxShops && (
-                    <div style={{fontSize:12, color:"#F08A24", marginTop:2}}>Quota atteint — passez à un plan supérieur pour créer davantage de boutiques.</div>
+                    <div style={{fontSize:12, color:"#F08A24", marginTop:2}}>Quota atteint. Passez à un plan supérieur pour créer davantage de boutiques.</div>
                   )}
                 </div>
                 <div style={{display:"flex", alignItems:"center", gap:10, flexShrink:0}}>
@@ -317,8 +317,8 @@ export default function CreateShopModal({ open, onClose, onCreated }: CreateShop
                       style={{paddingRight:110}}
                     />
                     <span style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",pointerEvents:"none"}}>
-                      {slugStatus === "available" && <span className="sm-slug-ok">✓ Disponible</span>}
-                      {slugStatus === "taken"     && <span className="sm-slug-err">✗ Indisponible</span>}
+                      {slugStatus === "available" && <span className="sm-slug-ok"><Check size={12} strokeWidth={2.5} /> Disponible</span>}
+                      {slugStatus === "taken"     && <span className="sm-slug-err"><X size={12} strokeWidth={2.5} /> Indisponible</span>}
                       {slugStatus === "checking"  && <span className="sm-slug-chk">Vérification…</span>}
                     </span>
                   </div>
@@ -463,7 +463,7 @@ export default function CreateShopModal({ open, onClose, onCreated }: CreateShop
                     <span style={{fontSize:12,fontWeight:600,color:"#1F2A24",textAlign:"center",lineHeight:1.3}}>{p.label}</span>
                     <div style={{width:18,height:18,borderRadius:5,border:`2px solid ${payMethods.includes(p.id) ? p.border : "#E8ECEA"}`,
                       background:payMethods.includes(p.id) ? p.border : "#fff",display:"flex",alignItems:"center",justifyContent:"center"}}>
-                      {payMethods.includes(p.id) && <span style={{color:"#fff",fontSize:11,fontWeight:800}}>✓</span>}
+                      {payMethods.includes(p.id) && <Check size={12} strokeWidth={3} color="#fff" />}
                     </div>
                   </div>
                 ))}
@@ -499,9 +499,9 @@ export default function CreateShopModal({ open, onClose, onCreated }: CreateShop
               style={{height:44,padding:"0 28px",borderRadius:10,fontSize:14,fontWeight:700,border:"none",minWidth:200,
                 cursor:isSubmitting ? "wait" : "pointer",
                 background: (quota !== null && quota.usage.shops >= quota.plan.maxShops) ? "#E8ECEA"
-                          : isSubmitting ? "#7CC49E" : "#0A8F45",
+                          : isSubmitting ? "#71d69d" : "#0A8F45",
                 color: (quota !== null && quota.usage.shops >= quota.plan.maxShops) ? "#98A2B3" : "#fff"}}>
-              {isSubmitting ? "Création en cours…" : "Créer la boutique →"}
+              {isSubmitting ? "Création en cours…" : <>Créer la boutique <ArrowRight size={14} strokeWidth={2.25} style={{verticalAlign:"-2px"}} /></>}
             </button>
           </div>
 

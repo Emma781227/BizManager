@@ -14,7 +14,7 @@ function hashToken(raw: string): string {
 const ALLOWED_ROLES = ["manager", "staff"] as const;
 type InviteRole = (typeof ALLOWED_ROLES)[number];
 
-// GET /api/team — liste membres + invitations pending
+// GET /api/team - liste membres + invitations pending
 export async function GET(request: NextRequest) {
   const session = await getSessionFromRequest(request);
   if (!session) return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({ members: memberships, invitations });
 }
 
-// POST /api/team — inviter un collaborateur
+// POST /api/team - inviter un collaborateur
 export async function POST(request: NextRequest) {
   const session = await getSessionFromRequest(request);
   if (!session) return NextResponse.json({ error: "Non authentifié" }, { status: 401 });

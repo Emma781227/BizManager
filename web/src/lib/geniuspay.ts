@@ -61,12 +61,12 @@ export async function initiatePayment(
     const errObj = json.error as Record<string, unknown> | undefined;
     const msg = isJson
       ? ((errObj?.message ?? json.message ?? json.error ?? "Erreur GeniusPay") as string)
-      : `GeniusPay HTTP ${res.status} — réponse non-JSON reçue`;
+      : `GeniusPay HTTP ${res.status} : réponse non-JSON reçue`;
     throw new Error(msg);
   }
 
   if (!isJson || Object.keys(json).length === 0) {
-    throw new Error(`GeniusPay HTTP ${res.status} — réponse non-JSON reçue`);
+    throw new Error(`GeniusPay HTTP ${res.status} : réponse non-JSON reçue`);
   }
 
   // La réponse peut être { data: {...} } ou directement l'objet

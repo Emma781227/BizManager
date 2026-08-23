@@ -64,7 +64,7 @@ export const ROLE_LABELS: Record<StaffRole, string> = {
 };
 
 export const ROLE_DESCRIPTIONS: Record<StaffRole, string> = {
-  owner:   "Accès complet — gestion des boutiques, abonnement, équipe",
-  manager: "Gestion opérationnelle — produits, commandes, clients, stats",
-  staff:   "Accès limité — consultation et mise à jour de stock/statuts",
+  owner:   "Accès complet : boutiques, abonnement et équipe",
+  manager: "Gestion opérationnelle : produits, commandes, clients, stats",
+  staff:   "Accès limité : consultation et mise à jour du stock et des statuts",
 };

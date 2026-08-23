@@ -158,7 +158,7 @@ export const shopSchema = z.object({
       z
         .string()
         .trim()
-        .regex(openingHoursRegex, "Horaires invalides — format attendu : JOU,JOU|HH:mm-HH:mm ou HH:mm-HH:mm"),
+        .regex(openingHoursRegex, "Horaires invalides. Format attendu : JOU,JOU|HH:mm-HH:mm ou HH:mm-HH:mm"),
     ])
     .optional(),
   paymentMethods: z.array(z.string()).optional(),
@@ -180,7 +180,7 @@ export const createShopSchema = z.object({
   coverUrl:          z.string().optional().or(z.literal("")),
   openingHours:      z.union([
                        z.literal(""),
-                       z.string().trim().regex(openingHoursRegex, "Horaires invalides — format attendu : JOU,JOU|HH:mm-HH:mm ou HH:mm-HH:mm"),
+                       z.string().trim().regex(openingHoursRegex, "Horaires invalides. Format attendu : JOU,JOU|HH:mm-HH:mm ou HH:mm-HH:mm"),
                      ]).optional(),
   paymentMethods:    z.array(z.string()).optional(),
   isPublished:       z.boolean().optional(),

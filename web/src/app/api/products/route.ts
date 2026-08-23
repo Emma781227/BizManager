@@ -149,7 +149,7 @@ export async function POST(request: NextRequest) {
   if (!shop) return NextResponse.json({ error: "Boutique introuvable" }, { status: 404 });
 
   if (!hasPermission(shop._staffRole, "canManageProducts")) {
-    return NextResponse.json({ error: "Accès refusé — droits insuffisants" }, { status: 403 });
+    return NextResponse.json({ error: "Accès refusé : droits insuffisants" }, { status: 403 });
   }
 
   // Vérification quota produits

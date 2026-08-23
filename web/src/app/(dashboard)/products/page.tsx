@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import type React from "react";
 import { useActiveShop } from "@/hooks/useActiveShop";
 import CreateShopModal from "../shops/CreateShopModal";
-import { Camera, Package, Tag, Search, Info, Image, Film, Lock, Check, Pencil, Copy, Eye, Trash2, ChevronLeft, ChevronRight, Store, AlertCircle, AlertTriangle, RefreshCw, Upload, Download, BarChart2, User, ChevronDown, MessageCircle, BookOpen, X, Loader2, Shirt, Sparkles, ShoppingBag } from "lucide-react";
+import { Camera, Package, Tag, Search, Info, Image, Film, Lock, Check, Pencil, Copy, Eye, Trash2, ChevronLeft, ChevronRight, Store, AlertCircle, AlertTriangle, RefreshCw, Upload, Download, BarChart2, User, ChevronDown, MessageCircle, BookOpen, X, Loader2, Shirt, Sparkles, ShoppingBag, ArrowRight, Lightbulb } from "lucide-react";
 import LastModifiedBy from "../LastModifiedBy";
 import NextImage from "next/image";
 
@@ -98,7 +98,7 @@ const CSS = `
             border-radius:16px; padding:18px 24px; margin-bottom:20px;
             box-shadow:0 2px 10px rgba(16,24,40,.04); flex-wrap:wrap; }
 .pr-hier  { display:flex; align-items:center; gap:8px; font-size:13px; color:#1F2A24; }
-.pr-hier-sep { color:#98A2B3; font-size:16px; }
+.pr-hier-sep { color:#98A2B3; flex-shrink:0; }
 
 /* main grid */
 .pr-main  { display:grid; grid-template-columns:1fr 360px; gap:18px; margin-bottom:18px; }
@@ -257,7 +257,7 @@ const CSS = `
               box-shadow:0 6px 24px rgba(10,143,69,0.30);
               animation:toast-in .25s ease forwards; }
 .toast-wrap.hiding { animation:toast-out .25s ease forwards; }
-.toast-icon { font-size:16px; flex-shrink:0; }
+.toast-icon { display:flex; align-items:center; flex-shrink:0; }
 `;
 
 // ─── Badge helpers ─────────────────────────────────────────────────────────────
@@ -361,7 +361,7 @@ function VariantsEditor({ variants, onChange }: { variants: ProductVariantRow[];
     <div>
       {variants.length === 0 ? (
         <p style={{ fontSize:12, color:"#98A2B3", margin:"0 0 10px" }}>
-          Aucune variante — cliquez sur « + Ajouter » pour en créer.
+          Aucune variante. Cliquez sur « + Ajouter » pour en créer une.
         </p>
       ) : (
         <div style={{ display:"flex", gap:8, marginBottom:4, paddingRight:44 }}>
@@ -398,7 +398,7 @@ function VariantsEditor({ variants, onChange }: { variants: ProductVariantRow[];
         + Ajouter une variante
       </button>
       <p style={{ fontSize:11, color:"#98A2B3", margin:"10px 0 0", lineHeight:1.5 }}>
-        💡 Laissez le prix vide pour utiliser le <strong>prix de base</strong> du produit. Si les variantes ont des prix différents, le client verra « À partir de X FCFA » et le prix se met à jour automatiquement à chaque sélection.
+        <Lightbulb size={13} strokeWidth={2} style={{ verticalAlign: "-2px", marginRight: 4, color: "#c8890f" }} />Laissez le prix vide pour utiliser le <strong>prix de base</strong> du produit. Si les variantes ont des prix différents, le client verra « À partir de X FCFA » et le prix se met à jour automatiquement à chaque sélection.
       </p>
     </div>
   );
@@ -788,7 +788,7 @@ function AddProductModal({ open, onClose, shopId, shopName, categories, onCreate
               <div>
                 <span style={{ fontSize:14, fontWeight:700, color:"#1F2A24" }}>Variantes du produit</span>
                 <p style={{ margin:"2px 0 0", fontSize:12, color:"#667085" }}>
-                  Tailles, couleurs, modèles — chaque variante a son propre stock et un prix optionnel.
+                  Tailles, couleurs, modèles : chaque variante a son propre stock et un prix optionnel.
                 </p>
               </div>
               <button className={`pm-toggle${hasVariants ? " on" : ""}`} onClick={() => {
@@ -842,7 +842,7 @@ function AddProductModal({ open, onClose, shopId, shopName, categories, onCreate
             </div>
           )}
           {submitSuccess && (
-            <div style={{ background:"#DDF6E7", border:"1px solid #A8E0BF", borderRadius:10,
+            <div style={{ background:"#DDF6E7", border:"1px solid #a8e8c2", borderRadius:10,
                           padding:"10px 14px", fontSize:13, color:"#08763A", fontWeight:600 }}>
               <Check size={14} style={{ marginRight:4, verticalAlign:"middle" }} /> Produit créé avec succès !
             </div>
@@ -861,7 +861,7 @@ function AddProductModal({ open, onClose, shopId, shopName, categories, onCreate
           <button onClick={handleSubmit} disabled={isSubmitting || !shopId}
             style={{ height:44, padding:"0 28px", borderRadius:10, fontSize:14, fontWeight:700,
                      border:"none", cursor: isSubmitting ? "wait" : "pointer", minWidth:200,
-                     background: isSubmitting ? "#7CC49E" : "#0A8F45", color:"#fff" }}>
+                     background: isSubmitting ? "#71d69d" : "#0A8F45", color:"#fff" }}>
             {isSubmitting ? "Enregistrement…" : "Enregistrer le produit"}
           </button>
         </div>
@@ -1022,7 +1022,7 @@ function EditProductModal({ open, onClose, shopId, shopName, categories, product
             <span style={{ flexShrink:0, color:"#0A8F45" }}><Pencil size={16} /></span>
             <span style={{ fontSize:13, color:"#1F2A24" }}>
               Modification du produit&nbsp;<strong style={{ color:"#0A8F45" }}>{product?.name}</strong>
-              &nbsp;— boutique&nbsp;<strong style={{ color:"#0A8F45" }}>{shopName}</strong>.
+              &nbsp;· boutique&nbsp;<strong style={{ color:"#0A8F45" }}>{shopName}</strong>.
             </span>
           </div>
 
@@ -1126,7 +1126,7 @@ function EditProductModal({ open, onClose, shopId, shopName, categories, product
                 <span title="Généré à partir du nom" style={{ color:"#98A2B3", cursor:"help" }}><Info size={13} /></span>
               </label>
               <div style={{ position:"relative" }}>
-                <input className="pm-input" disabled value={sku || product?.sku || "—"}
+                <input className="pm-input" disabled value={sku || product?.sku || "Généré à l’enregistrement"}
                   style={{ background:"#F8FAF9", color:"#1F2A24", fontFamily:"monospace", fontSize:12, paddingRight:32 }} />
                 <span style={{ position:"absolute", right:10, top:"50%", transform:"translateY(-50%)", color:"#C5CDD1" }}><Lock size={13} /></span>
               </div>
@@ -1201,7 +1201,7 @@ function EditProductModal({ open, onClose, shopId, shopName, categories, product
               <div>
                 <span style={{ fontSize:14, fontWeight:700, color:"#1F2A24" }}>Variantes du produit</span>
                 <p style={{ margin:"2px 0 0", fontSize:12, color:"#667085" }}>
-                  Tailles, couleurs, modèles — chaque variante a son propre stock et un prix optionnel.
+                  Tailles, couleurs, modèles : chaque variante a son propre stock et un prix optionnel.
                 </p>
               </div>
               <button className={`pm-toggle${hasVariants ? " on" : ""}`} onClick={() => {
@@ -1247,7 +1247,7 @@ function EditProductModal({ open, onClose, shopId, shopName, categories, product
             </div>
           )}
           {submitSuccess && (
-            <div style={{ background:"#DDF6E7", border:"1px solid #A8E0BF", borderRadius:10,
+            <div style={{ background:"#DDF6E7", border:"1px solid #a8e8c2", borderRadius:10,
                           padding:"10px 14px", fontSize:13, color:"#08763A", fontWeight:600 }}>
               <Check size={14} style={{ marginRight:4, verticalAlign:"middle" }} /> Produit modifié avec succès !
             </div>
@@ -1264,7 +1264,7 @@ function EditProductModal({ open, onClose, shopId, shopName, categories, product
           <button onClick={handleSubmit} disabled={isSubmitting || !shopId}
             style={{ height:44, padding:"0 28px", borderRadius:10, fontSize:14, fontWeight:700,
                      border:"none", cursor: isSubmitting ? "wait" : "pointer", minWidth:220,
-                     background: isSubmitting ? "#7CC49E" : "#0A8F45", color:"#fff" }}>
+                     background: isSubmitting ? "#71d69d" : "#0A8F45", color:"#fff" }}>
             {isSubmitting ? "Enregistrement…" : "Enregistrer les modifications"}
           </button>
         </div>
@@ -1542,7 +1542,7 @@ export default function ProductsPage() {
 
           <div style={{ display:"flex", alignItems:"center", gap:10, flexWrap:"wrap" }}>
             <span className="badge badge-biz" style={{ padding:"5px 12px", fontSize:12 }}>
-              Plan {quota?.plan.displayName ?? "—"}
+              Plan {quota?.plan.displayName ?? "en cours de chargement"}
             </span>
             <div>
               <div style={{ fontSize:12, color:"#1F2A24", fontWeight:500 }}>
@@ -1551,7 +1551,7 @@ export default function ProductsPage() {
               <div style={{ fontSize:11, color: atProductLimit ? "#EF4444" : "#98A2B3", fontWeight: atProductLimit ? 600 : 400 }}>
                 {quota
                   ? `${quota.usage.products} / ${quota.plan.maxProducts === -1 ? "∞" : quota.plan.maxProducts} produits`
-                  : "— / — produits"}
+                  : "Chargement du quota…"}
               </div>
             </div>
           </div>
@@ -1570,7 +1570,7 @@ export default function ProductsPage() {
           </p>
           <p style={{ margin:0, color:"#98A2B3", fontSize:12 }}>
             Les produits affichés ici appartiennent uniquement à la boutique&nbsp;
-            <strong style={{ color:"#0A8F45" }}>{activeShop?.name ?? "—"}</strong>.
+            <strong style={{ color:"#0A8F45" }}>{activeShop?.name ?? "Aucune boutique"}</strong>.
           </p>
         </div>
 
@@ -1590,7 +1590,7 @@ export default function ProductsPage() {
               </div>
               <div style={{ fontSize:26, fontWeight:800, color:"#1F2A24", margin:"8px 0 4px", letterSpacing:"-0.5px" }}>{k.val}</div>
               <div style={{ fontSize:11, color:k.tc, fontWeight:500 }}>{k.sub}</div>
-              <div style={{ fontSize:10, color:"#98A2B3", marginTop:6 }}>Boutique : {activeShop?.name ?? "—"}</div>
+              <div style={{ fontSize:10, color:"#98A2B3", marginTop:6 }}>Boutique : {activeShop?.name ?? "Aucune boutique"}</div>
             </div>
           ))}
         </div>
@@ -1601,7 +1601,7 @@ export default function ProductsPage() {
           <div style={{ flex:1, minWidth:220 }}>
             <div style={{ fontWeight:700, color:"#1F2A24", fontSize:14 }}>
               Tous les produits affichés ici appartiennent à la boutique active&nbsp;
-              <span style={{ color:"#0A8F45" }}>{activeShop?.name ?? "—"}</span>.
+              <span style={{ color:"#0A8F45" }}>{activeShop?.name ?? "Aucune boutique"}</span>.
             </div>
             <div style={{ color:"#667085", fontSize:12, marginTop:3 }}>
               Les produits ne sont plus liés directement au marchand mais à une boutique spécifique.
@@ -1612,12 +1612,12 @@ export default function ProductsPage() {
               <span style={{ background:"#EAF7EF", color:"#0A8F45", padding:"3px 8px", borderRadius:8, fontWeight:600, fontSize:12 }}>
                 {activeShop ? activeShop.name.slice(0,2).toUpperCase() : "BM"}
               </span>
-              <span className="pr-hier-sep">→</span>
-              <span style={{ fontWeight:600 }}>{activeShop?.name ?? "—"}</span>
-              <span className="pr-hier-sep">→</span>
+              <ChevronRight size={13} strokeWidth={2} className="pr-hier-sep" />
+              <span style={{ fontWeight:600 }}>{activeShop?.name ?? "Aucune boutique"}</span>
+              <ChevronRight size={13} strokeWidth={2} className="pr-hier-sep" />
               <span style={{ color:"#667085" }}>{globalStats.total} produits</span>
             </div>
-            <div style={{ fontSize:11, color:"#98A2B3", marginTop:6 }}>Marchand → Boutique → Produits</div>
+            <div style={{ fontSize:11, color:"#98A2B3", marginTop:6 }}>Marchand · Boutique · Produits</div>
           </div>
           <div style={{ minWidth:160 }}>
             <div style={{ fontSize:12, color:"#667085", fontWeight:500 }}>Quota boutiques</div>
@@ -1639,7 +1639,7 @@ export default function ProductsPage() {
             <div className="pr-tbar">
               <div>
                 <div style={{ fontWeight:700, color:"#1F2A24", fontSize:15 }}>
-                  Gestion des produits — {activeShop?.name ?? "—"}
+                  Gestion des produits · {activeShop?.name ?? "Aucune boutique"}
                   <span className="badge badge-biz" style={{ marginLeft:10, fontSize:10 }}>Catalogue indépendant</span>
                 </div>
                 <div style={{ fontSize:11, color:"#98A2B3", marginTop:2 }}>
@@ -1683,15 +1683,15 @@ export default function ProductsPage() {
               </select>
               <select className="sel" value={sortBy} onChange={e => { setSortBy(e.target.value); setPage(1); }}>
                 <option value="created_desc">Trier : Récents</option>
-                <option value="name_asc">Nom A→Z</option>
-                <option value="name_desc">Nom Z→A</option>
-                <option value="price_asc">Prix ↑</option>
-                <option value="price_desc">Prix ↓</option>
-                <option value="stock_asc">Stock ↑</option>
-                <option value="stock_desc">Stock ↓</option>
+                <option value="name_asc">Nom (A à Z)</option>
+                <option value="name_desc">Nom (Z à A)</option>
+                <option value="price_asc">Prix croissant</option>
+                <option value="price_desc">Prix décroissant</option>
+                <option value="stock_asc">Stock croissant</option>
+                <option value="stock_desc">Stock décroissant</option>
               </select>
               <div className="inp" style={{ display:"flex", alignItems:"center", gap:6, color:"#98A2B3", fontSize:12, cursor:"default", minWidth:130 }}>
-                <Lock size={12} /> {activeShop?.name ?? "—"}
+                <Lock size={12} /> {activeShop?.name ?? "Aucune boutique"}
               </div>
             </div>
 
@@ -1730,7 +1730,7 @@ export default function ProductsPage() {
                       </td>
                       <td style={{ fontFamily:"monospace", fontSize:12, color:"#667085" }}>{p.sku}</td>
                       <td>
-                        <span className="badge badge-biz" style={{ fontSize:10 }}>{activeShop?.name ?? "—"}</span>
+                        <span className="badge badge-biz" style={{ fontSize:10 }}>{activeShop?.name ?? "Aucune boutique"}</span>
                       </td>
                       <td style={{ fontSize:12, color:"#667085" }}>{p.category}</td>
                       <td style={{ fontWeight:600 }}>{p.price.toLocaleString("fr-FR")} FCFA</td>
@@ -1795,7 +1795,7 @@ export default function ProductsPage() {
                 <div style={{ width:44, height:44, borderRadius:12, background:"#EAF7EF",
                   display:"flex", alignItems:"center", justifyContent:"center", color:"#0A8F45" }}><Store size={20} /></div>
                 <div>
-                  <div style={{ fontWeight:700, fontSize:15, color:"#1F2A24" }}>{activeShop?.name ?? "—"}</div>
+                  <div style={{ fontWeight:700, fontSize:15, color:"#1F2A24" }}>{activeShop?.name ?? "Aucune boutique"}</div>
                   <span className={activeShop?.isPublished ? "badge badge-green" : "badge badge-gray"} style={{ fontSize:10 }}>
                     {activeShop?.isPublished ? "Publiée" : "Brouillon"}
                   </span>
@@ -1804,8 +1804,8 @@ export default function ProductsPage() {
               {[
                 { l:"Produits",   v: globalStats.total },
                 { l:"Catégories", v: apiCategories.length },
-                { l:"Commandes",  v: activeShop?._count?.orders ?? "—" },
-                { l:"Clients",    v: activeShop?._count?.customers ?? "—" },
+                { l:"Commandes",  v: activeShop?._count?.orders ?? 0 },
+                { l:"Clients",    v: activeShop?._count?.customers ?? 0 },
               ].map(r => (
                 <div key={r.l} style={{ display:"flex", justifyContent:"space-between",
                   padding:"7px 0", borderBottom:"1px solid #F4F6F5", fontSize:13 }}>
@@ -1850,7 +1850,7 @@ export default function ProductsPage() {
               ))}
               {realShops.length === 0 && (
                 <div style={{ textAlign:"center", fontSize:12, color:"#98A2B3", padding:"12px 0" }}>
-                  Aucune boutique — créez-en une.
+                  Aucune boutique. Créez-en une.
                 </div>
               )}
             </div>
@@ -1938,7 +1938,7 @@ export default function ProductsPage() {
                   onMouseLeave={e => (e.currentTarget.style.background="#F8FAF9")}>
                   <span style={{ display:"flex" }}>{r.icon}</span>
                   {r.label}
-                  <span style={{ marginLeft:"auto", color:"#98A2B3" }}>→</span>
+                  <ArrowRight size={14} strokeWidth={2} style={{ marginLeft:"auto", color:"#9aa5a1" }} />
                 </a>
               ))}
             </div>
@@ -2063,7 +2063,7 @@ export default function ProductsPage() {
                            borderRadius:12, padding:"12px 0", fontSize:14, fontWeight:700,
                            textDecoration:"none" }}
                 >
-                  Passer au plan {quota.nextPlan.displayName} →
+                  Passer au plan {quota.nextPlan.displayName} <ArrowRight size={13} strokeWidth={2.25} style={{ verticalAlign:"-2px" }} />
                 </a>
               )}
               <button
@@ -2080,7 +2080,7 @@ export default function ProductsPage() {
 
       {toast && (
         <div className={`toast-wrap${toast.hiding ? " hiding" : ""}`}>
-          <span className="toast-icon">✓</span>
+          <span className="toast-icon"><Check size={14} strokeWidth={2.75} /></span>
           {toast.msg}
         </div>
       )}

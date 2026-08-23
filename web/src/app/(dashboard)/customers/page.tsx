@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useActiveShop } from "@/hooks/useActiveShop";
-import { Users, RefreshCw, ChevronUp, ChevronDown, Store, UserPlus, X, Download } from "lucide-react";
+import { Users, RefreshCw, ChevronUp, ChevronDown, Store, UserPlus, X, Download, Search } from "lucide-react";
 
 type Customer = {
   id: string;
@@ -310,7 +310,7 @@ export default function CustomersPage() {
           {[
             { icon:<Users size={16} color="#0A8F45" />,   l:"Total clients",       v: String(customers.length) },
             { icon:<Users size={16} color="#3B82F6" />,   l:"Résultats filtrés",   v: String(filtered.length) },
-            { icon:<Store size={16} color="#F08A24" />,   l:"Boutique",            v: activeShop?.name ?? "—" },
+            { icon:<Store size={16} color="#F08A24" />,   l:"Boutique",            v: activeShop?.name ?? "Aucune boutique" },
             { icon:<Users size={16} color="#8B5CF6" />,   l:"Avec email",          v: String(customers.filter(c => c.email).length) },
           ].map((k, i) => (
             <div key={i} style={{ background:"#fff", border:"1px solid #E8ECEA", borderRadius:16,
@@ -356,13 +356,16 @@ export default function CustomersPage() {
 
             {/* Filters */}
             <div className="cu-ftrow">
-              <input
-                className="inp"
-                placeholder="🔍 Nom, téléphone, email…"
-                style={{ flex:1, minWidth:140 }}
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-              />
+              <div style={{ position:"relative", flex:1, minWidth:140, display:"flex" }}>
+                <Search size={14} strokeWidth={2} style={{ position:"absolute", left:11, top:"50%", transform:"translateY(-50%)", color:"#9aa5a1", pointerEvents:"none" }} />
+                <input
+                  className="inp"
+                  placeholder="Nom, téléphone, email…"
+                  style={{ width:"100%", paddingLeft:32 }}
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                />
+              </div>
               <select
                 className="sel"
                 value={`${sortField}-${sortDir}`}
@@ -372,9 +375,9 @@ export default function CustomersPage() {
                 }}>
                 <option value="date-desc">Plus récents</option>
                 <option value="date-asc">Plus anciens</option>
-                <option value="name-asc">Nom A → Z</option>
-                <option value="name-desc">Nom Z → A</option>
-                <option value="phone-asc">Téléphone ↑</option>
+                <option value="name-asc">Nom (A à Z)</option>
+                <option value="name-desc">Nom (Z à A)</option>
+                <option value="phone-asc">Téléphone (croissant)</option>
               </select>
               {search && (
                 <button
@@ -421,10 +424,10 @@ export default function CustomersPage() {
                           )}
                         </td>
                         <td style={{ fontFamily:"monospace", fontSize:12 }}>{c.phone}</td>
-                        <td style={{ fontSize:12, color:"#667085" }}>{c.email ?? "—"}</td>
+                        <td style={{ fontSize:12, color:"#667085" }}>{c.email ?? "Non renseigné"}</td>
                         <td style={{ fontSize:12, color:"#667085", maxWidth:180 }}>
                           <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", display:"block" }}>
-                            {c.address ?? "—"}
+                            {c.address ?? "Non renseignée"}
                           </span>
                         </td>
                         <td style={{ fontSize:11, color:"#98A2B3", whiteSpace:"nowrap" }}>

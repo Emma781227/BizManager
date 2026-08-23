@@ -1,5 +1,5 @@
 /**
- * Rate limiter — compteur en fenêtre fixe, stockage en mémoire (globalThis).
+ * Rate limiter - compteur en fenêtre fixe, stockage en mémoire (globalThis).
  *
  * ⚠️  Limite de déploiement : sur Vercel / serverless multi-instances,
  * chaque instance Node.js a son propre compteur. La protection reste efficace
@@ -61,7 +61,7 @@ export function getClientIp(request: Request): string {
 }
 
 /**
- * Log structuré des tentatives bloquées — traceable dans les logs Vercel / serveur.
+ * Log structuré des tentatives bloquées - traceable dans les logs Vercel / serveur.
  * À remplacer par un vrai service de logging (Sentry, Datadog, etc.) si nécessaire.
  */
 export function logAbuse(data: {

@@ -5,9 +5,11 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import {
-  ArrowLeft, Search, Heart, MessageCircle,
+  ArrowLeft, ArrowRight, ArrowUp, ArrowDown, Search, Heart, MessageCircle,
   Package, CheckCircle, X, ChevronLeft, ChevronRight,
   ShoppingBag, Minus, Plus, Home, Share2,
+  Truck, Lock, RotateCcw, Award, BadgeCheck, Star, Check, HelpCircle,
+  Banknote, Landmark, Smartphone, CreditCard,
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -68,10 +70,10 @@ type FavoriteItem = {
 const MM_IMG_URL = "https://res.cloudinary.com/dngaowjt8/image/upload/v1779488827/MM_uvauci.jpg";
 
 const PAYMENT_OPTIONS = [
-  { value: "cod",           emoji: "🚚", label: "Paiement à la livraison" },
-  { value: "mobile_money",  emoji: "📱", label: "Mobile Money" },
-  { value: "bank_transfer", emoji: "🏦", label: "Virement bancaire" },
-  { value: "cash",          emoji: "💵", label: "Espèces" },
+  { value: "cod",           Icon: Truck,      label: "Paiement à la livraison" },
+  { value: "mobile_money",  Icon: Smartphone, label: "Mobile Money" },
+  { value: "bank_transfer", Icon: Landmark,   label: "Virement bancaire" },
+  { value: "cash",          Icon: Banknote,   label: "Espèces" },
 ] as const;
 
 const SIMULATED_REVIEWS = [
@@ -321,7 +323,7 @@ const CSS = `
     cursor: pointer; display: flex; align-items: center; justify-content: center;
     gap: 8px; transition: background .15s; text-decoration: none;
   }
-  .pdp-cta-wa:hover { background: #1ebe5d; }
+  .pdp-cta-wa:hover { background: #38be74; }
   .pdp-cta-disabled {
     width: 100%; height: 50px; background: #F0F2F1; color: #A0ABA8;
     border: none; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: not-allowed;
@@ -369,7 +371,7 @@ const CSS = `
     background: #25D366; color: #fff; font-size: 13px; font-weight: 700;
     cursor: pointer; text-decoration: none; transition: background .15s;
   }
-  .pdp-share-wa:hover { background: #1ebe5d; }
+  .pdp-share-wa:hover { background: #38be74; }
   .pdp-share-copy {
     flex: 1; display: flex; align-items: center; justify-content: center; gap: 7px;
     padding: 10px 14px; border-radius: 10px; border: 1.5px solid #E8ECEA;
@@ -412,7 +414,7 @@ const CSS = `
   .pdp-spec-table tr:last-child { border-bottom: none; }
   .pdp-spec-table td { padding: 10px 12px; font-size: 13px; color: #1F2A24; background: #fff; }
   .pdp-spec-table td:first-child { color: #667085; font-weight: 600; width: 40%; background: #F8FAF9; }
-  .pdp-faq-q { font-size: 14px; font-weight: 700; color: #1F2A24; margin-bottom: 5px; }
+  .pdp-faq-q { display: flex; align-items: center; gap: 7px; font-size: 14px; font-weight: 700; color: #1F2A24; margin-bottom: 5px; }
   .pdp-faq-a { font-size: 13px; color: #667085; line-height: 1.6; margin-bottom: 16px; }
   .pdp-bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
   .pdp-bar-track { flex: 1; height: 7px; background: #F4F6F5; border-radius: 4px; overflow: hidden; }
@@ -666,7 +668,7 @@ const CSS = `
 
 function formatPrice(value: string | number): string {
   const num = typeof value === "string" ? Number(value) : value;
-  if (Number.isNaN(num)) return "—";
+  if (Number.isNaN(num)) return "0";
   return `${new Intl.NumberFormat("fr-FR").format(num)} FCFA`;
 }
 
@@ -680,7 +682,7 @@ function Stars({ count = 5, size = 14 }: { count?: number; size?: number }) {
   return (
     <span style={{ display: "flex", gap: 2 }}>
       {[1, 2, 3, 4, 5].map(i => (
-        <span key={i} style={{ fontSize: size, color: i <= count ? "#F7B500" : "#E8ECEA" }}>★</span>
+        <Star key={i} size={size} strokeWidth={0} fill={i <= count ? "#F7B500" : "#E8ECEA"} />
       ))}
     </span>
   );
@@ -865,7 +867,7 @@ export default function ProductDetailPage() {
     } else {
       favs.push({ productId: product.id, name: product.name, price: Number(product.unitPrice), imageUrl: product.imageUrl ?? null, category: product.category ?? null });
       setFavorited(true);
-      setToast("Ajouté aux favoris ♡");
+      setToast("Ajouté aux favoris");
     }
     try { localStorage.setItem(key, JSON.stringify(favs)); } catch { /* ignore */ }
     setFavCount(favs.length);
@@ -887,7 +889,7 @@ export default function ProductDetailPage() {
 
   function shareProduct() {
     const url  = window.location.href;
-    const text = product ? `${product.name} — ${formatPrice(unitPrice)}` : "";
+    const text = product ? `${product.name} · ${formatPrice(unitPrice)}` : "";
     if (navigator.share) {
       navigator.share({ title: product?.name, text, url }).catch(() => {});
     } else {
@@ -1023,16 +1025,16 @@ export default function ProductDetailPage() {
           <img
             key={lightboxIdx}
             src={gallery[lightboxIdx]}
-            alt={`${product.name} — image ${lightboxIdx + 1}`}
+            alt={`${product.name}, image ${lightboxIdx + 1}`}
             className="pdp-lb-img"
           />
 
           {gallery.length > 1 && (
             <>
-              <button className="pdp-lb-arrow pdp-lb-prev" onClick={() => setLightboxIdx(i => (i - 1 + gallery.length) % gallery.length)} title="Précédente (←)">
+              <button className="pdp-lb-arrow pdp-lb-prev" onClick={() => setLightboxIdx(i => (i - 1 + gallery.length) % gallery.length)} title="Précédente">
                 <ChevronLeft style={{ width: 22, height: 22 }} />
               </button>
-              <button className="pdp-lb-arrow pdp-lb-next" onClick={() => setLightboxIdx(i => (i + 1) % gallery.length)} title="Suivante (→)">
+              <button className="pdp-lb-arrow pdp-lb-next" onClick={() => setLightboxIdx(i => (i + 1) % gallery.length)} title="Suivante">
                 <ChevronRight style={{ width: 22, height: 22 }} />
               </button>
               <div className="pdp-lb-dots">
@@ -1063,7 +1065,7 @@ export default function ProductDetailPage() {
             }
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: "#0A8F45", marginBottom: 3 }}>
-                ✓ Ajouté au panier
+                <Check size={15} strokeWidth={2.5} style={{ verticalAlign: "-3px", marginRight: 5 }} />Ajouté au panier
               </div>
               <div style={{ fontSize: 13, fontWeight: 700, color: "#1F2A24", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {cartToast.name}
@@ -1075,7 +1077,7 @@ export default function ProductDetailPage() {
             </div>
           </div>
           <Link href={`/shop/${slug}/checkout`} className="pdp-cart-toast-cta" onClick={() => setCartToast(null)}>
-            Voir le panier ({cartCount}) →
+            Voir le panier ({cartCount}) <ArrowRight size={14} strokeWidth={2.25} style={{ verticalAlign: "-2px" }} />
           </Link>
         </div>
       )}
@@ -1209,7 +1211,7 @@ export default function ProductDetailPage() {
           {/* ── Info column ───────────────────────────────────────────── */}
           <div>
             <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
-              <span className="pdp-verified-badge">✓ Boutique vérifiée</span>
+              <span className="pdp-verified-badge"><BadgeCheck size={13} strokeWidth={2.1} /> Boutique vérifiée</span>
               <button className="pdp-share-icon-btn" onClick={shareProduct} title="Partager ce produit">
                 <Share2 style={{ width: 15, height: 15 }} />
               </button>
@@ -1262,7 +1264,9 @@ export default function ProductDetailPage() {
                     className="pdp-desc-toggle"
                     onClick={() => setDescExpanded(v => !v)}
                   >
-                    {descExpanded ? "Voir moins ↑" : "Voir plus ↓"}
+                    {descExpanded
+                  ? <>Voir moins <ArrowUp size={12} strokeWidth={2.25} style={{ verticalAlign: "-2px" }} /></>
+                  : <>Voir plus <ArrowDown size={12} strokeWidth={2.25} style={{ verticalAlign: "-2px" }} /></>}
                   </button>
                 )}
               </div>
@@ -1275,7 +1279,7 @@ export default function ProductDetailPage() {
               <div style={{ marginBottom: 18 }}>
                 <div style={{ fontSize: 13, fontWeight: 600, color: "#1F2A24", marginBottom: 10 }}>
                   Variante
-                  {selectedVariant && <span style={{ fontWeight: 400, color: "#667085" }}> — {selectedVariant.label}</span>}
+                  {selectedVariant && <span style={{ fontWeight: 400, color: "#667085" }}> · {selectedVariant.label}</span>}
                 </div>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                   {variants.map(v => {
@@ -1287,7 +1291,7 @@ export default function ProductDetailPage() {
                         onClick={() => { setSelectedVariantId(v.id); setQuantity(1); }}
                         disabled={v.stock === 0}
                         style={v.stock === 0 ? { opacity: .45, cursor: "not-allowed", textDecoration: "line-through" } : {}}
-                        title={v.stock === 0 ? "Rupture de stock" : `${v.label} — ${formatPrice(vPrice)}`}
+                        title={v.stock === 0 ? "Rupture de stock" : `${v.label} · ${formatPrice(vPrice)}`}
                       >
                         <span>{v.label}</span>
                         {hasPriceRange && (
@@ -1336,7 +1340,7 @@ export default function ProductDetailPage() {
               </div>
             )}
 
-            {/* CTA buttons — observed by sticky bar IntersectionObserver */}
+            {/* CTA buttons - observed by sticky bar IntersectionObserver */}
             <div ref={ctaRef} style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
               {activeStock > 0 ? (
                 <>
@@ -1374,11 +1378,11 @@ export default function ProductDetailPage() {
 
             {/* Perks */}
             <div className="pdp-perks">
-              <span className="pdp-perk">🚚 Livraison rapide</span>
+              <span className="pdp-perk"><Truck size={13} strokeWidth={1.9} /> Livraison rapide</span>
               <span style={{ color: "#E8ECEA" }}>·</span>
-              <span className="pdp-perk">🔒 Paiement sécurisé</span>
+              <span className="pdp-perk"><Lock size={13} strokeWidth={1.9} /> Paiement sécurisé</span>
               <span style={{ color: "#E8ECEA" }}>·</span>
-              <span className="pdp-perk">🔄 Retour facile</span>
+              <span className="pdp-perk"><RotateCcw size={13} strokeWidth={1.9} /> Retour facile</span>
             </div>
           </div>
 
@@ -1391,7 +1395,7 @@ export default function ProductDetailPage() {
                 <div className="pdp-shop-logo">{shopInitial}</div>
                 <div>
                   <div style={{ fontWeight: 700, fontSize: 15, color: "#1F2A24" }}>{shopName}</div>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: "#0A8F45", background: "#EAF7EF", padding: "2px 8px", borderRadius: 20 }}>✓ Vérifié</span>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: "#0a8f45", background: "#EAF7EF", padding: "2px 8px", borderRadius: 20, display: "inline-flex", alignItems: "center", gap: 3 }}><BadgeCheck size={12} strokeWidth={2.1} /> Vérifié</span>
                 </div>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 14 }}>
@@ -1404,8 +1408,14 @@ export default function ProductDetailPage() {
               >
                 Voir la boutique
               </Link>
-              {["💬 Réponse rapide", "🏅 Membre depuis 2022", "✓ Boutique vérifiée"].map(item => (
-                <div key={item} style={{ fontSize: 12, color: "#667085", marginBottom: 4 }}>{item}</div>
+              {[
+                { Icon: MessageCircle, label: "Réponse rapide" },
+                { Icon: Award,         label: "Membre depuis 2022" },
+                { Icon: BadgeCheck,    label: "Boutique vérifiée" },
+              ].map(({ Icon, label }) => (
+                <div key={label} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#667085", marginBottom: 4 }}>
+                  <Icon size={13} strokeWidth={1.9} style={{ flexShrink: 0, color: "#9aa5a1" }} />{label}
+                </div>
               ))}
             </div>
 
@@ -1414,7 +1424,7 @@ export default function ProductDetailPage() {
               <div className="pdp-card-title">Pourquoi nous faire confiance ?</div>
               {["Produits sélectionnés avec soin", "Satisfait ou remboursé sous 3 jours", "Livraison rapide et sécurisée", "Service client réactif"].map(item => (
                 <div key={item} className="pdp-check-item">
-                  <div className="pdp-check-icon">✓</div>
+                  <div className="pdp-check-icon"><Check size={11} strokeWidth={3} /></div>
                   {item}
                 </div>
               ))}
@@ -1424,8 +1434,13 @@ export default function ProductDetailPage() {
             <div className="pdp-card">
               <div className="pdp-card-title">Paiements acceptés</div>
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                {["📱 MTN", "🟠 Orange", "💳 Visa", "💵 Espèces"].map(p => (
-                  <span key={p} className="pdp-payment-chip">{p}</span>
+                {[
+                  { Icon: Smartphone, label: "MTN" },
+                  { Icon: Smartphone, label: "Orange" },
+                  { Icon: CreditCard, label: "Visa" },
+                  { Icon: Banknote,   label: "Espèces" },
+                ].map(({ Icon, label }) => (
+                  <span key={label} className="pdp-payment-chip"><Icon size={12} strokeWidth={1.9} /> {label}</span>
                 ))}
               </div>
             </div>
@@ -1436,7 +1451,7 @@ export default function ProductDetailPage() {
               <div style={{ display: "flex", gap: 8 }}>
                 {whatsappUrl && (
                   <a
-                    href={`${whatsappUrl}?text=${encodeURIComponent(`Découvrez ce produit : ${product.name} — ${formatPrice(unitPrice)}\n${typeof window !== "undefined" ? window.location.href : ""}`)}`}
+                    href={`${whatsappUrl}?text=${encodeURIComponent(`Découvrez ce produit : ${product.name} · ${formatPrice(unitPrice)}\n${typeof window !== "undefined" ? window.location.href : ""}`)}`}
                     target="_blank" rel="noopener noreferrer"
                     className="pdp-share-wa"
                   >
@@ -1509,7 +1524,7 @@ export default function ProductDetailPage() {
                     </p>
                     {["Matériaux de haute qualité", "Design moderne adapté aux tendances", "Finitions soignées", "Idéal pour toutes les occasions"].map(f => (
                       <div key={f} style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 10, fontSize: 14, color: "#1F2A24" }}>
-                        <div style={{ width: 20, height: 20, background: "#EAF7EF", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 10, color: "#0A8F45", fontWeight: 800 }}>✓</div>
+                        <div style={{ width: 20, height: 20, background: "#EAF7EF", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: "#0a8f45" }}><Check size={11} strokeWidth={3} /></div>
                         {f}
                       </div>
                     ))}
@@ -1519,7 +1534,7 @@ export default function ProductDetailPage() {
                 {descTab === "caracteristiques" && (
                   <table className="pdp-spec-table">
                     <tbody>
-                      <tr><td>Catégorie</td><td>{product.category ?? "—"}</td></tr>
+                      <tr><td>Catégorie</td><td>{product.category ?? "Non précisée"}</td></tr>
                       <tr><td>Stock</td><td>{activeStock > 0 ? `${activeStock} unités` : "Rupture"}</td></tr>
                       <tr><td>Prix unitaire</td><td style={{ fontWeight: 700, color: "#0A8F45" }}>{formatPrice(product.unitPrice)}</td></tr>
                       <tr><td>Référence</td><td style={{ fontFamily: "monospace", fontSize: 12 }}>{product.id.slice(0, 10).toUpperCase()}</td></tr>
@@ -1557,7 +1572,7 @@ export default function ProductDetailPage() {
                       { q: "Quels modes de paiement acceptez-vous ?", a: "MTN Mobile Money, Orange Money, cartes bancaires, et paiement à la livraison." },
                     ].map((item, i) => (
                       <div key={i}>
-                        <div className="pdp-faq-q">❓ {item.q}</div>
+                        <div className="pdp-faq-q"><HelpCircle size={14} strokeWidth={2} style={{ flexShrink: 0 }} /> {item.q}</div>
                         <div className="pdp-faq-a">{item.a}</div>
                       </div>
                     ))}
@@ -1579,7 +1594,7 @@ export default function ProductDetailPage() {
               {STAR_DISTRIBUTION.map(({ star, pct }) => (
                 <div key={star} className="pdp-bar-row">
                   <span style={{ fontSize: 11, color: "#667085", minWidth: 16, textAlign: "right" }}>{star}</span>
-                  <span style={{ fontSize: 11, color: "#F7B500" }}>★</span>
+                  <Star size={11} strokeWidth={0} fill="#F7B500" />
                   <div className="pdp-bar-track"><div className="pdp-bar-fill" style={{ width: `${pct}%` }} /></div>
                   <span style={{ fontSize: 11, color: "#98A2B3", minWidth: 28, textAlign: "right" }}>{pct}%</span>
                 </div>
@@ -1598,13 +1613,13 @@ export default function ProductDetailPage() {
                   <div className="pdp-reco-img-wrap">
                     {p.imageUrl
                       ? <Image src={p.imageUrl} alt={p.name} fill className="pdp-reco-img" sizes="(max-width: 768px) 45vw, 20vw" />
-                      : <div className="pdp-reco-placeholder">📦</div>
+                      : <div className="pdp-reco-placeholder"><Package size={26} strokeWidth={1.3} color="#c7cfcc" /></div>
                     }
                   </div>
                   <div className="pdp-reco-body">
                     <div className="pdp-reco-name">{p.name}</div>
                     <div style={{ display: "flex", gap: 1, marginBottom: 5 }}>
-                      {[1,2,3,4,5].map(s => <span key={s} style={{ fontSize: 10, color: "#F7B500" }}>★</span>)}
+                      {[1,2,3,4,5].map(s => <Star key={s} size={10} strokeWidth={0} fill="#F7B500" />)}
                     </div>
                     <div className="pdp-reco-price">{formatPrice(p.unitPrice)}</div>
                   </div>
@@ -1726,7 +1741,7 @@ export default function ProductDetailPage() {
                     <button key={opt.value} type="button" className={`pdp-pay-opt${paymentMethod === opt.value ? " active" : ""}`} onClick={() => setPaymentMethod(opt.value)}>
                       {opt.value === "mobile_money"
                         ? <img src={MM_IMG_URL} alt="Mobile Money" style={{ height: 24, width: "auto", maxWidth: 60, objectFit: "contain", flexShrink: 0 }} />
-                        : <span style={{ fontSize: 20 }}>{opt.emoji}</span>
+                        : <opt.Icon size={19} strokeWidth={1.9} style={{ flexShrink: 0 }} />
                       }
                       <span>{opt.label}</span>
                     </button>

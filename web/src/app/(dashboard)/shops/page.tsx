@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useActiveShop } from "@/hooks/useActiveShop";
 import CreateShopModal from "./CreateShopModal";
-import { Store, Star, Globe, Package, ShoppingCart, Users, Tag, Check } from "lucide-react";
+import { Store, Star, Globe, Package, ShoppingCart, Users, Tag, Check, ArrowUpRight } from "lucide-react";
 import Image from "next/image";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -98,7 +98,7 @@ export default function ShopsPage() {
         <div className="bs-kpi-row">
           {[
             { label:"Boutiques", val:shops.length, icon:<Store size={16} color="#0A8F45" />, note: quota ? `${quota.usage.shops} / ${quota.plan.maxShops} max` : "" },
-            { label:"Plan actif", val: quota?.plan.displayName ?? "—", icon:<Star size={16} color="#F08A24" />, note: quota ? `${quota.plan.priceMonthly > 0 ? quota.plan.priceMonthly.toLocaleString("fr-FR")+" FCFA/mois" : "Gratuit"}` : "" },
+            { label:"Plan actif", val: quota?.plan.displayName ?? "Aucun plan", icon:<Star size={16} color="#F08A24" />, note: quota ? `${quota.plan.priceMonthly > 0 ? quota.plan.priceMonthly.toLocaleString("fr-FR")+" FCFA/mois" : "Gratuit"}` : "" },
             { label:"Boutiques publiées", val: shops.filter(s=>s.isPublished).length, icon:<Globe size={16} color="#3B82F6" />, note:"accessibles au public" },
           ].map(k => (
             <div key={k.label} className="bs-kpi">
@@ -161,7 +161,7 @@ export default function ShopsPage() {
                     </div>
                     <div style={{flex:1,minWidth:0}}>
                       <div style={{fontWeight:700,fontSize:14,color:"#1F2A24",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{shop.name}</div>
-                      <div style={{fontSize:11,color:"#98A2B3"}}>{shop.city ?? "—"} · {shop.category ?? "—"}</div>
+                      <div style={{fontSize:11,color:"#98A2B3"}}>{shop.city ?? "Ville non renseignée"} · {shop.category ?? "Sans catégorie"}</div>
                     </div>
                     <span style={{fontSize:10,padding:"3px 8px",borderRadius:20,fontWeight:600,whiteSpace:"nowrap",
                       background:shop.isPublished ? "#DDF6E7" : "#F2F4F7",
@@ -195,12 +195,12 @@ export default function ShopsPage() {
                         target="_blank"
                         rel="noreferrer"
                         onClick={e => e.stopPropagation()}
-                        title={!shop.isPublished ? "Boutique non publiée — aperçu uniquement" : undefined}
+                        title={!shop.isPublished ? "Boutique non publiée : aperçu uniquement" : undefined}
                         style={{fontSize:11,fontWeight:600,
                           color: shop.isPublished ? "#0A8F45" : "#98A2B3",
                           background: shop.isPublished ? "#EAF7EF" : "#F2F4F7",
                           borderRadius:6,padding:"4px 10px",textDecoration:"none"}}>
-                        {shop.isPublished ? "Voir la boutique ↗" : "Aperçu ↗"}
+                        {shop.isPublished ? "Voir la boutique" : "Aperçu"} <ArrowUpRight size={12} strokeWidth={2.25} style={{verticalAlign:"-2px"}} />
                       </a>
                     </div>
                   </div>
@@ -212,7 +212,7 @@ export default function ShopsPage() {
                   )}
                   {!shop.isPublished && (
                     <div style={{marginTop:6,fontSize:10,color:"#F08A24",textAlign:"center",background:"#FFF8EC",borderRadius:6,padding:"3px 0"}}>
-                      Brouillon — non visible par vos clients
+                      Brouillon, non visible par vos clients
                     </div>
                   )}
                 </div>

@@ -115,7 +115,7 @@ export async function GET(
   }
 
   if (!hasPermission(shop._staffRole, "canViewProducts")) {
-    return NextResponse.json({ error: "Accès refusé — droits insuffisants" }, { status: 403 });
+    return NextResponse.json({ error: "Accès refusé : droits insuffisants" }, { status: 403 });
   }
 
   return NextResponse.json({ data: product });
@@ -144,7 +144,7 @@ export async function PUT(
   }
 
   if (!hasPermission(shop._staffRole, "canManageProducts")) {
-    return NextResponse.json({ error: "Accès refusé — droits insuffisants" }, { status: 403 });
+    return NextResponse.json({ error: "Accès refusé : droits insuffisants" }, { status: 403 });
   }
 
   const contentType = request.headers.get("content-type") ?? "";
@@ -340,7 +340,7 @@ export async function DELETE(
   }
 
   if (!hasPermission(shop._staffRole, "canManageProducts")) {
-    return NextResponse.json({ error: "Accès refusé — droits insuffisants" }, { status: 403 });
+    return NextResponse.json({ error: "Accès refusé : droits insuffisants" }, { status: 403 });
   }
 
   try {

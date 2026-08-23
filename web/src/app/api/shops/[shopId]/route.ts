@@ -47,7 +47,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     if (!resolved) return NextResponse.json({ error: "Boutique introuvable" }, { status: 404 });
 
     if (!hasPermission(resolved._staffRole, "canManageShops")) {
-      return NextResponse.json({ error: "Accès refusé — droits insuffisants" }, { status: 403 });
+      return NextResponse.json({ error: "Accès refusé : droits insuffisants" }, { status: 403 });
     }
 
     const body = await request.json().catch(() => null);
@@ -74,7 +74,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     if (!resolved) return NextResponse.json({ error: "Boutique introuvable" }, { status: 404 });
 
     if (!hasPermission(resolved._staffRole, "canDeleteShop")) {
-      return NextResponse.json({ error: "Accès refusé — droits insuffisants" }, { status: 403 });
+      return NextResponse.json({ error: "Accès refusé : droits insuffisants" }, { status: 403 });
     }
 
     // Empêcher la suppression si c'est la seule boutique

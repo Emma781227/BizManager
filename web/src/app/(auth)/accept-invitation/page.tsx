@@ -122,17 +122,17 @@ export default function AcceptInvitationPage() {
       className="flex flex-col items-center justify-center px-4 py-10"
     >
       {/* Top accent bar */}
-      <div style={{ position: "fixed", top: 0, left: 0, right: 0, height: 4, background: "#0f5f38" }} />
+      <div style={{ position: "fixed", top: 0, left: 0, right: 0, height: 4, background: "#085f30" }} />
 
       {/* Logo */}
       <div className="mb-8 flex items-center gap-2">
         <div
-          style={{ background: "#0f5f38", borderRadius: 12, width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center" }}
+          style={{ background: "#085f30", borderRadius: 12, width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center" }}
           className="text-white font-bold text-base"
         >
           B
         </div>
-        <span style={{ color: "#135a35", fontWeight: 800, fontSize: "1.2rem", letterSpacing: "-0.02em" }}>
+        <span style={{ color: "#085f30", fontWeight: 800, fontSize: "1.2rem", letterSpacing: "-0.02em" }}>
           BizManager
         </span>
       </div>
@@ -156,7 +156,7 @@ export default function AcceptInvitationPage() {
               style={{
                 width: 40, height: 40, borderRadius: "50%",
                 border: "3px solid #e2e8f0",
-                borderTopColor: "#0f5f38",
+                borderTopColor: "#085f30",
                 animation: "spin 0.8s linear infinite",
               }}
             />
@@ -200,7 +200,7 @@ export default function AcceptInvitationPage() {
                   display: "inline-block",
                   padding: "0.5rem 1.25rem",
                   borderRadius: 10,
-                  background: "#0f5f38",
+                  background: "#085f30",
                   color: "white",
                   fontWeight: 600,
                   fontSize: "0.875rem",
@@ -248,7 +248,7 @@ export default function AcceptInvitationPage() {
                   marginBottom: 14,
                 }}
               >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0f5f38" strokeWidth="1.8">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#085f30" strokeWidth="1.8">
                   <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
                   <circle cx="9" cy="7" r="4" />
                   <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
@@ -362,7 +362,7 @@ export default function AcceptInvitationPage() {
                         padding: "0 0.75rem", fontSize: "0.875rem", outline: "none",
                         transition: "border-color 0.15s",
                       }}
-                      onFocus={e => (e.target.style.borderColor = "#0f5f38")}
+                      onFocus={e => (e.target.style.borderColor = "#085f30")}
                       onBlur={e => (e.target.style.borderColor = "#e2e8f0")}
                     />
                   </label>
@@ -383,7 +383,7 @@ export default function AcceptInvitationPage() {
                           outline: "none", width: "100%", boxSizing: "border-box",
                           transition: "border-color 0.15s",
                         }}
-                        onFocus={e => (e.target.style.borderColor = "#0f5f38")}
+                        onFocus={e => (e.target.style.borderColor = "#085f30")}
                         onBlur={e => (e.target.style.borderColor = "#e2e8f0")}
                       />
                       <button
@@ -445,11 +445,11 @@ export default function AcceptInvitationPage() {
                 type="submit"
                 disabled={submitting}
                 style={{
-                  height: 42, borderRadius: 10, background: "#0f5f38",
+                  height: 42, borderRadius: 10, background: "#085f30",
                   color: "white", fontWeight: 600, fontSize: "0.9rem",
                   border: "none", cursor: submitting ? "not-allowed" : "pointer",
                   opacity: submitting ? 0.7 : 1,
-                  boxShadow: "0 8px 20px rgba(15,95,56,0.2)",
+                  boxShadow: "0 8px 20px rgba(8,118,58,0.2)",
                   transition: "opacity 0.15s",
                 }}
               >
@@ -458,7 +458,7 @@ export default function AcceptInvitationPage() {
 
               <p style={{ textAlign: "center", fontSize: "0.8rem", color: "#94a3b8" }}>
                 Déjà un compte ?{" "}
-                <a href="/login" style={{ color: "#0f5f38", fontWeight: 600, textDecoration: "none" }}>
+                <a href="/login" style={{ color: "#085f30", fontWeight: 600, textDecoration: "none" }}>
                   Se connecter
                 </a>
               </p>

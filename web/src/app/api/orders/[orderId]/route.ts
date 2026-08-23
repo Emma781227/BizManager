@@ -48,11 +48,11 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
     result.data.paidAmount !== undefined;
 
   if (updatingPayment && !hasPermission(shop._staffRole, "canManageOrders")) {
-    return NextResponse.json({ error: "Accès refusé — droits insuffisants pour modifier le paiement" }, { status: 403 });
+    return NextResponse.json({ error: "Accès refusé : droits insuffisants pour modifier le paiement" }, { status: 403 });
   }
 
   if (!hasPermission(shop._staffRole, "canUpdateStock") && !hasPermission(shop._staffRole, "canManageOrders")) {
-    return NextResponse.json({ error: "Accès refusé — droits insuffisants" }, { status: 403 });
+    return NextResponse.json({ error: "Accès refusé : droits insuffisants" }, { status: 403 });
   }
 
   const updated = await prisma.$transaction(async tx => {

@@ -19,7 +19,7 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://bizmanager.app";
 export const metadata: Metadata = {
   metadataBase: new URL(APP_URL),
   title: {
-    default: "BizManager — Créez votre boutique en ligne",
+    default: "BizManager, votre boutique en ligne",
     template: "%s | BizManager",
   },
   description:
@@ -42,14 +42,14 @@ export const metadata: Metadata = {
     locale: "fr_FR",
     url: APP_URL,
     siteName: "BizManager",
-    title: "BizManager — Créez votre boutique en ligne",
+    title: "BizManager, votre boutique en ligne",
     description:
       "Plateforme e-commerce pour commerçants africains. Boutique en ligne, gestion des commandes et communication via WhatsApp.",
     images: [{ url: "/icon-512.png", width: 512, height: 512, alt: "BizManager" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "BizManager — Créez votre boutique en ligne",
+    title: "BizManager, votre boutique en ligne",
     description:
       "Plateforme e-commerce pour commerçants africains. Boutique en ligne, gestion des commandes et communication via WhatsApp.",
     images: ["/icon-512.png"],
@@ -60,7 +60,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#1f7d5f",
+  themeColor: "#0a8f45",
 };
 
 export default function RootLayout({

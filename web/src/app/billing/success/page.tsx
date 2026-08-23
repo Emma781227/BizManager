@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import { ArrowRight, CircleCheck, CircleX, TriangleAlert } from "lucide-react";
 
 type TxStatus = "pending" | "paid" | "failed" | "cancelled" | "expired";
 
@@ -19,10 +20,10 @@ const POLL_INTERVAL = 3000;
 const CSS = `
 .bs-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #f5f7fa; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; padding: 24px; }
 .bs-card { background: #fff; border-radius: 16px; padding: 40px 32px; max-width: 420px; width: 100%; text-align: center; box-shadow: 0 4px 24px rgba(0,0,0,.08); }
-.bs-icon { font-size: 56px; margin-bottom: 16px; line-height: 1; }
+.bs-icon { display: flex; justify-content: center; margin-bottom: 16px; }
 .bs-title { font-size: 22px; font-weight: 700; color: #111; margin: 0 0 8px; }
 .bs-sub { font-size: 15px; color: #555; margin: 0 0 24px; }
-.bs-plan { background: #f0faf5; border: 1px solid #b3e6cb; border-radius: 10px; padding: 14px 18px; margin-bottom: 24px; font-size: 14px; color: #1a7a48; font-weight: 600; }
+.bs-plan { background: #f0faf5; border: 1px solid #b3e6cb; border-radius: 10px; padding: 14px 18px; margin-bottom: 24px; font-size: 14px; color: #12a253; font-weight: 600; }
 .bs-spinner { width: 40px; height: 40px; border: 3px solid #e5e7eb; border-top-color: #0A8F45; border-radius: 50%; animation: spin .8s linear infinite; margin: 0 auto 20px; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .bs-btn { display: inline-block; padding: 12px 28px; border-radius: 10px; font-size: 15px; font-weight: 600; text-decoration: none; border: none; cursor: pointer; }
@@ -78,7 +79,7 @@ function BillingSuccessContent() {
       <div className="bs-wrap">
         <style>{CSS}</style>
         <div className="bs-card">
-          <div className="bs-icon">⚠️</div>
+          <div className="bs-icon"><TriangleAlert size={44} strokeWidth={1.6} color="#c8890f" /></div>
           <h1 className="bs-title">Erreur</h1>
           <p className="bs-sub bs-err">{error ?? "Lien invalide."}</p>
           <button className="bs-btn bs-btn-primary" onClick={() => router.push("/dashboard")}>
@@ -121,17 +122,17 @@ function BillingSuccessContent() {
       <div className="bs-wrap">
         <style>{CSS}</style>
         <div className="bs-card">
-          <div className="bs-icon">✅</div>
+          <div className="bs-icon"><CircleCheck size={44} strokeWidth={1.6} color="#0a8f45" /></div>
           <h1 className="bs-title">Paiement confirmé !</h1>
           <p className="bs-sub">Votre abonnement est maintenant actif.</p>
           {data.plan && (
             <div className="bs-plan">
               Plan {data.plan.displayName} activé
-              {data.billingCycle === "yearly" ? " — facturation annuelle" : " — facturation mensuelle"}
+              {data.billingCycle === "yearly" ? " · facturation annuelle" : " · facturation mensuelle"}
             </div>
           )}
           <button className="bs-btn bs-btn-primary" onClick={() => router.push("/shops")}>
-            Créer ma première boutique →
+            Créer ma première boutique <ArrowRight size={14} strokeWidth={2.25} style={{ verticalAlign: "-2px" }} />
           </button>
           <br />
           <button className="bs-btn bs-btn-secondary" onClick={() => router.push("/dashboard")}>
@@ -147,7 +148,7 @@ function BillingSuccessContent() {
     <div className="bs-wrap">
       <style>{CSS}</style>
       <div className="bs-card">
-        <div className="bs-icon">❌</div>
+        <div className="bs-icon"><CircleX size={44} strokeWidth={1.6} color="#c2413a" /></div>
         <h1 className="bs-title">
           {data.status === "cancelled" ? "Paiement annulé" : "Paiement échoué"}
         </h1>

@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { MessageCircle, Globe, PenLine, ShoppingCart, Clock, CheckCircle, TrendingUp, Bell, RefreshCw, X, Check, Store, Download } from "lucide-react";
+import { MessageCircle, Globe, PenLine, ShoppingCart, Clock, CheckCircle, TrendingUp, Bell, RefreshCw, X, Check, Store, Download, ArrowRight, Package, Trash2, Search, ShieldCheck, CreditCard, BarChart3, BookOpen, HelpCircle, Timer, LifeBuoy } from "lucide-react";
 import { useActiveShop } from "@/hooks/useActiveShop";
 import LastModifiedBy from "../LastModifiedBy";
 
@@ -160,7 +160,7 @@ function apiToDisplay(o: ApiOrder): Order {
   return {
     id: o.id,
     ref: "#" + o.id.slice(-6).toUpperCase(),
-    client: o.customer?.fullName ?? "—",
+    client: o.customer?.fullName ?? "Client inconnu",
     phone: o.customer?.phone ?? "",
     channel: o.channel,
     amount: parseFloat(String(o.totalAmount ?? 0)),
@@ -169,7 +169,7 @@ function apiToDisplay(o: ApiOrder): Order {
     status: o.status,
     date: o.createdAt ? o.createdAt.slice(0, 10) : "",
     items: (o.items ?? []).map(i => ({
-      name: i.product?.name ?? "—",
+      name: i.product?.name ?? "Produit supprimé",
       qty: i.quantity,
       price: parseFloat(String(i.lineTotal ?? 0)),
     })),
@@ -302,14 +302,14 @@ function DetailModal({
           <div style={{ background:"#DDF6E7", border:"1px solid #0A8F45", borderRadius:10,
             padding:"8px 14px", fontSize:12, color:"#0A8F45", fontWeight:600, marginBottom:12,
             display:"flex", alignItems:"center", gap:8 }}>
-            ✓ Paiement reçu via GeniusPay
+            <Check size={14} strokeWidth={2.5} /> Paiement reçu via GeniusPay
           </div>
         )}
         {order.channel === "online" && order.paymentStatus === "unpaid" && (
           <div style={{ background:"#FFF1E5", border:"1px solid #F08A24", borderRadius:10,
             padding:"8px 14px", fontSize:12, color:"#F08A24", fontWeight:600, marginBottom:12,
             display:"flex", alignItems:"center", gap:8 }}>
-            ⏳ En attente de confirmation GeniusPay
+            <Clock size={14} strokeWidth={2} /> En attente de confirmation GeniusPay
           </div>
         )}
 
@@ -318,7 +318,7 @@ function DetailModal({
           {nextStatus && nextLabel && (
             <button className="btn-primary" style={{ flex:1, height:38, minWidth:120 }}
               onClick={() => { onAdvance(order.id, nextStatus); onClose(); }}>
-              {nextLabel} →
+              {nextLabel} <ArrowRight size={14} strokeWidth={2.25} />
             </button>
           )}
           {(order.paymentMethod === "cash" || order.paymentMethod === "cod") &&
@@ -328,7 +328,7 @@ function DetailModal({
               style={{ height:38, padding:"0 14px", background:"#7C3AED", color:"#fff", border:"none",
                 borderRadius:10, fontSize:12, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap" }}
               onClick={() => { onSendOtp(order.id); onClose(); }}>
-              🔐 Confirmer avec code
+              <ShieldCheck size={14} strokeWidth={2} style={{ verticalAlign: "-3px", marginRight: 5 }} />Confirmer avec code
             </button>
           )}
           {order.paymentStatus !== "paid" && order.paymentStatus !== "refunded" && order.channel !== "online" && (
@@ -336,12 +336,12 @@ function DetailModal({
               style={{ height:38, padding:"0 14px", background:"#3B82F6", color:"#fff", border:"none",
                 borderRadius:10, fontSize:12, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap" }}
               onClick={() => { onMarkPaid(order.id); onClose(); }}>
-              💳 Marquer comme payée
+              <CreditCard size={14} strokeWidth={2} style={{ verticalAlign: "-3px", marginRight: 5 }} />Marquer comme payée
             </button>
           )}
           <button className="btn-secondary" style={{ height:38 }}
             onClick={() => window.open(`https://wa.me/${order.phone.replace(/\D/g,"")}`, "_blank")}>
-            💬 WhatsApp
+            <MessageCircle size={14} strokeWidth={2} style={{ verticalAlign: "-3px", marginRight: 5 }} />WhatsApp
           </button>
           <button className="btn-secondary" style={{ height:38 }} onClick={onClose}>Fermer</button>
         </div>
@@ -438,7 +438,7 @@ function OtpModal({
         {step === "init" && (
           <>
             <div style={{ textAlign:"center", padding:"8px 0 20px" }}>
-              <div style={{ fontSize:36, marginBottom:12 }}>📦</div>
+              <div style={{ display:"flex", justifyContent:"center", marginBottom:12 }}><Package size={34} strokeWidth={1.3} color="#9aa5a1" /></div>
               <div style={{ fontSize:14, fontWeight:600, color:"#1F2A24", marginBottom:8 }}>
                 Confirmer la livraison par code OTP
               </div>
@@ -470,7 +470,7 @@ function OtpModal({
             }}>
               {otpInfo.sentVia === "email" ? (
                 <div style={{ fontSize:13, color:"#0A8F45" }}>
-                  <strong>✓ Code envoyé par email au client</strong>
+                  <strong style={{ display:"inline-flex", alignItems:"center", gap:5 }}><Check size={13} strokeWidth={2.5} /> Code envoyé par email au client</strong>
                   <div style={{ fontSize:12, fontWeight:400, marginTop:3, color:"#08763A" }}>
                     Demandez-lui de consulter son email et de vous lire son code.
                   </div>
@@ -478,7 +478,7 @@ function OtpModal({
               ) : (
                 <div>
                   <div style={{ fontSize:13, color:"#92600A", fontWeight:600, marginBottom:10 }}>
-                    Aucun email client — lisez ce code au client :
+                    Aucun email client. Lisez ce code au client :
                   </div>
                   <div style={{ fontSize:30, fontWeight:800, letterSpacing:10, color:"#1F2A24",
                     fontFamily:"monospace", textAlign:"center", background:"#FFF", borderRadius:10,
@@ -520,11 +520,11 @@ function OtpModal({
               <button
                 style={{ flex:1, height:42, border:"none", borderRadius:10, fontSize:13, fontWeight:600,
                   cursor: code.length === 6 && !verifying ? "pointer" : "not-allowed",
-                  background: code.length === 6 ? "#0A8F45" : "#A8D5B8", color:"#fff",
+                  background: code.length === 6 ? "#0A8F45" : "#a8e8c2", color:"#fff",
                   transition:"background .15s" }}
                 onClick={verifyOtp}
                 disabled={code.length !== 6 || verifying}>
-                {verifying ? "Vérification…" : "Valider la livraison ✓"}
+                {verifying ? "Vérification…" : <>Valider la livraison <Check size={14} strokeWidth={2.5} style={{ verticalAlign: "-2px" }} /></>}
               </button>
             </div>
 
@@ -540,8 +540,8 @@ function OtpModal({
           <div style={{ textAlign:"center", padding:"16px 0 8px" }}>
             <div style={{ width:64, height:64, borderRadius:"50%", background:"#EAF7EF",
               display:"flex", alignItems:"center", justifyContent:"center",
-              margin:"0 auto 16px", fontSize:28, color:"#0A8F45", fontWeight:800 }}>
-              ✓
+              margin:"0 auto 16px", color:"#0a8f45" }}>
+              <Check size={30} strokeWidth={2.5} />
             </div>
             <div style={{ fontSize:18, fontWeight:800, color:"#0A8F45", marginBottom:8 }}>
               Livraison confirmée !
@@ -747,7 +747,7 @@ function NewOrderModal({
               </button>
             </div>
             {lookupState === "found" && <div style={{ fontSize:11, color:"#0A8F45", marginTop:3, display:"flex", alignItems:"center" }}><Check size={12} style={{ marginRight:3 }} /> Client existant trouvé</div>}
-            {lookupState === "new"   && <div style={{ fontSize:11, color:"#F08A24", marginTop:3 }}>Nouveau client — sera créé automatiquement</div>}
+            {lookupState === "new"   && <div style={{ fontSize:11, color:"#F08A24", marginTop:3 }}>Nouveau client, il sera créé automatiquement</div>}
           </div>
 
           {/* Customer name */}
@@ -764,7 +764,7 @@ function NewOrderModal({
               <select className="sel" style={{ flex:1 }} value={selectedProd} onChange={e => setSelectedProd(e.target.value)}>
                 <option value="">Choisir un produit…</option>
                 {shopProducts.map(p => (
-                  <option key={p.id} value={p.id}>{p.name} — {p.unitPrice.toLocaleString("fr-FR")} FCFA (stock : {p.stock})</option>
+                  <option key={p.id} value={p.id}>{p.name} · {p.unitPrice.toLocaleString("fr-FR")} FCFA (stock : {p.stock})</option>
                 ))}
               </select>
               <input type="number" className="inp" style={{ width:64 }} min={1} value={selectedQty}
@@ -969,7 +969,7 @@ export default function OrdersPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeShopId, page, limit, search, statusF, payF, channelF, dateF, sortBy, refreshKey]);
 
-  // Poll every 30s — check first page for new orders only
+  // Poll every 30s - check first page for new orders only
   useEffect(() => {
     if (!activeShopId) return;
     const iv = setInterval(async () => {
@@ -1083,7 +1083,7 @@ export default function OrdersPage() {
         <div className="or-modal" onClick={() => setCancelOrderId(null)}>
           <div className="or-modal-box" style={{ maxWidth:380, textAlign:"center" }}
                onClick={e => e.stopPropagation()}>
-            <div style={{ fontSize:44, marginBottom:12 }}>🗑️</div>
+            <div style={{ display:"flex", justifyContent:"center", marginBottom:12 }}><Trash2 size={38} strokeWidth={1.4} color="#c2413a" /></div>
             <h2 style={{ fontSize:18, fontWeight:800, color:"#1F2A24", margin:"0 0 8px" }}>
               Annuler la commande ?
             </h2>
@@ -1154,7 +1154,7 @@ export default function OrdersPage() {
         <div style={{ marginBottom:16 }}>
           <h1 style={{ fontSize:22, fontWeight:700, color:"#1F2A24", margin:"0 0 4px" }}>Commandes</h1>
           <p style={{ margin:0, color:"#667085", fontSize:14 }}>
-            Commandes de <strong style={{ color:"#0A8F45" }}>{activeShop?.name ?? "votre boutique"}</strong> — gérez et faites avancer chaque commande.
+            Commandes de <strong style={{ color:"#0A8F45" }}>{activeShop?.name ?? "votre boutique"}</strong>. Gérez et faites avancer chaque commande.
           </p>
         </div>
 
@@ -1186,7 +1186,7 @@ export default function OrdersPage() {
             <div className="or-tbar">
               <div>
                 <div style={{ fontWeight:700, color:"#1F2A24", fontSize:15 }}>
-                  Commandes — {activeShop?.name ?? "…"}
+                  Commandes de {activeShop?.name ?? "votre boutique"}
                   {newBadge > 0 && (
                     <span style={{ marginLeft:8, background:"#EF4444", color:"#fff",
                       borderRadius:10, padding:"2px 7px", fontSize:11, fontWeight:700 }}>{newBadge}</span>
@@ -1208,8 +1208,11 @@ export default function OrdersPage() {
 
             {/* Filters */}
             <div className="or-ftrow">
-              <input className="inp" placeholder="🔍 Référence, client, téléphone…"
-                style={{ flex:1, minWidth:130 }} value={searchInput} onChange={e => setSearchInput(e.target.value)} />
+              <div style={{ position:"relative", flex:1, minWidth:130, display:"flex" }}>
+                <Search size={14} strokeWidth={2} style={{ position:"absolute", left:11, top:"50%", transform:"translateY(-50%)", color:"#9aa5a1", pointerEvents:"none" }} />
+                <input className="inp" placeholder="Référence, client, téléphone…"
+                  style={{ width:"100%", paddingLeft:32 }} value={searchInput} onChange={e => setSearchInput(e.target.value)} />
+              </div>
               <select className="sel" value={statusF} onChange={e => { setStatusF(e.target.value); setPage(1); }}>
                 <option value="all">Statut</option>
                 <option value="new">Nouvelle</option>
@@ -1238,10 +1241,10 @@ export default function OrdersPage() {
                 <option value="30d">30 derniers jours</option>
               </select>
               <select className="sel" value={sortBy} onChange={e => { setSortBy(e.target.value); setPage(1); }}>
-                <option value="created_desc">Date ↓</option>
-                <option value="created_asc">Date ↑</option>
-                <option value="amount_desc">Montant ↓</option>
-                <option value="amount_asc">Montant ↑</option>
+                <option value="created_desc">Date (récentes)</option>
+                <option value="created_asc">Date (anciennes)</option>
+                <option value="amount_desc">Montant décroissant</option>
+                <option value="amount_asc">Montant croissant</option>
               </select>
             </div>
 
@@ -1305,12 +1308,12 @@ export default function OrdersPage() {
                               )}
                               <button className="or-act-btn" title="WhatsApp"
                                 onClick={() => window.open(`https://wa.me/${o.phone.replace(/\D/g,"")}`, "_blank")}>
-                                💬
+                                <MessageCircle size={15} strokeWidth={2} />
                               </button>
                               {o.status !== "cancelled" && o.status !== "delivered" && (
                                 <button className="or-act-btn" title="Annuler la commande" style={{ color:"#EF4444" }}
                                   onClick={() => setCancelOrderId(o.id)}>
-                                  🗑️
+                                  <Trash2 size={15} strokeWidth={2} />
                                 </button>
                               )}
                             </div>
@@ -1416,19 +1419,21 @@ export default function OrdersPage() {
               <div style={{ fontSize:13, fontWeight:700, color:"#1F2A24", marginBottom:10 }}>Alertes</div>
               {globalStats.pending === 0 && globalStats.unpaid === 0 ? (
                 <div style={{ fontSize:12, color:"#98A2B3", textAlign:"center", padding:"8px 0" }}>
-                  {globalStats.total === 0 ? "Aucune commande" : "Aucune alerte en cours ✓"}
+                  {globalStats.total === 0
+                    ? "Aucune commande"
+                    : <span style={{ display:"inline-flex", alignItems:"center", gap:5 }}><Check size={13} strokeWidth={2.5} color="#0a8f45" /> Aucune alerte en cours</span>}
                 </div>
               ) : (
                 <>
                   {globalStats.pending > 0 && (
                     <div className="or-alert-row">
-                      <span style={{ fontSize:15 }}>⏳</span>
+                      <Clock size={15} strokeWidth={2} color="#c8890f" />
                       <span style={{ color:"#F08A24", fontWeight:500 }}>{globalStats.pending} commande{globalStats.pending > 1 ? "s" : ""} en attente</span>
                     </div>
                   )}
                   {globalStats.unpaid > 0 && (
                     <div className="or-alert-row">
-                      <span style={{ fontSize:15 }}>💳</span>
+                      <CreditCard size={15} strokeWidth={2} color="#2f6fb5" />
                       <span style={{ color:"#3B82F6", fontWeight:500 }}>{globalStats.unpaid} paiement{globalStats.unpaid > 1 ? "s" : ""} non reçu{globalStats.unpaid > 1 ? "s" : ""}</span>
                     </div>
                   )}
@@ -1451,16 +1456,16 @@ export default function OrdersPage() {
             <div style={{ fontSize:13, fontWeight:700, color:"#1F2A24", marginBottom:12 }}>Conseils de gestion</div>
             <div className="or-tips">
               {[
-                { icon:"⏱️", t:"Traitez les nouvelles commandes rapidement",  d:"Cliquez sur « Confirmer » dans le tableau dès qu'une commande arrive.", link:"Voir commandes",   href:"#" },
-                { icon:"💳", t:"Relancez les paiements en attente",           d:"Contactez les clients avec un paiement non reçu via WhatsApp.",        link:"WhatsApp clients", href:"#" },
-                { icon:"📊", t:"Analysez vos canaux de vente",               d:"Comparez WhatsApp, boutique en ligne et commandes manuelles.",          link:"Statistiques",     href:"/dashboard" },
-                { icon:"🏪", t:"Comparez vos boutiques",                      d:"Identifiez quelle boutique performe le mieux.",                        link:"Mes boutiques",    href:"/shops" },
-              ].map(c => (
+                { Icon: Timer,      t:"Traitez les nouvelles commandes rapidement", d:"Cliquez sur « Confirmer » dans le tableau dès qu'une commande arrive.", link:"Voir commandes",   href:"#" },
+                { Icon: CreditCard, t:"Relancez les paiements en attente",            d:"Contactez les clients avec un paiement non reçu via WhatsApp.",        link:"WhatsApp clients", href:"#" },
+                { Icon: BarChart3,  t:"Analysez vos canaux de vente",                 d:"Comparez WhatsApp, boutique en ligne et commandes manuelles.",         link:"Statistiques",     href:"/dashboard" },
+                { Icon: Store,      t:"Comparez vos boutiques",                       d:"Identifiez quelle boutique performe le mieux.",                        link:"Mes boutiques",    href:"/shops" },
+              ].map(({ Icon, ...c }) => (
                 <div key={c.t} style={{ background:"#F8FAF9", borderRadius:10, padding:"11px 13px", border:"1px solid #F0F2F1" }}>
-                  <div style={{ fontSize:18, marginBottom:5 }}>{c.icon}</div>
+                  <div style={{ marginBottom:6 }}><Icon size={17} strokeWidth={1.9} color="#0a8f45" /></div>
                   <div style={{ fontWeight:600, color:"#1F2A24", fontSize:12, marginBottom:3 }}>{c.t}</div>
                   <div style={{ fontSize:11, color:"#98A2B3", marginBottom:8 }}>{c.d}</div>
-                  <a href={c.href} style={{ fontSize:11, fontWeight:600, color:"#0A8F45", textDecoration:"none" }}>{c.link} →</a>
+                  <a href={c.href} style={{ display:"inline-flex", alignItems:"center", gap:3, fontSize:11, fontWeight:600, color:"#0a8f45", textDecoration:"none" }}>{c.link} <ArrowRight size={11} strokeWidth={2.25} /></a>
                 </div>
               ))}
             </div>
@@ -1469,19 +1474,19 @@ export default function OrdersPage() {
           <div className="or-card">
             <div style={{ fontSize:13, fontWeight:700, color:"#1F2A24", marginBottom:12 }}>Support</div>
             {[
-              { icon:"💬", label:"Contacter le support",      href:"mailto:support@bizmanager.app" },
-              { icon:"📚", label:"Documentation",              href:"#docs" },
-              { icon:"❓", label:"Aide commandes et canaux",   href:"#help" },
-            ].map(r => (
+              { Icon: LifeBuoy,   label:"Contacter le support",    href:"mailto:support@bizmanager.app" },
+              { Icon: BookOpen,   label:"Documentation",            href:"#docs" },
+              { Icon: HelpCircle, label:"Aide commandes et canaux", href:"#help" },
+            ].map(({ Icon, ...r }) => (
               <a key={r.label} href={r.href}
                 style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 12px", background:"#F8FAF9",
                   borderRadius:10, textDecoration:"none", color:"#1F2A24", fontSize:13, fontWeight:500,
                   marginBottom:8, transition:"background .15s" }}
                 onMouseEnter={e => (e.currentTarget.style.background="#EAF7EF")}
                 onMouseLeave={e => (e.currentTarget.style.background="#F8FAF9")}>
-                <span style={{ fontSize:16 }}>{r.icon}</span>
+                <Icon size={16} strokeWidth={1.9} color="#565f5c" />
                 {r.label}
-                <span style={{ marginLeft:"auto", color:"#98A2B3" }}>→</span>
+                <ArrowRight size={14} strokeWidth={2} style={{ marginLeft:"auto", color:"#9aa5a1" }} />
               </a>
             ))}
           </div>

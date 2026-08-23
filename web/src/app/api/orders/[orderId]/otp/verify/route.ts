@@ -27,7 +27,7 @@ export async function POST(request: NextRequest, context: RouteParams) {
   const body   = await request.json().catch(() => null);
   const parsed = verifySchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: "Code invalide — 6 chiffres requis" }, { status: 400 });
+    return NextResponse.json({ error: "Code invalide : 6 chiffres requis" }, { status: 400 });
   }
   const { code } = parsed.data;
 
@@ -87,7 +87,7 @@ export async function POST(request: NextRequest, context: RouteParams) {
     if (remaining <= 0) {
       await prisma.deliveryOtp.update({ where: { id: otp.id }, data: { status: "failed" } });
       return NextResponse.json(
-        { verified: false, error: "Code incorrect — trop de tentatives. Générez un nouveau code.", remainingAttempts: 0 },
+        { verified: false, error: "Code incorrect : trop de tentatives. Générez un nouveau code.", remainingAttempts: 0 },
         { status: 400 },
       );
     }

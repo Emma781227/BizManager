@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Check } from "lucide-react";
 
 type Mode = "login" | "register";
 
@@ -29,7 +30,6 @@ export default function LoginPage() {
   const [forgotError, setForgotError] = useState<string | null>(null);
   const [forgotLoading, setForgotLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  const [acceptTerms, setAcceptTerms] = useState(false);
   const [gsiReady, setGsiReady] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<"starter" | "business" | "premium" | null>(null);
 
@@ -114,7 +114,7 @@ export default function LoginPage() {
   function handleGoogleButton() {
     const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
     if (!clientId || clientId === "REPLACE_WITH_GOOGLE_CLIENT_ID") {
-      setError("Connexion Google non configurée — ajoutez NEXT_PUBLIC_GOOGLE_CLIENT_ID dans .env.local et redémarrez.");
+      setError("Connexion Google non configurée : ajoutez NEXT_PUBLIC_GOOGLE_CLIENT_ID dans .env.local puis redémarrez.");
       return;
     }
     if (!gsiReady) {
@@ -179,11 +179,6 @@ export default function LoginPage() {
     if (mode === "register") {
       if (!fullName.trim() || fullName.trim().length < 2) {
         setError("Entrez votre nom complet");
-        return;
-      }
-
-      if (!acceptTerms) {
-        setError("Vous devez accepter les CGU et la politique de confidentialité pour créer un compte.");
         return;
       }
 
@@ -407,7 +402,179 @@ export default function LoginPage() {
       ) : null}
 
       <section className="grid min-h-screen lg:grid-cols-[1.1fr_1.05fr]">
-        
+        <div className="relative hidden overflow-hidden border-b border-emerald-100 bg-linear-to-br from-[#f7fbf5] via-white to-[#edf4ee] px-3 py-4 sm:px-4 lg:block lg:border-b-0 lg:border-r lg:px-8 lg:py-4">
+          <div className="pointer-events-none absolute left-0 top-0 h-full w-full">
+            <div className="absolute -left-20 top-12 h-72 w-72 rounded-full bg-emerald-100/70 blur-3xl" />
+            <div className="absolute right-12 top-8 h-48 w-48 rounded-full bg-white/70 blur-3xl" />
+            <div className="absolute right-16 top-20 grid grid-cols-6 gap-2 opacity-30">
+              {Array.from({ length: 36 }).map((_, index) => (
+                <span key={index} className="h-1.5 w-1.5 rounded-full bg-emerald-200" />
+              ))}
+            </div>
+          </div>
+
+          <div className="relative flex min-h-full flex-col gap-4 lg:gap-5">
+            <div className="flex items-center gap-2">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#085f30] text-base font-bold text-white shadow-sm">B</div>
+              <span className="text-xl font-extrabold tracking-tight text-[#085f30]">BizManager</span>
+            </div>
+
+            <div className="max-w-135 space-y-2">
+              <h1 className="max-w-135 text-[clamp(1.75rem,3vw,2.25rem)] font-black leading-[0.92] tracking-tight text-[#074e29] sm:text-[clamp(1.9rem,3vw,2.4rem)]">
+                Pilotez votre boutique
+                <br />
+                simplement
+              </h1>
+              <p className="max-w-130 text-sm leading-5 text-slate-600 sm:text-[0.95rem]">
+                Gérez vos produits, vos commandes, vos clients, vos paiements
+                et vos ventes WhatsApp depuis un seul endroit.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap gap-3 lg:flex-nowrap lg:gap-3">
+              {marketingKpis.map((item) => (
+                <article key={item.label} className="flex h-16 min-w-40 flex-1 items-center gap-3 rounded-lg border border-slate-100 bg-white px-3 text-sm shadow-[0_8px_20px_rgba(15,23,42,0.07)]">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-50 text-[#085f30]">
+                    {item.icon === "cube" ? (
+                      <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
+                        <path d="M3.3 7.2 12 12l8.7-4.8M12 22V12" />
+                      </svg>
+                    ) : item.icon === "clipboard" ? (
+                      <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
+                        <rect x="5" y="4" width="14" height="16" rx="2" />
+                        <path d="M9 4V2h6v2" />
+                        <path d="M8 9h8M8 13h8" />
+                      </svg>
+                    ) : (
+                      <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2" />
+                        <circle cx="9" cy="7" r="4" />
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                      </svg>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-lg font-extrabold leading-none tracking-tight text-[#085f30]">{item.value}</p>
+                    <p className="mt-0.5 text-xs font-medium text-slate-600">{item.label}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
+
+            <article className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-[0_12px_30px_rgba(15,23,42,0.07)]">
+              <div className="flex min-h-64 flex-col lg:min-h-72 lg:flex-row">
+                <aside className="flex w-full flex-col border-b border-slate-100 bg-[#f9fbf8] px-3 py-2 lg:w-32 lg:border-b-0 lg:border-r lg:px-3 lg:py-3">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-md bg-[#085f30] text-xs font-bold text-white">B</div>
+                    <span className="text-sm font-extrabold text-[#085f30]">BizManager</span>
+                  </div>
+                  <nav className="mt-2 flex flex-1 flex-wrap gap-1 lg:mt-3 lg:flex-col lg:gap-1">
+                    {dashboardMenu.map((item) => (
+                      <div
+                        key={item}
+                        className={`flex items-center gap-1.5 rounded-md px-2 py-1.5 text-xs transition ${
+                          item === "Tableau de bord"
+                            ? "bg-[#085f30] text-white shadow-sm"
+                            : "text-slate-600 hover:bg-white"
+                        }`}
+                      >
+                        <span className={`h-2.5 w-2.5 rounded-full ${item === "Tableau de bord" ? "bg-white" : "bg-emerald-200"}`} />
+                        <span className="whitespace-nowrap">{item}</span>
+                      </div>
+                    ))}
+                  </nav>
+                </aside>
+
+                <div className="flex-1 px-3 py-2 sm:px-3 sm:py-3 lg:px-4 lg:py-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <h2 className="text-sm font-bold tracking-tight text-slate-950 sm:text-base">Tableau de bord</h2>
+                      <p className="mt-0.5 text-xs text-slate-500">Vue d'ensemble des ventes et commandes</p>
+                    </div>
+                    <div className="hidden items-center gap-2 sm:flex">
+                      <span className="h-3.5 w-3.5 rounded-full bg-slate-200" />
+                      <span className="h-3.5 w-3.5 rounded-full bg-emerald-200" />
+                      <span className="h-3.5 w-3.5 rounded-full bg-slate-200" />
+                    </div>
+                  </div>
+
+                  <div className="mt-2 grid gap-2 lg:grid-cols-[1.35fr_0.65fr]">
+                    <div className="rounded-lg border border-slate-100 bg-white p-2 shadow-sm">
+                      <div className="h-40 rounded-lg bg-[#fafcf9] p-2">
+                        <div className="flex h-full items-end gap-1 rounded-lg border border-slate-100 bg-white px-2 pb-2 pt-3">
+                          {chartBars.map((height, index) => (
+                            <div key={index} className="flex flex-1 items-end justify-center">
+                              <div
+                                className={`w-full max-w-4.5 rounded-t-lg ${index % 3 === 0 ? "bg-[#085f30]" : "bg-emerald-200"}`}
+                                style={{ height: `${height}%` }}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                      {[
+                        { label: "Chiffre d'affaires", value: "28 650 €", delta: "+18,6%" },
+                        { label: "Commandes", value: "156", delta: "+12,4%" },
+                      ].map((card) => (
+                        <article key={card.label} className="rounded-lg border border-slate-100 bg-white p-2 shadow-sm">
+                          <div className="flex items-center justify-between gap-2">
+                            <div>
+                              <p className="text-xs text-slate-500">{card.label}</p>
+                              <p className="mt-1 text-base font-bold tracking-tight text-slate-950">{card.value}</p>
+                            </div>
+                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-50 text-[#085f30]">
+                              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                                <path d="M12 5v14" />
+                                <path d="M5 12l7-7 7 7" />
+                              </svg>
+                            </div>
+                          </div>
+                          <p className="mt-1 text-xs text-emerald-700">{card.delta} vs période précédente</p>
+                        </article>
+                      ))}
+                    </div>
+                  </div>
+
+                  <article className="mt-2 rounded-lg border border-slate-100 bg-white p-2 shadow-sm">
+                    <div className="mb-2 flex items-center justify-between gap-2">
+                      <h3 className="text-xs font-semibold text-slate-900">Commandes récentes</h3>
+                      <button type="button" className="rounded-full border border-emerald-200 px-2 py-0.5 text-xs font-semibold text-[#085f30]">Voir</button>
+                    </div>
+                    <div className="overflow-hidden rounded-lg border border-slate-100">
+                      <table className="w-full text-left text-xs">
+                        <thead className="bg-slate-50 text-xs uppercase tracking-[0.1em] text-slate-500">
+                          <tr>
+                            <th className="px-2 py-1">Cmd</th>
+                            <th className="px-2 py-1">Client</th>
+                            <th className="px-2 py-1">Statut</th>
+                            <th className="px-2 py-1">Montant</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {recentOrders.map((row) => (
+                            <tr key={row.order} className="border-t border-slate-100">
+                              <td className="px-2 py-1 font-medium text-slate-700 text-xs">{row.order}</td>
+                              <td className="px-2 py-1 text-slate-600 text-xs truncate">{row.client}</td>
+                              <td className="px-2 py-1">
+                                <span className="inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-[#085f30]">{row.status}</span>
+                              </td>
+                              <td className="px-2 py-1 text-slate-600 text-xs">{row.amount}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </article>
+                </div>
+              </div>
+            </article>
+          </div>
+        </div>
 
         <div className="relative flex items-center justify-center px-3 py-4 sm:px-4 lg:px-6">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,#ffffff_0%,#f6f8f4_55%,#eef4ee_100%)]" />
@@ -416,7 +583,7 @@ export default function LoginPage() {
             <div className="absolute bottom-10 right-6 h-28 w-28 rounded-full bg-white/80 blur-3xl" />
           </div>
 
-          <div className="relative  max-w-md lg:max-w-3xl rounded-2xl border border-white/80 bg-white px-4 py-5 shadow-[0_16px_50px_rgba(15,23,42,0.08)] sm:px-5 sm:py-6 lg:px-6 lg:py-6">
+          <div className="relative w-full max-w-md lg:max-w-3xl rounded-2xl border border-white/80 bg-white px-4 py-5 shadow-[0_16px_50px_rgba(15,23,42,0.08)] sm:px-5 sm:py-6 lg:px-6 lg:py-6">
             <div className="mb-4 text-center">
               <h2 className="text-xl font-black tracking-tight text-slate-950">Connexion</h2>
               <p className="mx-auto mt-2 max-w-80 text-xs leading-5 text-slate-500 sm:text-sm">
@@ -447,13 +614,13 @@ export default function LoginPage() {
                 <div className="space-y-2">
                   {selectedPlan ? (
                     <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2">
-                      <span className="text-emerald-600 text-sm font-bold">✓</span>
+                      <Check size={15} strokeWidth={2.5} className="shrink-0 text-emerald-600" />
                       <span className="text-xs text-emerald-800 font-medium">
                         Plan sélectionné :{" "}
                         <span className="font-bold capitalize">{selectedPlan}</span>
-                        {selectedPlan === "business" && " — 4 500 FCFA/mois"}
-                        {selectedPlan === "premium" && " — 10 000 FCFA/mois"}
-                        {selectedPlan === "starter" && " — Gratuit"}
+                        {selectedPlan === "business" && " · 4 500 FCFA/mois"}
+                        {selectedPlan === "premium" && " · 10 000 FCFA/mois"}
+                        {selectedPlan === "starter" && " · Gratuit"}
                       </span>
                     </div>
                   ) : null}
@@ -548,28 +715,6 @@ export default function LoginPage() {
                   </label>
                 ) : null}
 
-                {mode === "register" && registerStep === "details" ? (
-                  <label className="flex items-start gap-2 text-xs text-slate-600">
-                    <input
-                      required
-                      type="checkbox"
-                      checked={acceptTerms}
-                      onChange={(e) => setAcceptTerms(e.target.checked)}
-                      className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 rounded border-emerald-500 text-emerald-600 focus:ring-emerald-500"
-                    />
-                    <span>
-                      J&apos;accepte les{" "}
-                      <a href="/cgu" target="_blank" rel="noopener noreferrer" className="font-medium text-emerald-700 underline hover:text-emerald-800">
-                        CGU
-                      </a>{" "}
-                      et la{" "}
-                      <a href="/politique-de-confidentialite" target="_blank" rel="noopener noreferrer" className="font-medium text-emerald-700 underline hover:text-emerald-800">
-                        politique de confidentialité
-                      </a>
-                    </span>
-                  </label>
-                ) : null}
-
                 {mode === "login" ? (
                   <div className="flex items-center justify-between gap-3 pt-0 text-xs">
                     <label className="flex items-center gap-1.5 text-slate-600">
@@ -602,9 +747,9 @@ export default function LoginPage() {
                 {error ? <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">{error}</p> : null}
 
                 <button
-                  disabled={isLoading || (mode === "register" && registerStep === "details" && !acceptTerms)}
+                  disabled={isLoading}
                   type="submit"
-                  className="inline-flex h-10 w-full items-center justify-center rounded-lg bg-[#145f38] px-4 text-xs font-semibold text-white shadow-[0_12px_25px_rgba(20,95,56,0.18)] transition hover:bg-[#0f522f] disabled:cursor-not-allowed disabled:opacity-70"
+                  className="inline-flex h-10 w-full items-center justify-center rounded-lg bg-[#085f30] px-4 text-xs font-semibold text-white shadow-[0_12px_25px_rgba(8,118,58,0.18)] transition hover:bg-[#074e29] disabled:cursor-not-allowed disabled:opacity-70"
                 >
                   {isLoading
                     ? "Chargement..."
@@ -653,7 +798,7 @@ export default function LoginPage() {
 
                 <div className="rounded-lg border border-emerald-100 bg-emerald-50/80 px-3 py-2">
                   <div className="flex items-start gap-2">
-                    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-white text-[#145f38] shadow-sm">
+                    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-white text-[#085f30] shadow-sm">
                       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                         <path d="M12 2 4 5v6c0 5 3.4 9.7 8 11 4.6-1.3 8-6 8-11V5l-8-3Z" />
                         <path d="m9 12 2 2 4-4" />
@@ -749,7 +894,7 @@ export default function LoginPage() {
                     <button
                       disabled={forgotLoading}
                       type="submit"
-                      className="inline-flex h-9 flex-1 items-center justify-center rounded-lg bg-[#145f38] px-3 text-xs font-semibold text-white transition hover:bg-[#0f522f] disabled:cursor-not-allowed disabled:opacity-70"
+                      className="inline-flex h-9 flex-1 items-center justify-center rounded-lg bg-[#085f30] px-3 text-xs font-semibold text-white transition hover:bg-[#074e29] disabled:cursor-not-allowed disabled:opacity-70"
                     >
                       {forgotLoading
                         ? "..."

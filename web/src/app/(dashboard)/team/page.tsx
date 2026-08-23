@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState, useCallback, useRef, type JSX } from "react";
-import { Users, UserPlus, Mail, Shield, Store, Clock, CheckCircle, XCircle, AlertCircle, Pencil, Trash2, RefreshCw, X, Check, ChevronDown, Lock, Send, MoreHorizontal, Activity } from "lucide-react";
+import { Users, UserPlus, Mail, Shield, Store, Clock, CheckCircle, XCircle, AlertCircle, Pencil, Trash2, RefreshCw, X, Check, ChevronDown, Lock, Send, MoreHorizontal, Activity, ArrowRight } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type StaffRole = "owner" | "manager" | "staff";
@@ -275,7 +275,7 @@ function describeAction(entry: AuditEntry): JSX.Element {
     case "team.invitation_accepted":
       return <><strong>{entry.actorName}</strong>{" a rejoint l'équipe"}</>;
     default:
-      return <><strong>{entry.actorName}</strong>{" — "}{entry.action}</>;
+      return <><strong>{entry.actorName}</strong>{" · "}{entry.action}</>;
   }
 }
 type ActionStyle = { bg: string; color: string; icon: JSX.Element };
@@ -518,7 +518,7 @@ function InviteModal({ open, onClose, shops, onInvited }: {
             </div>
           )}
           {success && (
-            <div style={{ background:"#DDF6E7", border:"1px solid #A8E0BF", borderRadius:10,
+            <div style={{ background:"#DDF6E7", border:"1px solid #a8e8c2", borderRadius:10,
                           padding:"10px 14px", fontSize:13, color:"#08763A", fontWeight:600 }}>
               <Check size={13} style={{ marginRight:5, verticalAlign:"middle" }} />
               Invitation envoyée avec succès !
@@ -591,7 +591,7 @@ function EditMemberModal({ open, onClose, member, shops, onUpdated }: {
         <div className="tm-modal-hd">
           <div>
             <h2 style={{ fontSize:18, fontWeight:800, color:"#1F2A24", margin:0 }}>Modifier le collaborateur</h2>
-            <p style={{ fontSize:13, color:"#667085", margin:"4px 0 0" }}>{member.user.fullName} — {member.user.email}</p>
+            <p style={{ fontSize:13, color:"#667085", margin:"4px 0 0" }}>{member.user.fullName} · {member.user.email}</p>
           </div>
           <button onClick={onClose}
             style={{ background:"none", border:"1.5px solid #E8ECEA", borderRadius:8, width:32, height:32,
@@ -641,7 +641,7 @@ function EditMemberModal({ open, onClose, member, shops, onUpdated }: {
             </div>
           )}
           {success && (
-            <div style={{ background:"#DDF6E7", border:"1px solid #A8E0BF", borderRadius:10, padding:"10px 14px", fontSize:13, color:"#08763A", fontWeight:600 }}>
+            <div style={{ background:"#DDF6E7", border:"1px solid #a8e8c2", borderRadius:10, padding:"10px 14px", fontSize:13, color:"#08763A", fontWeight:600 }}>
               <Check size={13} style={{ marginRight:5, verticalAlign:"middle" }} /> Mis à jour avec succès !
             </div>
           )}
@@ -968,7 +968,7 @@ export default function TeamPage() {
           <button className="btn-primary"
             style={atLimit ? { opacity:.5, cursor:"not-allowed" } : undefined}
             onClick={() => { if (!atLimit) setShowInvite(true); }}
-            title={atLimit ? "Quota de collaborateurs atteint — passez au plan supérieur" : undefined}>
+            title={atLimit ? "Quota de collaborateurs atteint : passez au plan supérieur" : undefined}>
             <UserPlus size={14} /> Inviter un collaborateur
           </button>
         </div>
@@ -980,13 +980,13 @@ export default function TeamPage() {
                         marginBottom:18, fontSize:13, color:"#C05C0A", flexWrap:"wrap" }}>
             <Lock size={16} style={{ flexShrink:0 }} />
             <span style={{ flex:1 }}>
-              Quota atteint — votre plan <strong>{quota?.plan.displayName}</strong> permet{" "}
+              Quota atteint. Votre plan <strong>{quota?.plan.displayName}</strong> permet{" "}
               {quota?.plan.maxTeamMembers} collaborateur{(quota?.plan.maxTeamMembers ?? 0) > 1 ? "s" : ""}.
             </span>
             <a href="/settings"
               style={{ background:"#F08A24", color:"#fff", borderRadius:8, padding:"6px 14px",
                        fontSize:12, fontWeight:700, textDecoration:"none", flexShrink:0 }}>
-              Passer au plan supérieur →
+              Passer au plan supérieur <ArrowRight size={13} strokeWidth={2.25} style={{verticalAlign:"-2px"}} />
             </a>
           </div>
         )}
@@ -1009,7 +1009,7 @@ export default function TeamPage() {
                 {quota && k.label === "Membres actifs" && (
                   <>
                     <div style={{ fontSize:11, color:k.tc }}>
-                      {quota.plan.maxTeamMembers === 0 ? "Plan Starter — non disponible"
+                      {quota.plan.maxTeamMembers === 0 ? "Plan Starter : non disponible"
                         : quota.plan.maxTeamMembers === -1 ? "Illimité"
                         : `${k.val} / ${quota.plan.maxTeamMembers} (plan ${quota.plan.displayName})`}
                     </div>
@@ -1242,7 +1242,7 @@ export default function TeamPage() {
                       <td>
                         <div style={{ display:"flex", flexWrap:"wrap", gap:4 }}>
                           {inv.shopIds.length === 0 ? (
-                            <span style={{ fontSize:11, color:"#98A2B3" }}>—</span>
+                            <span style={{ fontSize:11, color:"#98A2B3" }}>Aucune</span>
                           ) : inv.shopIds.map(sid => {
                             const s = shops.find(sh => sh.id === sid);
                             return s ? (

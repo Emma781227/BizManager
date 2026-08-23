@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
   if (!shop) return NextResponse.json({ error: "Boutique introuvable" }, { status: 404 });
 
   if (!hasPermission(shop._staffRole, "canManageOrders")) {
-    return NextResponse.json({ error: "Accès refusé — droits insuffisants" }, { status: 403 });
+    return NextResponse.json({ error: "Accès refusé : droits insuffisants" }, { status: 403 });
   }
 
   const body   = await request.json().catch(() => null);

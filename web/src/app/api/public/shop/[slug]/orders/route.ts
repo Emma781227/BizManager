@@ -69,7 +69,7 @@ export async function POST(request: NextRequest, context: RouteParams) {
 
   const body = await request.json().catch(() => null);
 
-  // 4. Honeypot check — bots fill hidden fields, humans don't
+  // 4. Honeypot check - bots fill hidden fields, humans don't
   if (body && typeof body._hp === "string" && body._hp.length > 0) {
     logAbuse({ ip, slug, reason: "honeypot_triggered", ua });
     // Fake success to avoid tipping off bots
@@ -180,7 +180,7 @@ export async function POST(request: NextRequest, context: RouteParams) {
       }
       if (variant.stock < item.quantity) {
         return NextResponse.json(
-          { error: `Stock insuffisant pour "${product.name} — ${variant.label}". Disponible : ${variant.stock}, demandé : ${item.quantity}` },
+          { error: `Stock insuffisant pour "${product.name} (${variant.label})". Disponible : ${variant.stock}, demandé : ${item.quantity}` },
           { status: 409 },
         );
       }
@@ -308,7 +308,7 @@ export async function POST(request: NextRequest, context: RouteParams) {
       note:          notes ?? null,
       items: resolvedItems.map(item => {
         const product = products.find(p => p.id === item.productId)!;
-        const label = item.variantLabel ? `${product.name} — ${item.variantLabel}` : product.name;
+        const label = item.variantLabel ? `${product.name} (${item.variantLabel})` : product.name;
         return {
           productName: label,
           quantity:    item.quantity,

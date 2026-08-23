@@ -30,7 +30,7 @@ export async function generateMetadata({
   const price = parseFloat(String(product.unitPrice)).toLocaleString("fr-FR");
   const description =
     product.description ||
-    `${product.name} — ${price} FCFA. Disponible dans la boutique ${product.shop.name}. Commandez via WhatsApp.`;
+    `${product.name}, ${price} FCFA. Disponible dans la boutique ${product.shop.name}. Commandez via WhatsApp.`;
   const image = product.imageUrl || `${appUrl}/icon-512.png`;
   const url = `${appUrl}/shop/${slug}/products/${productId}`;
 

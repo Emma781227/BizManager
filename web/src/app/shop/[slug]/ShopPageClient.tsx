@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Heart, Home, MessageCircle, Plus, Search, ShoppingBag, X } from 'lucide-react';
+import { ArrowRight, BadgeCheck, Banknote, Check, CheckCircle2, Heart, Home, Landmark, Lock, MapPin, MessageCircle, Package, Plus, Search, ShoppingBag, ShoppingCart, SlidersHorizontal, Smartphone, Truck, X } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -511,7 +511,7 @@ const CSS = `
   .sp-toast-icon {
     width: 36px; height: 36px; border-radius: 9px; background: #DDF6E7;
     display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0; font-size: 17px;
+    flex-shrink: 0; color: #0a8f45;
   }
   .sp-toast-close {
     background: none; border: none; cursor: pointer;
@@ -668,7 +668,7 @@ export default function ShopPageClient({ initialShop, initialProducts }: ShopPag
     const delay = Math.min(idx % PAGE_SIZE, 11) * 50;
     return (
       <article key={product.id} className="sp-card" style={{ animationDelay: `${delay}ms` }}>
-        {/* Card-link — covers full surface, z-index: 1 */}
+        {/* Card-link - covers full surface, z-index: 1 */}
         <Link
           href={`/shop/${slug}/products/${product.id}`}
           className="sp-card-link"
@@ -684,10 +684,10 @@ export default function ShopPageClient({ initialShop, initialProducts }: ShopPag
                 className="sp-card-img"
                 sizes="(max-width: 480px) 50vw, (max-width: 900px) 50vw, (max-width: 1200px) 33vw, 25vw"
               />
-            : <div className="sp-card-img" style={{ background: '#F0F2F1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32 }}>📦</div>
+            : <div className="sp-card-img" style={{ background: '#F0F2F1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Package size={30} strokeWidth={1.4} color="#c7cfcc" /></div>
           }
           <div className="sp-card-overlay" aria-hidden>
-            <span className="sp-card-overlay-label">Voir le produit →</span>
+            <span className="sp-card-overlay-label">Voir le produit <ArrowRight size={13} strokeWidth={2.25} style={{ verticalAlign: '-2px' }} /></span>
           </div>
           <div
             className={`sp-card-stock${product.stock > 0 && product.stock <= 5 ? ' sp-card-stock-urgent' : ''}`}
@@ -695,9 +695,9 @@ export default function ShopPageClient({ initialShop, initialProducts }: ShopPag
           >
             {stockLabel(product.stock)}
           </div>
-          {/* z-index: 3 via CSS — au-dessus du card-link */}
+          {/* z-index: 3 via CSS - au-dessus du card-link */}
           <button className="sp-card-fav" onClick={() => toggleFavorite(product.id, product)}>
-            <span style={{ fontSize: 14, color: isFav ? '#EF4444' : '#D0D5DD' }}>{isFav ? '♥' : '♡'}</span>
+            <Heart size={15} strokeWidth={2} fill={isFav ? '#EF4444' : 'none'} color={isFav ? '#EF4444' : '#c7cfcc'} />
           </button>
           {product.stock > 0 && (
             <button
@@ -725,7 +725,7 @@ export default function ShopPageClient({ initialShop, initialProducts }: ShopPag
           <div className="sp-card-price">
             {product.hasVariants ? `Dès ${formatPrice(product.unitPrice)}` : formatPrice(product.unitPrice)}
           </div>
-          {/* z-index: 2 via CSS — "Voir" supprimé */}
+          {/* z-index: 2 via CSS - "Voir" supprimé */}
           <button
             className="sp-card-btn-add"
             disabled={product.stock <= 0}
@@ -896,7 +896,7 @@ export default function ShopPageClient({ initialShop, initialProducts }: ShopPag
                     <div className="sp-suggest-thumb">
                       {p.imageUrl
                         ? <Image src={p.imageUrl} alt={p.name} width={38} height={38} style={{ objectFit: 'cover', width: '100%', height: '100%' }} />
-                        : <span style={{ fontSize: 18 }}>📦</span>
+                        : <Package size={17} strokeWidth={1.6} color="#9aa5a1" />
                       }
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
@@ -917,7 +917,7 @@ export default function ShopPageClient({ initialShop, initialProducts }: ShopPag
                   <button className="sp-suggest-footer" onClick={() => setShowSuggest(false)}>
                     <span style={{ color: '#667085' }}>Voir tous les résultats</span>
                     <span style={{ fontWeight: 700, color: '#0A8F45' }}>
-                      {suggestResults.length} produit{suggestResults.length > 1 ? 's' : ''} →
+                      {suggestResults.length} produit{suggestResults.length > 1 ? 's' : ''} <ArrowRight size={12} strokeWidth={2.25} style={{ verticalAlign: '-2px' }} />
                     </span>
                   </button>
                 )}
@@ -964,7 +964,7 @@ export default function ShopPageClient({ initialShop, initialProducts }: ShopPag
           <div className="sp-hero-overlay" />
           {whatsappUrl && (
             <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="sp-hero-cta">
-              💬 WhatsApp
+              <MessageCircle size={15} strokeWidth={2} /> WhatsApp
             </a>
           )}
           <div className="sp-hero-content">
@@ -980,8 +980,8 @@ export default function ShopPageClient({ initialShop, initialProducts }: ShopPag
                 {shop.category ? `${shop.category} · ` : ''}{shop.description ? shop.description.slice(0, 100) : 'Boutique en ligne'}
               </div>
               <div className="sp-hero-badges">
-                <span className="sp-hero-badge sp-badge-verified">✓ Boutique vérifiée</span>
-                {shop.city && <span className="sp-hero-badge sp-badge-city">📍 {shop.city}</span>}
+                <span className="sp-hero-badge sp-badge-verified"><BadgeCheck size={13} strokeWidth={2.1} /> Boutique vérifiée</span>
+                {shop.city && <span className="sp-hero-badge sp-badge-city"><MapPin size={13} strokeWidth={2.1} /> {shop.city}</span>}
               </div>
             </div>
           </div>
@@ -990,11 +990,11 @@ export default function ShopPageClient({ initialShop, initialProducts }: ShopPag
         {/* Stats strip */}
         <div className="sp-stats">
           <div className="sp-stat">
-            <div className="sp-stat-val">{shop.productsCount || allProducts.length || '—'}</div>
+            <div className="sp-stat-val">{shop.productsCount || allProducts.length || 0}</div>
             <div className="sp-stat-lbl">Produits</div>
           </div>
           <div className="sp-stat">
-            <div className="sp-stat-val" style={{ color: '#0A8F45', fontSize: 20 }}>✓</div>
+            <div className="sp-stat-val" style={{ color: '#0a8f45', display: 'flex', justifyContent: 'center' }}><Check size={20} strokeWidth={2.5} /></div>
             <div className="sp-stat-lbl">Livraison</div>
           </div>
           <div className="sp-stat">
@@ -1030,14 +1030,14 @@ export default function ShopPageClient({ initialShop, initialProducts }: ShopPag
             className={`sp-filter-btn${activeFilterCount > 0 ? ' has-active' : ''}`}
             onClick={() => setFilterOpen(true)}
           >
-            ⚙ Filtres
+            <SlidersHorizontal size={14} strokeWidth={2} /> Filtres
             {activeFilterCount > 0 && <span className="sp-filter-badge">{activeFilterCount}</span>}
           </button>
 
           <select className="sp-select" value={sortBy} onChange={e => setSortBy(e.target.value)}>
             <option value="newest">Plus récents</option>
-            <option value="price_asc">Prix ↑</option>
-            <option value="price_desc">Prix ↓</option>
+            <option value="price_asc">Prix croissant</option>
+            <option value="price_desc">Prix décroissant</option>
             <option value="name_asc">Nom A–Z</option>
           </select>
 
@@ -1073,7 +1073,7 @@ export default function ShopPageClient({ initialShop, initialProducts }: ShopPag
           </div>
         ) : filteredProducts.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '72px 0' }}>
-            <div style={{ fontSize: 48, marginBottom: 14 }}>📦</div>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 14 }}><Package size={44} strokeWidth={1.2} color="#c7cfcc" /></div>
             <div style={{ fontSize: 16, fontWeight: 700, color: '#1F2A24', marginBottom: 6 }}>Aucun produit disponible</div>
             <div style={{ fontSize: 13, color: '#98A2B3' }}>
               {activeFilterCount > 0 || activeCategory !== 'all'
@@ -1106,7 +1106,7 @@ export default function ShopPageClient({ initialShop, initialProducts }: ShopPag
               </div>
             )}
             {!hasMore && !productsLoading && filteredProducts.length >= PAGE_SIZE && (
-              <div className="sp-end-msg">— Tous les produits sont affichés —</div>
+              <div className="sp-end-msg">Tous les produits sont affichés</div>
             )}
           </>
         )}
@@ -1114,13 +1114,13 @@ export default function ShopPageClient({ initialShop, initialProducts }: ShopPag
         {/* Reassurance */}
         <div className="sp-reassurance">
           {[
-            { icon: '🚚', title: 'Livraison rapide', sub: 'Chez vous en 24h – 48h' },
-            { icon: '✅', title: 'Produits authentiques', sub: 'Qualité garantie' },
-            { icon: '🔒', title: 'Paiement sécurisé', sub: '100% sûr et protégé' },
-            { icon: '💬', title: 'Support client', sub: 'Réponse rapide sur WhatsApp' },
-          ].map((item, i) => (
+            { Icon: Truck,       title: 'Livraison rapide', sub: 'Chez vous en 24h – 48h' },
+            { Icon: BadgeCheck,  title: 'Produits authentiques', sub: 'Qualité garantie' },
+            { Icon: Lock,        title: 'Paiement sécurisé', sub: '100% sûr et protégé' },
+            { Icon: MessageCircle, title: 'Support client', sub: 'Réponse rapide sur WhatsApp' },
+          ].map(({ Icon, ...item }, i) => (
             <div key={i} className="sp-reassurance-item">
-              <div className="sp-reassurance-icon">{item.icon}</div>
+              <div className="sp-reassurance-icon"><Icon size={19} strokeWidth={1.9} color="#0a8f45" /></div>
               <div>
                 <div style={{ fontSize: 13, fontWeight: 700, color: '#1F2A24' }}>{item.title}</div>
                 <div style={{ fontSize: 11, color: '#98A2B3', marginTop: 2 }}>{item.sub}</div>
@@ -1155,7 +1155,7 @@ export default function ShopPageClient({ initialShop, initialProducts }: ShopPag
       {/* ── Cart toast ───────────────────────────────────────────────── */}
       {toast && (
         <div className="sp-toast" role="alert">
-          <div className="sp-toast-icon">✓</div>
+          <div className="sp-toast-icon"><Check size={14} strokeWidth={2.75} /></div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: '#1F2A24' }}>Ajouté au panier</div>
             <div style={{ fontSize: 12, color: '#667085', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 2 }}>
@@ -1165,7 +1165,7 @@ export default function ShopPageClient({ initialShop, initialProducts }: ShopPag
               className="sp-toast-view"
               onClick={() => { setToast(null); setCartOpen(true); }}
             >
-              Voir le panier ({cartCount}) →
+              Voir le panier ({cartCount}) <ArrowRight size={14} strokeWidth={2.25} style={{ verticalAlign: '-2px' }} />
             </button>
           </div>
           <button className="sp-toast-close" onClick={() => setToast(null)} aria-label="Fermer">
@@ -1238,9 +1238,9 @@ export default function ShopPageClient({ initialShop, initialProducts }: ShopPag
                 <div className="sp-filter-chips">
                   {([
                     { v: 'all', l: 'Tous' },
-                    { v: 'in',  l: '✓ En stock' },
-                    { v: 'low', l: '⚠ Stock faible' },
-                    { v: 'out', l: '✗ Rupture' },
+                    { v: 'in',  l: 'En stock' },
+                    { v: 'low', l: 'Stock faible' },
+                    { v: 'out', l: 'Rupture' },
                   ] as const).map(({ v, l }) => (
                     <button key={v} className={`sp-filter-chip${stockFilter === v ? ' active' : ''}`} onClick={() => setStockFilter(v)}>{l}</button>
                   ))}
@@ -1284,7 +1284,7 @@ export default function ShopPageClient({ initialShop, initialProducts }: ShopPag
             <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px' }}>
               {cart.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '48px 0', color: '#98A2B3' }}>
-                  <div style={{ fontSize: 44, marginBottom: 12 }}>🛒</div>
+                  <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}><ShoppingCart size={40} strokeWidth={1.2} color="#c7cfcc" /></div>
                   <div style={{ fontSize: 14, fontWeight: 600, color: '#1F2A24' }}>Votre panier est vide</div>
                   <div style={{ fontSize: 12, marginTop: 4 }}>Ajoutez des produits pour commander</div>
                 </div>
@@ -1294,7 +1294,7 @@ export default function ShopPageClient({ initialShop, initialProducts }: ShopPag
                     <div style={{ width: 56, height: 56, borderRadius: 10, background: '#F8FAF9', overflow: 'hidden', flexShrink: 0 }}>
                       {item.imageUrl
                         ? <Image src={item.imageUrl} alt={item.name} width={56} height={56} style={{ objectFit: 'cover', width: '100%', height: '100%' }} />
-                        : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>📦</div>
+                        : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Package size={20} strokeWidth={1.5} color="#c7cfcc" /></div>
                       }
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
@@ -1333,7 +1333,7 @@ export default function ShopPageClient({ initialShop, initialProducts }: ShopPag
                   onClick={() => { setCartOpen(false); setCheckoutOpen(true); }}
                   style={{ width: '100%', height: 48, background: '#0A8F45', color: '#fff', border: 'none', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: 'pointer' }}
                 >
-                  Passer commande →
+                  Passer commande <ArrowRight size={15} strokeWidth={2.25} style={{ verticalAlign: '-3px' }} />
                 </button>
                 <button
                   onClick={() => setCart([])}
@@ -1363,7 +1363,7 @@ export default function ShopPageClient({ initialShop, initialProducts }: ShopPag
       {confirmedOrder && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.5)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
           <div style={{ background: '#fff', borderRadius: 20, padding: '32px 28px', maxWidth: 440, width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,.15)', textAlign: 'center' }}>
-            <div style={{ width: 64, height: 64, borderRadius: 50, background: '#DDF6E7', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', fontSize: 32 }}>✅</div>
+            <div style={{ width: 64, height: 64, borderRadius: 50, background: '#DDF6E7', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}><CheckCircle2 size={32} strokeWidth={1.8} color="#0a8f45" /></div>
             <h2 style={{ fontSize: 22, fontWeight: 800, color: '#1F2A24', margin: '0 0 8px' }}>Commande confirmée !</h2>
             <p style={{ fontSize: 14, color: '#667085', marginBottom: 6 }}>
               Référence : <strong style={{ color: '#1F2A24' }}>#{confirmedOrder.orderId.slice(0, 8).toUpperCase()}</strong>
@@ -1382,7 +1382,7 @@ export default function ShopPageClient({ initialShop, initialProducts }: ShopPag
                   target="_blank" rel="noreferrer"
                   style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, height: 46, background: '#25D366', color: '#fff', borderRadius: 12, fontSize: 14, fontWeight: 700, textDecoration: 'none' }}
                 >
-                  💬 Contacter la boutique sur WhatsApp
+                  <MessageCircle size={15} strokeWidth={2} style={{ verticalAlign: '-3px', marginRight: 6 }} />Contacter la boutique sur WhatsApp
                 </a>
               )}
               <button
@@ -1499,11 +1499,11 @@ function CheckoutModal({ cart, cartTotal, slug, shopPaymentMethods, onClose, onS
     }
   }
 
-  const ALL_PAYMENT_OPTIONS: { id: 'cod' | 'cash' | 'mobile_money' | 'bank_transfer'; icon: string; label: string; imgUrl?: string }[] = [
-    { id: 'cod',          icon: '🚚', label: 'Paiement à la livraison' },
-    { id: 'mobile_money', icon: '📱', label: 'Mobile Money', imgUrl: 'https://res.cloudinary.com/dngaowjt8/image/upload/v1779488827/MM_uvauci.jpg' },
-    { id: 'cash',         icon: '💵', label: 'Espèces' },
-    { id: 'bank_transfer',icon: '🏦', label: 'Virement' },
+  const ALL_PAYMENT_OPTIONS: { id: 'cod' | 'cash' | 'mobile_money' | 'bank_transfer'; Icon: typeof Truck; label: string; imgUrl?: string }[] = [
+    { id: 'cod',          Icon: Truck,      label: 'Paiement à la livraison' },
+    { id: 'mobile_money', Icon: Smartphone, label: 'Mobile Money', imgUrl: 'https://res.cloudinary.com/dngaowjt8/image/upload/v1779488827/MM_uvauci.jpg' },
+    { id: 'cash',         Icon: Banknote,   label: 'Espèces' },
+    { id: 'bank_transfer',Icon: Landmark,   label: 'Virement' },
   ];
 
   // Filtrer selon la configuration du marchand
@@ -1590,7 +1590,7 @@ function CheckoutModal({ cart, cartTotal, slug, shopPaymentMethods, onClose, onS
                 >
                   {opt.imgUrl
                     ? <img src={opt.imgUrl} alt={opt.label} style={{ height: 24, width: 'auto', maxWidth: 60, objectFit: 'contain', flexShrink: 0 }} />
-                    : <span style={{ fontSize: 18 }}>{opt.icon}</span>
+                    : <opt.Icon size={17} strokeWidth={1.9} style={{ flexShrink: 0 }} />
                   }
                   {opt.label}
                 </button>
@@ -1609,7 +1609,7 @@ function CheckoutModal({ cart, cartTotal, slug, shopPaymentMethods, onClose, onS
             />
           </div>
 
-          {/* Honeypot — invisible to humans, filled only by bots */}
+          {/* Honeypot - invisible to humans, filled only by bots */}
           <input
             type="text"
             tabIndex={-1}
@@ -1628,7 +1628,7 @@ function CheckoutModal({ cart, cartTotal, slug, shopPaymentMethods, onClose, onS
           <button
             onClick={handleSubmit}
             disabled={loading}
-            style={{ width: '100%', height: 50, background: loading ? '#7CC49E' : '#0A8F45', color: '#fff', border: 'none', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: loading ? 'wait' : 'pointer' }}
+            style={{ width: '100%', height: 50, background: loading ? '#71d69d' : '#0A8F45', color: '#fff', border: 'none', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: loading ? 'wait' : 'pointer' }}
           >
             {loading
               ? (isOnlinePayment ? 'Redirection vers le paiement…' : 'Envoi en cours…')

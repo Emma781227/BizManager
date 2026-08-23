@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, Construction, Trash2 } from "lucide-react";
+import { AlertTriangle, Construction, Trash2, Check, X, Circle, ChevronLeft, ChevronRight } from "lucide-react";
 
 type OverviewPayload = {
   shopsCount: number;
@@ -355,10 +355,10 @@ export default function AdminDashboardClient() {
       {/* KPI Cards */}
       <div className="adm-kpi-grid">
         {([
-          { label: "Boutiques actives", value: activeCount, color: "#0A8F45", bg: "#DDF6E7", icon: "✓" as React.ReactNode, sub: `sur ${totalShops} total` },
+          { label: "Boutiques actives", value: activeCount, color: "#0A8F45", bg: "#DDF6E7", icon: <Check size={16} strokeWidth={2.5} />, sub: `sur ${totalShops} total` },
           { label: "Suspendues", value: 0, color: "#F08A24", bg: "#FFF1E5", icon: <AlertTriangle size={16} />, sub: "Aucune suspension" },
-          { label: "Inactives", value: inactiveCount, color: "#3B82F6", bg: "#E8F0FF", icon: "○" as React.ReactNode, sub: "Non publiées" },
-          { label: "Fermées", value: 0, color: "#EF4444", bg: "#FDE8E8", icon: "✕" as React.ReactNode, sub: "Aucune fermeture" },
+          { label: "Inactives", value: inactiveCount, color: "#3B82F6", bg: "#E8F0FF", icon: <Circle size={15} strokeWidth={2} />, sub: "Non publiées" },
+          { label: "Fermées", value: 0, color: "#EF4444", bg: "#FDE8E8", icon: <X size={16} strokeWidth={2.5} />, sub: "Aucune fermeture" },
         ] as { label: string; value: number; color: string; bg: string; icon: React.ReactNode; sub: string }[]).map((card) => (
           <div
             key={card.label}
@@ -498,7 +498,7 @@ export default function AdminDashboardClient() {
                               {shop.plan?.displayName ?? "Starter"}
                             </span>
                           </td>
-                          <td style={{ padding: "11px 12px", color: "#667085", fontSize: 13 }}>{shop.city ?? "—"}</td>
+                          <td style={{ padding: "11px 12px", color: "#667085", fontSize: 13 }}>{shop.city ?? "Non renseignée"}</td>
                           <td style={{ padding: "11px 12px" }}>
                             <span style={{
                               display: "inline-block", padding: "3px 9px", borderRadius: 20, fontSize: 11, fontWeight: 600,
@@ -559,7 +559,8 @@ export default function AdminDashboardClient() {
                       disabled={currentPage === 1}
                       onClick={() => setCurrentPage((p) => p - 1)}
                       style={{ padding: "5px 10px", borderRadius: 7, border: "1.5px solid #E8ECEA", background: "#fff", color: "#1F2A24", fontSize: 13, cursor: currentPage === 1 ? "default" : "pointer", opacity: currentPage === 1 ? 0.4 : 1 }}
-                    >←</button>
+                      aria-label="Page précédente"
+                    ><ChevronLeft size={14} strokeWidth={2.25} /></button>
                     {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1).map((page) => (
                       <button
                         key={page}
@@ -571,7 +572,8 @@ export default function AdminDashboardClient() {
                       disabled={currentPage === totalPages}
                       onClick={() => setCurrentPage((p) => p + 1)}
                       style={{ padding: "5px 10px", borderRadius: 7, border: "1.5px solid #E8ECEA", background: "#fff", color: "#1F2A24", fontSize: 13, cursor: currentPage === totalPages ? "default" : "pointer", opacity: currentPage === totalPages ? 0.4 : 1 }}
-                    >→</button>
+                      aria-label="Page suivante"
+                    ><ChevronRight size={14} strokeWidth={2.25} /></button>
                   </div>
                 </div>
               )}
