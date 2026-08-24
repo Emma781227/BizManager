@@ -1,14 +1,23 @@
-version: '3.8'
+# Base de données de développement pour BizManager.
+#
+# `name: commerce` fixe le nom du projet Compose. Sans cette ligne, Compose
+# le déduirait du dossier (« bizmanager ») et créerait un volume
+# `bizmanager_postgres_data` vide, sans rapport avec les données existantes.
+# Avec ce nom, le volume reste `commerce_postgres_data` — celui utilisé
+# depuis le début du projet.
+name: commerce
 
 services:
   postgres:
     image: postgres:16-alpine
     container_name: commerce_postgres
+    restart: unless-stopped
     environment:
       POSTGRES_USER: commerce
       POSTGRES_PASSWORD: commerce_dev_123
       POSTGRES_DB: commerce
     ports:
+      # 5434 côté hôte : port attendu par DATABASE_URL dans web/.env.local
       - "5434:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -21,13 +30,16 @@ services:
   pgadmin:
     image: dpage/pgadmin4:latest
     container_name: commerce_pgadmin
+    restart: unless-stopped
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@commerce.local
       PGADMIN_DEFAULT_PASSWORD: admin_123
+      PGADMIN_CONFIG_SERVER_MODE: "False"
     ports:
       - "5050:80"
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
 
 volumes:
   postgres_data:
