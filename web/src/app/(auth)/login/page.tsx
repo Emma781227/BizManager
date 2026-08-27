@@ -1,10 +1,22 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check } from "lucide-react";
 
 type Mode = "login" | "register";
+
+/**
+ * google.accounts.id.initialize() configure un singleton global : chaque appel
+ * supplémentaire écrase le précédent et fait émettre à GSI « initialize() is
+ * called multiple times ».
+ *
+ * Le drapeau est au niveau module, et non dans un état ou une ref, pour couvrir
+ * les trois cas qui rejouent l'effet : le double montage de StrictMode, le
+ * onload du script qui suit un initGSI() déjà exécuté, et un retour ultérieur
+ * sur la page.
+ */
+let gsiInitialized = false;
 
 export default function LoginPage() {
   const router = useRouter();
@@ -31,6 +43,11 @@ export default function LoginPage() {
   const [forgotLoading, setForgotLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [gsiReady, setGsiReady] = useState(false);
+  const googleBtnRef = useRef<HTMLDivElement | null>(null);
+  const credentialHandlerRef = useRef<(resp: any) => void>(() => {});
+  const googleConfigured =
+    Boolean(process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID) &&
+    process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID !== "REPLACE_WITH_GOOGLE_CLIENT_ID";
   const [selectedPlan, setSelectedPlan] = useState<"starter" | "business" | "premium" | null>(null);
 
   useEffect(() => {
@@ -57,10 +74,16 @@ export default function LoginPage() {
         return;
       }
       try {
-        g.accounts.id.initialize({
-          client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
-          callback: (resp: any) => handleCredentialResponse(resp),
-        });
+        if (!gsiInitialized) {
+          g.accounts.id.initialize({
+            client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
+            // Le rappel est figé au premier appel : on passe par une ref pour
+            // qu'il vise toujours la version courante de handleCredentialResponse.
+            callback: (resp: any) => credentialHandlerRef.current(resp),
+          });
+          gsiInitialized = true;
+        }
+        // Hors du garde : à chaque montage, le bouton doit être re-rendu.
         setGsiReady(true);
       } catch (e) {
         console.warn("GSI init failed", e);
@@ -80,6 +103,46 @@ export default function LoginPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Tient la ref à jour : initialize() n'ayant lieu qu'une fois, son rappel
+  // doit passer par cette indirection pour ne pas figer un ancien état.
+  useEffect(() => {
+    credentialHandlerRef.current = handleCredentialResponse;
+  });
+
+  /**
+   * Rend le bouton officiel Google dans son conteneur.
+   *
+   * On passe par renderButton plutôt que par accounts.id.prompt() : ce dernier
+   * déclenche One Tap, soumis à FedCM, aux réglages de connexion tiers du
+   * navigateur et à un délai de carence après quelques fermetures — il échoue
+   * avec « FedCM get() rejects with NetworkError » même bien configuré.
+   *
+   * Le conteneur est démonté quand on bascule sur l'inscription, d'où les
+   * dépendances à mode et registerStep : l'effet doit rejouer au remontage.
+   */
+  useEffect(() => {
+    if (!gsiReady) return;
+    const node = googleBtnRef.current;
+    const g = (window as any).google;
+    if (!node || typeof g?.accounts?.id?.renderButton !== "function") return;
+
+    // Google ajoute un iframe au conteneur : sans ce nettoyage, un effet
+    // rejoué empilerait plusieurs boutons.
+    node.innerHTML = "";
+
+    g.accounts.id.renderButton(node, {
+      type:           "standard",
+      theme:          "outline",
+      size:           "large",
+      text:           "signin_with",
+      shape:          "rectangular",
+      logo_alignment: "center",
+      locale:         "fr",
+      // renderButton n'accepte pas de largeur relative ; 400 est le maximum admis.
+      width: Math.min(node.offsetWidth || 320, 400),
+    });
+  }, [gsiReady, mode, registerStep]);
 
   async function handleCredentialResponse(response: any) {
     console.log("GSI credential response:", response);
@@ -108,30 +171,6 @@ export default function LoginPage() {
       setError("Erreur réseau pendant la connexion Google");
     } finally {
       setIsLoading(false);
-    }
-  }
-
-  function handleGoogleButton() {
-    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-    if (!clientId || clientId === "REPLACE_WITH_GOOGLE_CLIENT_ID") {
-      setError("Connexion Google non configurée : ajoutez NEXT_PUBLIC_GOOGLE_CLIENT_ID dans .env.local puis redémarrez.");
-      return;
-    }
-    if (!gsiReady) {
-      setError("Le service Google n'est pas encore chargé, réessayez dans quelques secondes.");
-      return;
-    }
-
-    const g = (window as any).google;
-    if (g && g.accounts && typeof g.accounts.id?.prompt === "function") {
-      try {
-        g.accounts.id.prompt();
-      } catch (err: any) {
-        console.error("GSI prompt error:", err);
-        setError(err?.message ?? "Erreur lors de l'appel Google Identity");
-      }
-    } else {
-      setError("Le service Google n'est pas chargé");
     }
   }
 
@@ -780,21 +819,15 @@ export default function LoginPage() {
                   <div className="h-px flex-1 bg-slate-200" />
                 </div>
 
-                <button
-                  type="button"
-                  onClick={handleGoogleButton}
-                  className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-800 transition hover:bg-slate-50"
-                >
-                  <span className="flex h-4 w-4 items-center justify-center rounded-full bg-white">
-                    <svg className="h-4 w-4" viewBox="0 0 48 48">
-                      <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.6 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.2 6.1 29.4 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.5-.2-3-.4-3.5z" />
-                      <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15 19 12 24 12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.2 6.1 29.4 4 24 4 15.5 4 8.1 8.7 4.1 15.6l2.2-.9z" />
-                      <path fill="#4CAF50" d="M24 44c5.1 0 9.8-2 13.3-5.2l-6.1-5.1C29.3 35.8 26.8 36 24 36c-5.3 0-9.7-3.4-11.3-8.1l-6.5 5C9.9 39.3 16.4 44 24 44z" />
-                      <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-1 2.8-3 5-5.7 6.7l.1-.1 6.1 5.1C34.7 38.2 44 32 44 24c0-1.5-.2-3-.4-3.5z" />
-                    </svg>
-                  </span>
-                  <span>Google</span>
-                </button>
+                {/* Conteneur du bouton rendu par Google (google.accounts.id.renderButton). */}
+                <div ref={googleBtnRef} className="flex w-full justify-center" />
+                {!gsiReady ? (
+                  <p className="text-center text-xs text-slate-400">
+                    {googleConfigured
+                      ? "Chargement de la connexion Google…"
+                      : "Connexion Google non configurée : renseignez NEXT_PUBLIC_GOOGLE_CLIENT_ID dans .env.local puis redémarrez."}
+                  </p>
+                ) : null}
 
                 <div className="rounded-lg border border-emerald-100 bg-emerald-50/80 px-3 py-2">
                   <div className="flex items-start gap-2">
